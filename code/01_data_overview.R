@@ -313,3 +313,42 @@ for (curr_row in 1:nrow(res)) {
 # hold! --> Each row & col represent a DF!
 # The entrance [1,2] tells us how much of the colnames of DF1 are also in DF2
 res
+
+# Get the type of the features used in all blocks!                          ----
+# Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
+DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
+                  "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
+data_path    <- "./data/external/Dr_Hornung/Data/ProcessedData/"
+
+res_all <- list()
+
+for (df in DFs_w_gender) {
+  
+  writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
+  
+  # [0] empty list w/ name of the current DF
+  assign(df, list())
+  curr_res_list <- eval(as.symbol(df))
+  
+  # [1] Load 'df' & only keep names of the feature blocks!
+  omics_blocks <- load(paste0(data_path, df, ".Rda"))
+  omics_blocks <- omics_blocks[-which(omics_blocks %in% c("targetvar"))]
+  
+  # [2] Loop over all the blocks/subDFs
+  for (block in omics_blocks) {
+    
+    writeLines(paste0("Block: --------------------------------------\n", block))
+    
+    DF    <- eval(as.symbol(block))
+    types <- sapply(1:ncol(DF),  FUN = function(x) class(DF[,x]))
+    curr_res_list[[length(curr_res_list) + 1]] <- table(types)
+  }
+  
+  res_all[[df]] <- curr_res_list
+}
+
+# Get thy types of all DFs and all blocks:
+sapply(names(res_all), FUN = function(x) unlist(res_all[[x]]))
+lapply(names(res_all), FUN = function(x) unlist(res_all[[x]]))
+
+
