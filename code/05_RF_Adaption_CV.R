@@ -1,6 +1,6 @@
 "Script to crossValidate the adaption of the RF Alogrithm in our use cases!"
 # Load Funcitons, Classes, librarys & set the WD!
-setwd("C:/Users/kuche_000/Desktop/Master_Omicsdaten/")
+setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 source("./code/04_simpleRF_adaption.R")
 
 create_data <- function(path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",

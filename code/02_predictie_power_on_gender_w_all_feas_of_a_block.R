@@ -12,7 +12,7 @@
     -Time in minutes
 "
 # Set Working Directory and load the needed packages!
-setwd("C:/Users/kuche_000/Desktop/Master_Omicsdaten/")
+setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 library(randomForest)
 
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)

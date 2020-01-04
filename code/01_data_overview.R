@@ -2,7 +2,7 @@
  Data is preprocessed already, by the work of Dr. Roman Hornung!
 "
 # Set the WD to the main folder, that holds all things for "Master OmicsDaten"
-setwd("C:/Users/kuche_000/Desktop/Master_Omicsdaten/")
+setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 
 # Load Packages
 

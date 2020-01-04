@@ -1,7 +1,8 @@
 " Norberts Adjustment for the RF in blockwise missing data situations!"
 
+
 # SetWD and define/load functions
-setwd("C:/Users/kuche_000/Desktop/Master_Omicsdaten/")
+setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 
 library(randomForestSRC)
 

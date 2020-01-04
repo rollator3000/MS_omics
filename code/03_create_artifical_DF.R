@@ -1,6 +1,6 @@
 "Create a dataset w/ factors, characters & numeric features - for investigation!"
 
-setwd("C:/Users/kuche_000/Desktop/Master_Omicsdaten")
+setwd("C:/Users/kuche_000/Desktop/MS-Thesis")
 data("iris")
 iris$factor                              <-  sample(c("good", "ok", "legend"), 
                                                     size = nrow(iris), 
