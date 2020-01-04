@@ -1,0 +1,144 @@
+____________________________________________________________________________________________________
+DONE -----------------------------------------------------------------------------------------------
+	- DONE Finsih Script to inspect the data & get a brief overview of the data
+	- DONE init repository; doing right now, takes some time, as i added data
+	- DONE try RF for Survival- there is an R package!
+	- DONE read into the Romans Method
+	- DONE add MARKDOWN Preview to sublime!
+	- DONE add a README.md
+	- DONE finish "Bi level multisource learning ..." - XIANG [behind Dr. Hornung Work]
+	- DONE finsih "recursive partioning on incomplete..."- Hapfelmeier
+	- DONE finish "Random Survival Trees"
+	- DONE save folder on USB for savety - update GIT 
+	- DONE Finish "block forrests"
+	- DONE "supervised learning for multi-block..." --> finish before meeting on tuesday! 
+	- DONE Read 5. & 6. Chapter of Krautenbachers Dr. Thesis!
+	- DONE Read MS. Thesis
+	- DONE Sketch the different approaches 
+	  (especially with the RF approaches, as there are many different Ideas!)
+    - DONE Think of an standard approach we can use as baseline! ask Roman  
+    - DONE How shall the Evaluation be done? [CV, Measures, found features etc..]
+
+____________________________________________________________________________________________________
+- TO DO --------------------------------------------------------------------------------------------
+	------------------------ UNTIL THURSDAY 
+	- Think of Testing-& Traing-Situations (which cases can which models handle)
+		--> which cases to cover etc.
+		--> Jonas:	- adapt datasituations to the possibilities the methods offer?!
+					- exchange simulated data in the end?!
+	
+	- Tunable Parameters w/ Roman: see 'Improved Outcome Prediciton'
+			- ntree    - high as possible [e.g. 500] - no need to tune it!
+			- mtry     - fixed   --> sqrt(p)
+			- nodesize - tuning! --> the higher the more robust
+
+	- !!!!!!!!!! new mtry split candidates at every split point... How to implement?! !!!!!!!!!!!!!!
+		--> right now, for the whole tree we subsample the feature space and use the same features
+		    as split canidates for EACH split!
+
+	- Check, how good the predicitve power of classifier is, that uses all features of a single
+	  block to predict the gender! --> probably xtremly good!
+
+	- Check, whether the genetical features in the different DFs are the same?!
+	  [e.g. same transcriptor features as in the other blocks] 
+
+
+	------------------------ GENERAL 
+	- RealLife Data with an categorical response:
+		--> childhood asthma find features [Promotion-Thesis Dr. Krautenbacher]
+		--> Cancer Atlas, use e.g. 2 Sets and predict type of cancer?
+
+	- RF Aaption: 	- we can subsample the features space for every tree, how to implement
+	                  mtry new split candidates at every node, not only every tree?!
+	                - rounding errors, as the rules summary only gives us 2 decimals
+
+	- Finsih Implementation [>> see RF-Adaption Section]
+
+	- Think of relevant alternative methods to use:
+	  USABLE -------------------- 
+			* RF Adaption from Roman *
+				- take all observations, with the same features and train on each of these sets
+				  a RandomForrest	--> RF for single blocks, and combinations of the different
+				                        blocks 
+				- Prediction: Based on the features in x_test, we prune all our trees, from the
+				              different RFs, and use the remaining trees for prediciton!
+				- Further Adaptions:
+					- Weights based on the single blocks!
+					- Favor Clinical Variables!
+
+			* RF Adaption from Krautenbacher *
+				- train a single RF on each block
+				- weight the predictions of the single blocks by how much 'predicitive power' the
+				  block has! [--> CV of the block: higher accuracy --> higher predicive power] 
+				- Further Adaptions
+					- Favor Clinical Variables
+					- Do no weighting at all
+
+			* Hieke: 'integrating multiple molecular sources...' * 
+				- need overlap in the train data + testset needs same layout
+				- Method Integrated already
+					--> possible for Classification aswell?!
+			
+			* mdd-sPLS Imputation Method! *
+				- code is open source 
+					--> should be possible to do!	
+				- MICE or any other Imputation Method could be tried!
+					--> need overlap to do meaningful imputation!
+
+			* Single Block Model *
+				- Only use one single block to train a classifer!
+					--> create to see the 'added predictive value'
+					--> create baseline, as it can not combine the blockwise information, 
+					    and we can show our superiority!
+
+			* Fully Observed *
+				- Before introducing the blockwise missingness, we can fit a model on the 
+				  whole data to recieve like some upper bound of the performance!
+				  	--> Jonas:"Gold-Standard"
+
+		NOT USABLE --------------------
+			- bi-level multisource learning for heterogenous blockwise missing data
+				- TestSet needs same Layout as one of the Blocks in the training! 
+				- not integrated yet..!
+
+
+____________________________________________________________________________________________________
+RF ADAPTION: ---------------------------------------------------------------------------------------
+	- DONE take care of factor vaariables as split point!
+	- DONE take care of intervals ["hsa.mir.493	is 3.7 to 4.7"]	 
+	- DONE Regression / Time-to-Event as Response?! --> only CLASSIFICATION
+
+	- Add name of the response class! [not just "pos" and "neg"]
+		--> tree$ordered --> y_values!
+	
+	- Add a function for CrossValidation
+	
+	- Read out only probabilites only up to a certain degree!
+		--> errors when we prune (rounding errors) --> ask Roman
+	
+	- HyperParameters [from 'Improved Outcome Prediciton - Hornung']
+		- ntree    - high as possible [e.g. 500] - no need to tune it!
+		- mtry     - fixed   --> sqrt(p)
+		- nodesize - tuning! --> the higher the more robust
+
+
+
+
+
+
+
+
+
+
+
+____________________________________________________________________________________________________
+General Notes regarding the adaption of RF Algo: ---------------------------------------------------
+		- different packages checked: 	
+	 	   'rpart', 'randomForestSRC', 'ranger', 'LTRCTrees'
+		   		--> all seem to have drawbacks [e.g. reading out single trees, cruical for Adaption]
+
+		- for classification/ regression adaption of the trees could be easier, as we can:
+	 	   		- fit single decision trees directly w/ rpart!
+				   does it also work w/ TimeToEvent data?
+				- possible to prune single trees!
+					--> possible to grow RF Adaption!!!!

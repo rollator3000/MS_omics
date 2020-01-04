@@ -1,0 +1,708 @@
+"Script to crossValidate the adaption of the RF Alogrithm in our use cases!"
+# Load Funcitons, Classes, librarys & set the WD!
+setwd("C:/Users/kuche_000/Desktop/Master_Omicsdaten/")
+source("./code/04_simpleRF_adaption.R")
+
+create_data <- function(path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
+                        seed = 1312, response = 'gender') {
+  "Function to load data, subset the featurespace - each block will use only 5% 
+   of their avaible feas - and returning 1 big DF, of all single (subsetted) 
+   blocks!
+   
+   Args:
+    - path (char)     : path to a DF w/ block structure! Shall contain
+                        'rna', 'cnv', 'mirna', 'clin' & 'mutation' block!
+    - seed (int)      : seed, so the subsetting of single blocks is reproducable
+    - response (char) : feature used as reponse class - must be in 'clin' block!
+   
+   Return:
+    list with 2 entrances:  
+      1 - data: all blocks pasted together as single DF, the first col of it 
+                equals the response!
+      2 - block_names: names of the features in the different  blocks
+  "
+  # [0] Check Inputs
+  # [0-1] Load data from path & check it 
+  load(path)
+  if (any(!exists('clin') & !exists('cnv') & !exists('mirna') & 
+          !exists('mutation') & !exists('rna'))) {
+    stop("'path' led to a DF with missing block!")
+  }
+  if (!(response %in% colnames(clin))) stop("Clin Block has no 'response' feature")
+  
+  # [0-2] Check the 'seed' argument!
+  if (seed %% 1 != 0 ) stop("'seed' must be an integer!")
+  
+  # [1] Subsett the single blocks:
+  # [1-1] Extract response from 'clin' block & all other clinical features
+  resp     <- clin[which(colnames(clin) == response)]
+  clin     <- clin[-which(colnames(clin) == response)]
+  
+  # [1-2] Subset the 'cnv' features
+  set.seed(seed)
+  cnv      <- cnv[,sample(ncol(cnv), round(ncol(cnv) * 0.05))]
+  
+  # [1-3] Subset 'rna' features + rename to avoid duplicates w/ 'cnv'
+  set.seed(seed)
+  rna           <- rna[,sample(ncol(rna), round(ncol(rna) * 0.05))]
+  colnames(rna) <- paste0(colnames(rna), "_rna")
+  
+  # [1-4] Subset 'mirna' features
+  set.seed(seed)
+  mirna    <- mirna[,sample(ncol(mirna), round(ncol(mirna) * 0.05))]
+  
+  # [1-5] Subset 'mutation' features
+  set.seed(seed)
+  mutation <- mutation[,sample(ncol(mutation), round(ncol(mutation) * 0.05))]
+  
+  
+  # [2] Create single DF
+  # [2-1] Bind the subsetted blocks together to one big DF
+  df <- cbind(resp, clin, cnv, rna, mirna, mutation)
+  
+  # [2-2] Recode the response as factor!
+  df[,colnames(df) == response] <- factor(df[,colnames(df) == response])
+  
+  
+  # [3] Extract the colnames of the single blocks & save them in list:
+  block_variables <- list("clin_block"     = colnames(clin),
+                          "cnv_block"      = colnames(cnv),
+                          "mirna_block"    = colnames(mirna),
+                          "mutation_block" = colnames(mutation),
+                          "rna_block"      = colnames(rna))
+  
+  # [4] Return a list with a 'data' entrance & the colnames of the single blocks
+  return(list("data" = df,
+              "block_names" = block_variables))
+}
+
+get_obs_per_fold <- function(data) {
+  "Find the amount of observations, we need in each test fold, so we have same
+   sized training folds!
+   --> This might lead to slightly smaller testfolds than trainingfolds, but the
+       price are equally sized training folds
+       
+  Args:
+    - data (data.frame) : dataframe on which we want to do CV oon blockwise
+                          missingness patterns!
+  Return:
+    - list filled with:
+      -'amount_train':       amount of Observations used for Training in total!
+      - 'amount_train_fold': amount of Observations in each Trainfold!
+      - 'amount_test':       amount of Observations in each Testfold
+  "
+  # [0] Check Inputs!
+  assert_data_frame(data, min.rows = 1)
+  
+  # [1] Get the amount of Obs. in each Trainingsfold & Testfold, so the Trainig-
+  #     folds have the same size!
+  #     Amount of trainig observations we use must be dividable by 4! 
+  #     Increase the amount of observations in trainingfolds by 1 & 
+  #     Reduce the amount of observations in testfold by 1 until, amount of 
+  #     observations in trainingfoldsis dividable by 4!
+  amount_train <- floor(4/5 * nrow(data))
+  amount_test  <- ceiling(1/5 * nrow(data)) 
+  
+  while ((amount_train %% 4) != 0) {
+    amount_train      <- amount_train + 1
+    amount_train_fold <- amount_train / 4
+    amount_test       <- amount_test - 1
+  }
+  
+  # print info
+  writeLines(paste("Each TestFold will hold", amount_test,  "Test-Observations!"))
+  writeLines(paste("The remaning", nrow(df) - amount_test, "Obs. are used for Training",
+                   "-", amount_train_fold, "Observations per Trainingsfold"))
+  
+  # [2] Return the amount of observations needed in each fold, to create equally
+  #     sized trainingfolds!
+  return(list("amount_train"      = amount_train,
+              "amount_train_fold" = amount_train_fold,
+              "amount_test"       = amount_test))
+}
+
+all_trees_grown_correctly <- function(trees, replace_rf = replace_rf) {
+  "Function to check, whether all trees, were grown correctly & if not, we grow
+   these trees again, as long, as they are grown correctly!
+  
+   Args:
+      trees (list) : list filled with object of the class 'Tree'! For each 
+                     object in the 'trees' list we check, whether it was grown 
+                     correctly! If it doesn't have any child nodes, it is grown 
+                     again!
+      replace_rf (bool) : When growing the trees, shall we draw from the 
+                          observations with or without replacement!
+                          
+   Return: 
+      list of trees, where all of these trees were grown correctly
+  "
+  # [1] Get the entrance of the objects, that miss child node IDs
+  amount_trees <- length(trees)
+  wrong_trees  <- unlist(lapply(1:amount_trees, FUN = function(x) if (length(trees[[x]]$child_nodeIDs) == 0) x))
+  
+  # [2] If there are any trees not grown correctly, grow them again until all
+  #     of the trees were grown correctly!
+  while (length(wrong_trees) > 0) {
+    
+    # grow the errours trees again
+    trees[wrong_trees] <- mclapply(trees[wrong_trees], 
+                                   function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # check whether any of the trees is not grown correctly!
+    wrong_trees <- unlist(lapply(1:amount_trees, FUN = function(x) if (length(trees[[x]]$child_nodeIDs) == 0) x))
+  }
+  
+  return(trees)
+}
+
+do_evaluation <- function(Forest, testdata) {
+  " Get the aggregated predicition from all trees! 
+    Evaluate the aggregated predicitons & return metrics!
+  
+     Args:
+      - Forest (list)         : list filled with the objects of class 'Tree'
+      - testdata (data.frame) : testdata we want to get predicitons for!
+                                Must conatain the response we learned the Forest
+                                on!
+      
+     Return:
+      - list w/ metrics [accuracy, f1, ...]
+  "
+  # [1] For each TreeSet in the Forest, we prepare the testdata
+  #     Setting factors to same levels, ...
+  testdata1 <- process_test_data(tree = Forest[[1]][[1]], test_data = testdata)
+  testdata2 <- process_test_data(tree = Forest[[2]][[1]], test_data = testdata)
+  testdata3 <- process_test_data(tree = Forest[[3]][[1]], test_data = testdata)
+  testdata4 <- process_test_data(tree = Forest[[4]][[1]], test_data = testdata)
+  
+  # [2] Get a prediction for every observation in TestData from all the tree
+  tree1_pred <- get_pruned_prediction(trees = Forest[[1]], test_set = testdata1)
+  tree2_pred <- get_pruned_prediction(trees = Forest[[2]], test_set = testdata2)
+  tree3_pred <- get_pruned_prediction(trees = Forest[[3]], test_set = testdata3)
+  tree4_pred <- get_pruned_prediction(trees = Forest[[4]], test_set = testdata4)
+  
+  # [3] Aggregate Predictions from the different trees!
+  # [3-1] Get the probabilities of all test obs to be of class '0'
+  all_forrest_preds_probs_class_0 <- sapply(1:nrow(testdata), FUN = function(x) {
+    
+    # Class1
+    prob_class1 <- mean(c(tree1_pred$Probs[[x]][1], tree2_pred$Probs[[x]][1],
+                          tree3_pred$Probs[[x]][1], tree4_pred$Probs[[x]][1]), 
+                        na.rm = TRUE)
+    prob_class1
+  })
+  
+  # [3-2] Convert the probabilities to class predicitons and convert it to 'class'
+  all_forrest_preds_class <- ifelse(all_forrest_preds_probs_class_0 >= 0.5, 0, 1)
+  all_forrest_preds_class <- factor(all_forrest_preds_class, 
+                                    levels = levels(Forest[[1]][[1]]$data$data[,1]))
+  
+  # [4] Get Metrics for the current setting!
+  #     Confusion Matrix
+  confmat <- caret::confusionMatrix(data      = all_forrest_preds_class, 
+                                    reference = testdata[,1])
+  
+  # [5] Create a list to collect the results!
+  res = list("Accuracy"    = confmat$overall["Accuracy"],
+             "Sensitifity" = confmat$byClass["Sensitivity"],
+             "Specificity" = confmat$byClass["Specificity"],
+             "Precision"   = confmat$byClass["Precision"],
+             "Recall"      = confmat$byClass["Recall"],
+             "F1"          = confmat$byClass["F1"],
+             "Balance_Acc" = confmat$byClass["Balanced Accuracy"])
+  
+  return(as.vector(res))
+}
+
+do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
+                           response = "gender", seed = 1312, num_trees = as.integer(10),
+                           mtry = as.integer(10), min_node_size = as.integer(5),
+                           replace_rf = TRUE) {
+  " Function to evaluate RF Adaption on blockwise missing data!
+    Data is split into test and train set [5-fold], w/ little adjustment, that
+    all train folds have same amount of obs., so the TestFold can be up to 3 obs.
+    smaller than the testfold!
+    Then each [equally sized] trainingsfold is censored to scenario 1, so that 
+    each fold has an observed clinical block & an observed omics block!
+    Then we train a serperate RandomForest on the 4 different training folds 
+    [where each fold has different observed features] and ensemble the 
+    predicitons from these 4 different RFs to a single prediciton and rate these
+    w/ Accuracy, Precision, Specifity, F1-Socre,....
+    The TestingSituations are different, as we can test the models on fully 
+    observed testdata, on testdata w/ 1 missing block etc. etc.
+    
+    Args:
+      - data_path (char)    : Path to the data, we want to CV! This should lead 
+                              to a file w/ multiple sub DFs 
+                              [details see 'create_data()']
+      - response (char)     : The repsonse we want to model - 
+                              MUST be in the 'clin'-block!
+      - seed (int)          : Seed to keep results reproducible
+      - num_trees (int)     : amount of trees, we shall grow on each[!] fold
+      - mtry (int)          : amount of split-variables we try, when looking for 
+                              a split variable!
+      - min_node_size (int) : Amount of Observations a node must at least 
+                              contain, so the model keeps on trying to split 
+                              them!
+      - replace_rf (bool)   : When growing the tree, shall we draw w/ or w/o 
+                              replacement!
+    Return:
+      - list filled w/:
+        - full    : CV Results for each fold on the fully observed testdata!
+        - miss1_1 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [cnv]!
+        - miss1_2 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [mirna]!
+        - miss1_3 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [nutation]!
+        - miss1_4 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [rna]!
+        - MORE TO COME AFTER I'VE TALKED TO ROMAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  "
+  # [0] Check Inputs
+  # - data_path, seed, response are all checked within 'create_data()'
+  # [0-1] mtry, min_node_size & num_trees, should be integers > 0
+  if (any(mtry < 0 | min_node_size < 0 | num_trees < 0)) {
+    stop("'mtry', 'min_node_size' or 'num_trees' is < 0!")
+  }
+  
+  if (any(mtry %% 1 != 0 | min_node_size  %% 1 != 0 | num_trees  %% 1 != 0)) {
+    stop("'mtry', 'min_node_size' or 'num_trees' is no integer!")
+  }
+  
+  # [0-2] replace_rf must be boolean
+  assert_logical(replace_rf)
+  
+  # [1] Get the data & dimensions of train & test folds!
+  # [1-1] Load the blockwise Omics-Data & create a single DF 
+  data <- create_data(path = data_path, seed = seed, response = response)
+  
+  # [1-2] Get amount of Obs. we need for equally sized train folds 
+  obs_per_fold <- get_obs_per_fold(data = data$data)
+  
+  # [2] Split the data to Test & Train
+  # [2-1] Shuffle IDs from 'data' randomly, for splitting it to test & train!
+  set.seed(seed)
+  fold_ids <- sample(nrow(data$data), nrow(data$data), replace = FALSE)
+  
+  # [2-2] Create empty lists to store results in!
+  full <- list(); miss1_1 <- list(); miss1_2 <- list(); miss1_3 <- list()
+  miss1_4 <- list(); miss3_1 <- list(); miss3_2 <- list(); miss3_3 <- list()
+  miss3_4 <- list(); single1 <- list()
+  
+  # [3] Start the CV, split data to Test and Train and evaluate it!
+  for (i in 0:4) {
+    
+    # [1] Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
+    #     IDs in 'fold_ids'
+    test_ids <- fold_ids[((i * obs_per_fold$amount_test) + 1):(((i + 1) * obs_per_fold$amount_test))]
+    test_df  <- data$data[test_ids,]
+    
+    # [2] Get the TrainSet from 'data' [= IDs not in TestSet] & 
+    #     induce blockwise missingness!
+    train_ids <- fold_ids[-which(fold_ids %in% test_ids)]
+    train_df  <- data$data[train_ids,]
+    
+    # [3] Print Infos to size of Test & Train
+    print(paste("FOLD", as.character(i)))
+    print(paste0("total TRAIN-obs. = ", as.character(nrow(train_df)), " Observations"))
+    print(paste0("total TEST-obs. = ", as.character(nrow(test_df)), " Observations"))
+    if (ncol(test_df) == ncol(train_df)) {
+      print(paste0("total amount of Features = ", as.character(ncol(test_df))))
+    } else {
+      stop("Test and Trainfold have different amount of features!")
+    }
+    
+    # [4] Induce blockwise missingness [SCENARIO_1]
+    # [4-1] Sample equally sized 'observed' blocks [according to SCENARIO_1]
+    set.seed(seed)
+    observed_blocks <- sample(c(rep("Clin, A", obs_per_fold$amount_train_fold), 
+                                rep("Clin, B", obs_per_fold$amount_train_fold),
+                                rep("Clin, C", obs_per_fold$amount_train_fold), 
+                                rep("Clin, D", obs_per_fold$amount_train_fold)),
+                              obs_per_fold$amount_train, replace = FALSE)
+    
+    # [4-2] Split Traindata into observed blocks! The resulting blocks will only
+    #       contain the features, in the blocks!
+    block1 <- train_df[which(observed_blocks == "Clin, A"), 
+                       c(response, data$block_names$clin_block, data$block_names$cnv_block)]
+    block2 <- train_df[which(observed_blocks == "Clin, B"), 
+                       c(response, data$block_names$clin_block, data$block_names$rna_block)]
+    block3 <- train_df[which(observed_blocks == "Clin, C"), 
+                       c(response, data$block_names$clin_block, data$block_names$mutation_block)]
+    block4 <- train_df[which(observed_blocks == "Clin, D"), 
+                       c(response, data$block_names$clin_block, data$block_names$mirna_block)]
+    
+    
+    # [5] Fit 'num_trees' decision trees on each block!
+    # [5-1] Get the Formula we use to fit all DecisionTrees/ partial forrests!
+    formula_all <- as.formula(paste(response, " ~ ."))
+    
+    # [5-2] BLOCK1 - grow the trees [as long, as all of them are grown correctly]
+    trees1 <- simpleRF(formula = formula_all, data = block1, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees1 <- mclapply(trees1, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # [5-3] BLOCK2 - grow the trees [as long, as all of them are grown correctly]
+    trees2 <- simpleRF(formula = formula_all, data = block2, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees2 <- mclapply(trees2, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+
+    # [5-4] BLOCK3 - grow the trees [as long, as all of them are grown correctly]
+    trees3 <- simpleRF(formula = formula_all, data = block3, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees3 <- mclapply(trees3, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # [5-5] BLOCK4 - grow the trees [as long, as all of them are grown correctly]
+    trees4 <- simpleRF(formula = formula_all, data = block4, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees4 <- mclapply(trees4, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # [6] Check, that all of the trees were grown correctly
+    trees1 <- all_trees_grown_correctly(trees1, replace_rf = replace_rf)
+    trees2 <- all_trees_grown_correctly(trees2, replace_rf = replace_rf)
+    trees3 <- all_trees_grown_correctly(trees3, replace_rf = replace_rf)
+    trees4 <- all_trees_grown_correctly(trees4, replace_rf = replace_rf)
+    
+    # [7] Add all the trees to a big forrest:
+    Forest <- list(trees1, trees2, trees3, trees4)
+    saveRDS(Forest, "./data/interim/tmp_model/tmp_forrest.rds")
+    
+    # [8] Start Testing!
+    # [8-1] FULL TESTSET - all blocks observed!
+    full[[i + 1]] <- do_evaluation(Forest = Forest, testdata = test_df)
+    
+    # [8-2] TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
+    #       everytime before evaluation we need to load the Forest again, as 
+    #       previous evaluation could have led to pruned trees 
+    #       --> load again for unpruned trees
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_1[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_2[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_3[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mutation_block)])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_4[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata =  test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
+    
+    # # [8-3] TESTSET THREE OMICS BLOCKS MISSING - one block is missing in TestData, 
+    # #       everytime before evaluation we need to load the Forest again, 
+    # #       as previous evaluation could have led to pruned trees 
+    # #       --> load again for unpruned trees
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_1 <- do_evaluation(Forest = Forest,   # CNV block only!
+    #                          testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
+    #                                                                              data$block_name$mutation_block,
+    #                                                                              data$block_name$rna_block))])
+    # 
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_2 <- do_evaluation(Forest = Forest, # MUTATION only
+    #                          testdata = test_df[,which(colnames(test_df) %in% c(data$block_name$mirna_block,
+    #                                                                             data$block_name$cnv_block,
+    #                                                                             data$block_names$rna_block))])
+    # 
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_3 <- do_evaluation(Forest = Forest, # RNA only!
+    #                          testdata = test_df[,which(colnames(test_df) %in% c(data$block_name$mutation_block,
+    #                                                                             data$block_name$cnv_block,
+    #                                                                             data$block_name$mirna_block))])
+    # 
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_4 <- do_evaluation(Forest = Forest, # MIRNA only!
+    #                          testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
+    #                                                                              data$block_name$cnv_block,
+    #                                                                              data$block_name$mutation_block))])
+  }
+  res_all <- list("full" = full,
+                  "miss1_1" = miss1_1,
+                  "miss1_2" = miss1_2,
+                  "miss1_3" = miss1_3,
+                  "miss1_4" = miss1_4)
+  
+  return(res_all)
+}
+
+do_CV_setting2 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
+                           response = "gender", seed = 1312, num_trees = as.integer(10),
+                           mtry = as.integer(10), min_node_size = as.integer(5),
+                           replace_rf = TRUE) {
+  " Function to evaluate RF Adaption on blockwise missing data!
+    Data is split into test and train set [5-fold], w/ little adjustment, that
+    all train folds have same amount of obs., so the TestFold can be up to 3 obs.
+    smaller than the testfold!
+    Then each [equally sized] trainingsfold is censored to scenario 2, so that 
+    the first fold is fully observed [clin + 4 omics blocks] the second fold has 
+    one observed block of omics data less [clin + 3 omics blocks], the third fold
+    has one observed block of omics data less [clin + 2 omics blocks], .........
+    Then we train a serperate RandomForest on the 4 different training folds 
+    [where each fold has different observed features] and ensemble the 
+    predicitons from these 4 different RFs to a single prediciton and rate these
+    w/ Accuracy, Precision, Specifity, F1-Socre,....
+    The TestingSituations are different, as we can test the models on fully 
+    observed testdata, on testdata w/ 1 missing block etc. etc.
+    
+    Args:
+      - data_path (char)    : Path to the data, we want to CV! This should lead 
+                              to a file w/ multiple sub DFs 
+                              [details see 'create_data()']
+      - response (char)     : The repsonse we want to model - 
+                              MUST be in the 'clin'-block!
+      - seed (int)          : Seed to keep results reproducible
+      - num_trees (int)     : amount of trees, we shall grow on each[!] fold
+      - mtry (int)          : amount of split-variables we try, when looking for 
+                              a split variable!
+      - min_node_size (int) : Amount of Observations a node must at least 
+                              contain, so the model keeps on trying to split 
+                              them!
+      - replace_rf (bool)   : When growing the tree, shall we draw w/ or w/o 
+                              replacement!
+    Return:
+      - list filled w/:
+        - full    : CV Results for each fold on the fully observed testdata!
+        - miss1_1 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [cnv]!
+        - miss1_2 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [mirna]!
+        - miss1_3 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [nutation]!
+        - miss1_4 : CV Results for each fold on the testdata, w/ 1 missing 
+                    omics-block [rna]!
+        - MORE TO COME AFTER I'VE TALKED TO ROMAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  "
+  # [0] Check Inputs
+  # - data_path, seed, response are all checked within 'create_data()'
+  # [0-1] mtry, min_node_size & num_trees, should be integers > 0
+  if (any(mtry < 0 | min_node_size < 0 | num_trees < 0)) {
+    stop("'mtry', 'min_node_size' or 'num_trees' is < 0!")
+  }
+  
+  if (any(mtry %% 1 != 0 | min_node_size  %% 1 != 0 | num_trees  %% 1 != 0)) {
+    stop("'mtry', 'min_node_size' or 'num_trees' is no integer!")
+  }
+  
+  # [0-2] replace_rf must be boolean
+  assert_logical(replace_rf)
+  
+  
+  # [1] Get the data & dimensions of train & test folds!
+  # [1-1] Load the blockwise Omics-Data & create a single DF 
+  data <- create_data(path = data_path, seed = seed, response = response)
+  
+  # [1-2] Get amount of Obs. we need for equally sized train folds 
+  obs_per_fold <- get_obs_per_fold(data = data$data)
+  
+  # [2] Split the data to Test & Train
+  # [2-1] Shuffle IDs from 'data' randomly, for splitting it to test & train!
+  set.seed(seed)
+  fold_ids <- sample(nrow(data$data), nrow(data$data), replace = FALSE)
+  
+  # [2-2] Create empty lists to store results in!
+  full <- list(); miss1_1 <- list(); miss1_2 <- list(); miss1_3 <- list()
+  miss1_4 <- list(); miss3_1 <- list(); miss3_2 <- list(); miss3_3 <- list()
+  miss3_4 <- list(); single1 <- list()
+  
+  # [3] Start the CV, split data to Test and Train and evaluate it!
+  for (i in 0:4) {
+    
+    # [1] Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
+    #     IDs in 'fold_ids'
+    test_ids <- fold_ids[((i * obs_per_fold$amount_test) + 1):(((i + 1) * obs_per_fold$amount_test))]
+    test_df  <- data$data[test_ids,]
+    
+    # [2] Get the TrainSet from 'data' [= IDs not in TestSet] & 
+    #     induce blockwise missingness!
+    train_ids <- fold_ids[-which(fold_ids %in% test_ids)]
+    train_df  <- data$data[train_ids,]
+    
+    # [3] Print Infos to size of Test & Train
+    print(paste("FOLD", as.character(i)))
+    print(paste0("total TRAIN-obs. = ", as.character(nrow(train_df)), " Observations"))
+    print(paste0("total TEST-obs. = ", as.character(nrow(test_df)), " Observations"))
+    if (ncol(test_df) == ncol(train_df)) {
+      print(paste0("total amount of Features = ", as.character(ncol(test_df))))
+    } else {
+      stop("Test and Trainfold have different amount of features!")
+    }
+    
+    # [4] Induce blockwise missingness [SCENARIO_1]
+    # [4-1] Sample equally sized 'observed' blocks [according to SCENARIO_1]
+    observed_blocks <- sample(c(rep("Clin, A, B, C, D", obs_per_fold$amount_train_fold), 
+                                rep("Clin, B, C, D", obs_per_fold$amount_train_fold),
+                                rep("Clin, C, D", obs_per_fold$amount_train_fold), 
+                                rep("Clin, D", obs_per_fold$amount_train_fold)),
+                              obs_per_fold$amount_train, replace = FALSE)
+    
+    # [4-2] Split Traindata into observed blocks! The resulting blocks will only
+    #       contain the features, in the blocks!
+    block1 <- train_df[which(observed_blocks == "Clin, A, B, C, D"), 
+                       c(response, data$block_names$clin_block, data$block_names$cnv_block, 
+                         data$block_names$mirna_block, data$block_names$mutation_block,
+                         data$block_names$rna_block)]
+    block2 <- train_df[which(observed_blocks == "Clin, B, C, D"), 
+                       c(response, data$block_names$clin_block, 
+                         data$block_names$mirna_block, data$block_names$mutation_block,
+                         data$block_names$rna_block)]
+    block3 <- train_df[which(observed_blocks == "Clin, C, D"), 
+                       c(response, data$block_names$clin_block, 
+                         data$block_names$mutation_block,
+                         data$block_names$rna_block)]
+    block4 <- train_df[which(observed_blocks == "Clin, D"), 
+                       c(response, data$block_names$clin_block, data$block_names$rna_block)]
+    
+    
+    # [5] Fit 'num_trees' decision trees on each block!
+    # [5-1] Get the Formula we use to fit all DecisionTrees/ partial forrests!
+    formula_all <- as.formula(paste(response, " ~ ."))
+    
+    # [5-2] BLOCK1 - grow the trees [as long, as all of them are grown correctly]
+    trees1 <- simpleRF(formula = formula_all, data = block1, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees1 <- mclapply(trees1, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # [5-3] BLOCK2 - grow the trees [as long, as all of them are grown correctly]
+    trees2 <- simpleRF(formula = formula_all, data = block2, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees2 <- mclapply(trees2, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # [5-4] BLOCK3 - grow the trees [as long, as all of them are grown correctly]
+    trees3 <- simpleRF(formula = formula_all, data = block3, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees3 <- mclapply(trees3, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # [5-5] BLOCK4 - grow the trees [as long, as all of them are grown correctly]
+    trees4 <- simpleRF(formula = formula_all, data = block4, 
+                       num_trees = num_trees, mtry = mtry, 
+                       min_node_size = min_node_size, replace = replace_rf,  
+                       splitrule = NULL, unordered_factors = "ignore")
+    trees4 <- mclapply(trees4, function(x) {
+      x$grow(replace = replace_rf)
+      x
+    }, mc.cores = 1)
+    
+    # [6] Check, that all of the trees were grown correctly
+    trees1 <- all_trees_grown_correctly(trees1, replace_rf = replace_rf)
+    trees2 <- all_trees_grown_correctly(trees2, replace_rf = replace_rf)
+    trees3 <- all_trees_grown_correctly(trees3, replace_rf = replace_rf)
+    trees4 <- all_trees_grown_correctly(trees4, replace_rf = replace_rf)
+    
+    # [7] Add all the trees to a big forrest:
+    Forest <- list(trees1, trees2, trees3, trees4)
+    saveRDS(Forest, "./data/interim/tmp_model/tmp_forrest.rds")
+    
+    # [8] Start Testing!
+    # [8-1] FULL TESTSET - all blocks observed!
+    full[[i + 1]] <- do_evaluation(Forest = Forest, testdata = test_df)
+    
+    # [8-2] TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
+    #       everytime before evaluation we need to load the Forest again, as 
+    #       previous evaluation could have led to pruned trees 
+    #       --> load again for unpruned trees
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_1[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_2[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_3[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mutation_block)])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss1_4[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata =  test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
+    
+    # # [8-3] TESTSET THREE OMICS BLOCKS MISSING - one block is missing in TestData, 
+    # #       everytime before evaluation we need to load the Forest again, 
+    # #       as previous evaluation could have led to pruned trees 
+    # #       --> load again for unpruned trees
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_1 <- do_evaluation(Forest = Forest,   # CNV block only!
+    #                          testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
+    #                                                                              data$block_name$mutation_block,
+    #                                                                              data$block_name$rna_block))])
+    # 
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_2 <- do_evaluation(Forest = Forest, # MUTATION only
+    #                          testdata = test_df[,which(colnames(test_df) %in% c(data$block_name$mirna_block,
+    #                                                                             data$block_name$cnv_block,
+    #                                                                             data$block_names$rna_block))])
+    # 
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_3 <- do_evaluation(Forest = Forest, # RNA only!
+    #                          testdata = test_df[,which(colnames(test_df) %in% c(data$block_name$mutation_block,
+    #                                                                             data$block_name$cnv_block,
+    #                                                                             data$block_name$mirna_block))])
+    # 
+    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    # miss3_4 <- do_evaluation(Forest = Forest, # MIRNA only!
+    #                          testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
+    #                                                                              data$block_name$cnv_block,
+    #                                                                              data$block_name$mutation_block))])
+  }
+  res_all <- list("full" = full,
+                  "miss1_1" = miss1_1,
+                  "miss1_2" = miss1_2,
+                  "miss1_3" = miss1_3,
+                  "miss1_4" = miss1_4)
+  
+  return(res_all)
+}
+
+# Run a example and check the results!                                      ----
+a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda",
+                    response = "gender", seed = 1312, num_trees = as.integer(15),
+                    mtry = as.integer(15), min_node_size = as.integer(5), replace_rf = TRUE)
+
+sapply(a, FUN = function(x) x[[1]]$F1)
+sapply(a$full, FUN = function(x) x$F1); mean(sapply(a$full, FUN = function(x) x$F1))
+sapply(a$miss1_1, FUN = function(x) x$F1); mean(sapply(a$miss1_1, FUN = function(x) x$F1))
+sapply(a$miss1_2, FUN = function(x) x$F1); mean(sapply(a$miss1_2, FUN = function(x) x$F1))
+sapply(a$miss1_3, FUN = function(x) x$F1); mean(sapply(a$miss1_3, FUN = function(x) x$F1))
+sapply(a$miss1_4, FUN = function(x) x$F1); mean(sapply(a$miss1_4, FUN = function(x) x$F1))
