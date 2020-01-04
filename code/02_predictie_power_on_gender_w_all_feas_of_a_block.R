@@ -20,9 +20,10 @@ DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 data_path    <- "./data/external/Dr_Hornung/Data/ProcessedData/"
 
-# Use only single whole (Omics-)Blocks as features                          ----
-"Use single Blocks w/ all features & get performance, runtime...
- !!! --> My local machine can maximally handle 12.5k feas for a tree <-- !!!
+# Single fully observed Omics-Blocks as features to RF                       ----
+" Use single omics Blocks and get a performance of a RF how it performs!
+  Get performance, runtime, etc.
+     --> local machine can maximally handle 12.5k feas for a tree
      --> not all blocks could be used as full block!
 "
 # [1] Empty DF - for all results of the Evaluation:
@@ -93,11 +94,10 @@ for (df in DFs_w_gender) {
 # Save the results!
 write.csv2(eval_res, "./docs/performance_RF_whole_single_blocks_gender_classif.csv",
            row.names = FALSE)
-# Use only single subsetted (Omics-)Blocks as features                      ----
+# Single 10% subsetted Omics-Blocks as features to RF                        ----
 "Use single Blocks w/ 10% of the original features & get performance, runtime...
- There should be no issues with the computer now!
+ There shouldn't be any more computional issues now!
 "
-
 # [1] Empty DF - for all results of the Evaluation:
 eval_res_sub <- data.frame("Data"  = character(),  "Block" = character(),
                            "Dim"   = numeric(),    "OOB"   = numeric(),
@@ -196,7 +196,10 @@ colnames(TEST) <- paste0(colnames(TEST), "_test")
 # [4-5] General Overview of Performance on the single blocks!
 cbind(OOB, TEST)
 
-# Use 10% subsets of all blocks as feature                                  ----
+# 10% subsets of all blocks as feature to RF                                 ----
+"Remove 90% of all omics blocks features and paste them together to learn a 
+ model on the joint data"
+
 # [1] Empty DF - for all results of the Evaluation:
 eval_res_sub_all <- data.frame("Data"  = character(), "Dim"   = numeric(),   
                                "OOB"   = numeric(),   "Test"  = numeric(),   
@@ -294,46 +297,15 @@ eval_res_sub_all$Data <- as.factor(eval_res_sub_all$Data)
 
 # [4-2] Get average Test/OOB Accuracy  
 # [4-2-1] TEST
-TEST <- summary(eval_res_sub$Test)
+TEST <- summary(eval_res_sub_all$Test)
 # [4-2-2] OOB
-OOB <- summary(eval_res_sub$OOB)
+OOB <- summary(eval_res_sub_all$OOB)
 
 # [4-3] General Overview of Performance on the single blocks!
 cbind(OOB, TEST)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# Use 'rna' & 'cnv' w 5% subsets as single Block-Features                   ----
-"Use the single Omics-Blocks 'rna' & 'cnv' w/ 5% of the original features & get 
- performance, runtime, etc.. 
- Reason to do so: The blocks had too much evidence for the gender and resulted
-                  in models w/ an average ~90-98% Accuracy on the testeset!
-                  --> too strong, there might be no differences notable between
-                      the different approaches then!
-"
-
-# [1] Empty DF - for all results of the Evaluation:
-eval_res_sub_all <- data.frame("Data"  = character(), "Dim"   = numeric(),   
-                               "OOB"   = numeric(),   "Test"  = numeric(),   
-                               "Time"  = numeric(),    stringsAsFactors = F)
-
-# Use only single subsetted (Omics-)Blocks as features [%5 RNA & CNV]       ----
-"Use single Blocks w/ 5% of the original features & get performance, runtime...
- There should be no issues with the computer now!
+# 5% subsets of 'rna'/'cnv' as features to RF                                ----
+" For the blocks 'rna' / 'cnv' we use 5% subsets and train a RF on these [seperat] 
 "
 
 # [1] Empty DF - for all results of the Evaluation:
@@ -402,32 +374,32 @@ for (df in DFs_w_gender) {
 write.csv2(eval_res_sub_2, "./docs/performance_RF_5percent_rna_cnv_single_block_gender_classif.csv",
            row.names = FALSE)
 
-# # [4] Litte analyse w/ results:
-# # [4-0] Load the results!
-# eval_res_sub_2 = read.csv2("./docs/performance_RF_5percent_rna_cnv_blocks_gender_classif.csv", 
-#                          stringsAsFactors = F)
-# 
-# # [4-1] convert to numeric:
-# cols_ <- c("OOB", "Test", "Time")
-# eval_res_sub[cols_] <- sapply(eval_res_sub[cols_], as.numeric)
-# 
-# # [4-2] Get the mean TestAccuracy / OOB-Accuracy of a certain block!
-# # [4-2-1] TEST
-# TEST <- sapply(unique(eval_res_sub$Block), 
-#                FUN = function(x) summary(eval_res_sub$Test[eval_res_sub$Block == x]))
-# # [4-2-2] OOB
-# OOB <- sapply(unique(eval_res_sub$Block), 
-#               FUN = function(x) summary(eval_res_sub$OOB[eval_res_sub$Block == x]))
-# 
-# # [4-4-3] Apply meaningful names and check the data
-# colnames(OOB)  <- paste0(colnames(OOB), "_oob")
-# colnames(TEST) <- paste0(colnames(TEST), "_test")
-# 
-# # [4-5] General Overview of Performance on the single blocks!
-# cbind(OOB, TEST)
+# [4] Litte analyse w/ results:
+# [4-0] Load the results!
+eval_res_sub_2 = read.csv2("./docs/performance_RF_5percent_rna_cnv_single_block_gender_classif.csv",
+                         stringsAsFactors = F)
+
+# [4-1] convert to numeric:
+cols_ <- c("OOB", "Test", "Time")
+eval_res_sub_2[cols_] <- sapply(eval_res_sub_2[cols_], as.numeric)
+
+# [4-2] Get the mean TestAccuracy / OOB-Accuracy of a certain block!
+# [4-2-1] TEST
+TEST <- sapply(unique(eval_res_sub_2$Block),
+               FUN = function(x) summary(eval_res_sub_2$Test[eval_res_sub_2$Block == x]))
+# [4-2-2] OOB
+OOB <- sapply(unique(eval_res_sub_2$Block),
+              FUN = function(x) summary(eval_res_sub_2$OOB[eval_res_sub_2$Block == x]))
+
+# [4-4-3] Apply meaningful names and check the data
+colnames(OOB)  <- paste0(colnames(OOB), "_oob")
+colnames(TEST) <- paste0(colnames(TEST), "_test")
+
+# [4-5] General Overview of Performance on the single blocks!
+cbind(OOB, TEST)
 
 
-# Use 10% mirna & mutation + 5% cnv & rna all together                      ----
+# Use 10% mirna & mutation + 5% cnv & rna all together                       ----
 " Subset mirna & mutation blocks by 10% and use 5% subsets of the 'cnv' & 'rna'
   blocks, as featurespace to predcit the gender!
 "
@@ -524,8 +496,30 @@ for (df in DFs_w_gender) {
 # [3] Save the results!
 write.csv2(eval_res_sub_all2, "./docs/performance_RF_10percent_mirna_mutation_5percent_rna_cnv_all_blocks_gender_classif.csv",
            row.names = FALSE)
-# Use only single subsetted (Omics-)Blocks as features [2.5% RNA & CNV]     ----
-"Use single Blocks w/ 5% of the original features & get performance, runtime...
+
+# [4] Litte analyse w/ results:
+# [4-0] Load the results!
+eval_res_sub_all = read.csv2("./docs/performance_RF_10percent_mirna_mutation_5percent_rna_cnv_all_blocks_gender_classif.csv", 
+                             stringsAsFactors = F)
+
+# [4-1] convert to correct types:
+cols_ <- c("OOB", "Test", "Time")
+eval_res_sub_all[cols_] <- sapply(eval_res_sub_all[cols_], as.numeric)
+eval_res_sub_all$Data <- as.factor(eval_res_sub_all$Data)
+
+# [4-2] Get average Test/OOB Accuracy  
+# [4-2-1] TEST
+TEST <- summary(eval_res_sub_all$Test)
+# [4-2-2] OOB
+OOB <- summary(eval_res_sub_all$OOB)
+
+# [4-3] General Overview of Performance on the single blocks!
+cbind(OOB, TEST)
+
+
+# 2.5% subsets of 'rna'&'cnv' as features to RF                              ----
+"Use single 'rna'/'cnv' Blocks w/ 2.5% of the original features 
+ & get performance, runtime...
  There should be no issues with the computer now!
 "
 
@@ -595,33 +589,32 @@ for (df in DFs_w_gender) {
 write.csv2(eval_res_sub_2, "./docs/performance_RF_2.5percent_rna_cnv_single_block_gender_classif.csv",
            row.names = FALSE)
 
-# # [4] Litte analyse w/ results:
-# # [4-0] Load the results!
-# eval_res_sub_2 = read.csv2("./docs/performance_RF_5percent_rna_cnv_blocks_gender_classif.csv", 
-#                          stringsAsFactors = F)
-# 
-# # [4-1] convert to numeric:
-# cols_ <- c("OOB", "Test", "Time")
-# eval_res_sub[cols_] <- sapply(eval_res_sub[cols_], as.numeric)
-# 
-# # [4-2] Get the mean TestAccuracy / OOB-Accuracy of a certain block!
-# # [4-2-1] TEST
-# TEST <- sapply(unique(eval_res_sub$Block), 
-#                FUN = function(x) summary(eval_res_sub$Test[eval_res_sub$Block == x]))
-# # [4-2-2] OOB
-# OOB <- sapply(unique(eval_res_sub$Block), 
-#               FUN = function(x) summary(eval_res_sub$OOB[eval_res_sub$Block == x]))
-# 
-# # [4-4-3] Apply meaningful names and check the data
-# colnames(OOB)  <- paste0(colnames(OOB), "_oob")
-# colnames(TEST) <- paste0(colnames(TEST), "_test")
-# 
-# # [4-5] General Overview of Performance on the single blocks!
-# cbind(OOB, TEST)
+# [4] Litte analyse w/ results:
+# [4-0] Load the results!
+eval_res_sub_2 = read.csv2("./docs/performance_RF_2.5percent_rna_cnv_single_block_gender_classif.csv",
+                         stringsAsFactors = F)
 
+# [4-1] convert to numeric:
+cols_ <- c("OOB", "Test", "Time")
+eval_res_sub_2[cols_] <- sapply(eval_res_sub_2[cols_], as.numeric)
 
-# Use 10% mirna & mutation + ":5% cnv & rna all together                    ----
-" Subset mirna & mutation blocks by 10% and use 5% subsets of the 'cnv' & 'rna'
+# [4-2] Get the mean TestAccuracy / OOB-Accuracy of a certain block!
+# [4-2-1] TEST
+TEST <- sapply(unique(eval_res_sub_2$Block),
+               FUN = function(x) summary(eval_res_sub_2$Test[eval_res_sub_2$Block == x]))
+# [4-2-2] OOB
+OOB <- sapply(unique(eval_res_sub_2$Block),
+              FUN = function(x) summary(eval_res_sub_2$OOB[eval_res_sub_2$Block == x]))
+
+# [4-4-3] Apply meaningful names and check the data
+colnames(OOB)  <- paste0(colnames(OOB), "_oob")
+colnames(TEST) <- paste0(colnames(TEST), "_test")
+
+# [4-5] General Overview of Performance on the single blocks!
+cbind(OOB, TEST)
+
+# 10% mirna & mutation + 2.5% cnv & rna as joint features to RF              ----
+" Subset mirna & mutation blocks by 10% and use 2.5% subsets of the 'cnv' & 'rna'
   blocks, as featurespace to predcit the gender!
 "
 eval_res_sub_all2 <- data.frame("Data"  = character(), "Dim"   = numeric(),   
@@ -717,3 +710,23 @@ for (df in DFs_w_gender) {
 # [3] Save the results!
 write.csv2(eval_res_sub_all2, "./docs/performance_RF_10percent_mirna_mutation_2.5percent_rna_cnv_all_blocks_gender_classif.csv",
            row.names = FALSE)
+
+
+# [4] Litte analyse w/ results:
+# [4-0] Load the results!
+eval_res_sub_all = read.csv2("./docs/performance_RF_10percent_mirna_mutation_2.5percent_rna_cnv_all_blocks_gender_classif.csv", 
+                             stringsAsFactors = F)
+
+# [4-1] convert to correct types:
+cols_ <- c("OOB", "Test", "Time")
+eval_res_sub_all[cols_] <- sapply(eval_res_sub_all[cols_], as.numeric)
+eval_res_sub_all$Data <- as.factor(eval_res_sub_all$Data)
+
+# [4-2] Get average Test/OOB Accuracy  
+# [4-2-1] TEST
+TEST <- summary(eval_res_sub_all$Test)
+# [4-2-2] OOB
+OOB <- summary(eval_res_sub_all$OOB)
+
+# [4-3] General Overview of Performance on the single blocks!
+cbind(OOB, TEST)
