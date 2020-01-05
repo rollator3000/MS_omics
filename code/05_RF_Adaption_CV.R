@@ -272,9 +272,11 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
                            mtry = NULL, min_node_size = as.integer(5),
                            unorderd_factors = "ignore", replace_rf = TRUE) {
   " Function to evaluate RF Adaption on blockwise missing data!
-    Data is split into test and train set [5-fold], w/ little adjustment, that
-    all train folds have same amount of obs., so the TestFold can be up to 3 obs.
-    smaller than the testfold!
+    Data is split into test and train set [curently fixed to 5-fold], with the 
+    little adjustment, the amount of traindata can be split into 4 folds w/o rest
+    --> All train folds have same amount of observations
+    --> TestFold can be a bit smaller as price for the equally sized training folds!
+    
     Then each [equally sized] trainingsfold is censored to scenario 1, so that 
     each fold has an observed clinical block & an observed omics block!
     Then we train a serperate RandomForest on the 4 different training folds 
@@ -331,7 +333,8 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
             - datapath, seed, response, mtry,.... 
   "
   # [0] Check Inputs
-  # - data_path, seed, response are all checked within 'create_data()'
+  # [0-0] data_path, seed, response are all checked within 'create_data()'
+  
   # [0-1] mtry, min_node_size & num_trees, should be integers > 0
   #    If 'mtry' is null, we don't need to check it and assign sqrt(p) later on!
   if (!is.null(mtry)) {
@@ -412,9 +415,6 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     block4 <- train_df[which(observed_blocks == "Clin, D"), 
                        c(response, data$block_names$clin_block, data$block_names$mirna_block)]
     
-    # [4-3] Create some extra space by removing variables we don't need no more!
-    rm(observed_blocks); rm(test_ids); rm(train_ids); gc()
-    
     # [5] Fit 'num_trees' decision trees on each block!
     # [5-1] Get the Formula we use to fit all DecisionTrees/ partial forrests!
     formula_all <- as.formula(paste(response, " ~ ."))
@@ -476,9 +476,8 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     rm(curr_Forest); gc()
     
     # [7-2] TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
-    #       everytime before evaluation we need to load the Forest again, as 
-    #       previous evaluation could have led to pruned trees 
-    #       --> load again for unpruned trees [rm before, as else memory errors]
+    #       everytime before evaluation we need to copy the Forest, as the 
+    #       evaluation can leed to pruned trees [also outside of the function] 
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
     curr_Forest      <- copy_forrest(Forest)
     miss1_A[[i + 1]] <- do_evaluation(Forest   = curr_Forest, 
@@ -501,9 +500,8 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     rm(curr_Forest); gc()
     
     # [7-3] TESTSET TWO OMICS BLOCKS MISSING - two ommic blocks are missing in
-    #       TestData, everytime before evaluation we need to load the Forest 
-    #       again, as previous evaluation could have led to pruned trees
-    #       --> load again for unpruned trees [rm before, as else memory errors]
+    #       TestData, everytime before evaluation we need to copy the Forest, 
+    #       as the  evaluation can leed to pruned trees [also outside of the function] 
     print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
 
     curr_Forest       <- copy_forrest(Forest)
