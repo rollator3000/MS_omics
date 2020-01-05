@@ -706,7 +706,8 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
                                    names defined in 'formula'
       - num_trees (int)          : Amount of trees [int > 1] to create!
       - mtry (int)               : Amount of possible split_candidates, we draw 
-                                   at every split point!
+                                   at every split point! If NULL, we use 
+                                   ceiling(sqrt(p))
       - min_node_size (int)      : Amount of Observations, that, at least, need 
                                    to be in a terminal node!
       - replace (boolean)        : When drawing the observations from data, we 
@@ -758,7 +759,7 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
   # [2] Check Arguments, that can be passed w/ 'NULL'
   # [2-1] mtry - set to standard values from literature if NULL & < ncol(data)
   if (is.null(mtry)) {
-    mtry <- sqrt(ncol(model.data) - 1) 
+    mtry <- as.integer(sqrt(ncol(model.data) - 1))
   } else if (mtry > ncol(model.data) - 1) {
     stop("'mtry' cannot be larger than number of feature variables!")
   }

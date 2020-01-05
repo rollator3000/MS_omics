@@ -224,9 +224,19 @@ do_evaluation <- function(Forest, testdata) {
   return(as.vector(res))
 }
 
+
+data_path = "./data/external/Dr_Hornung/Data/ProcessedData/COAD.Rda"
+response = "gender"
+seed = 1312
+num_trees = as.integer(10)
+mtry = NULL
+min_node_size = as.integer(5)
+unorderd_factors = "ignore"
+replace_rf = TRUE
+
 do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
                            response = "gender", seed = 1312, num_trees = as.integer(10),
-                           mtry = as.integer(10), min_node_size = as.integer(5),
+                           mtry = NULL, min_node_size = as.integer(5),
                            unorderd_factors = "ignore", replace_rf = TRUE) {
   " Function to evaluate RF Adaption on blockwise missing data!
     Data is split into test and train set [5-fold], w/ little adjustment, that
@@ -250,7 +260,8 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
       - seed (int)          : Seed to keep results reproducible
       - num_trees (int)     : amount of trees, we shall grow on each[!] fold
       - mtry (int)          : amount of split-variables we try, when looking for 
-                              a split variable!
+                              a split variable! If 'NULL' is passed sqrt(p) is 
+                              used as mtry!
       - min_node_size (int) : Amount of Observations a node must at least 
                               contain, so the model keeps on trying to split 
                               them!
@@ -263,26 +274,48 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
       - list filled w/:
         - res_all [the CV Results on different testsets]:
             - full    : CV Results for each fold on the fully observed testdata!
-            - miss1_1 : CV Results for each fold on the testdata, w/ 1 missing 
+            - miss1_A : CV Results for each fold on the testdata, w/ 1 missing 
                         omics-block [cnv]!
-            - miss1_2 : CV Results for each fold on the testdata, w/ 1 missing 
-                        omics-block [mirna]!
-            - miss1_3 : CV Results for each fold on the testdata, w/ 1 missing 
-                        omics-block [nutation]!
-            - miss1_4 : CV Results for each fold on the testdata, w/ 1 missing 
+            - miss1_B : CV Results for each fold on the testdata, w/ 1 missing 
                         omics-block [rna]!
+            - miss1_C : CV Results for each fold on the testdata, w/ 1 missing 
+                        omics-block [mutation]!
+            - miss1_D : CV Results for each fold on the testdata, w/ 1 missing 
+                        omics-block [mirna]!
+            - miss2_CD: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [mutation & mirna]!
+            - miss2_BD: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [rna & mirna]!
+            - miss2_BC: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [rna & mutation]!
+            - miss2_AD: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [cnv & mirna]!
+            - miss2_AC: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [cnv & mutation]!
+            - miss2_AB: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [cnv & rna]!
         - settings [settings used to do the CV - all arguments!]
             - datapath, seed, response, mtry,.... 
   "
   # [0] Check Inputs
   # - data_path, seed, response are all checked within 'create_data()'
   # [0-1] mtry, min_node_size & num_trees, should be integers > 0
-  if (any(mtry < 0 | min_node_size < 0 | num_trees < 0)) {
-    stop("'mtry', 'min_node_size' or 'num_trees' is < 0!")
-  }
-  
-  if (any(mtry %% 1 != 0 | min_node_size  %% 1 != 0 | num_trees  %% 1 != 0)) {
-    stop("'mtry', 'min_node_size' or 'num_trees' is no integer!")
+  #    If 'mtry' is null, we don't need to check it and assign sqrt(p) later on!
+  if (!is.null(mtry)) {
+    if (any(mtry < 0 | min_node_size < 0 | num_trees < 0)) {
+      stop("'mtry', 'min_node_size' or 'num_trees' is < 0!")
+    }
+    
+    if (any(mtry %% 1 != 0 | min_node_size  %% 1 != 0 | num_trees  %% 1 != 0)) {
+      stop("'mtry', 'min_node_size' or 'num_trees' is no integer!")
+    } 
+  } else {
+    if (min_node_size < 0 | num_trees < 0) {
+      stop("'mtry', 'min_node_size' or 'num_trees' is < 0!")
+    }
+    if (any(min_node_size  %% 1 != 0 | num_trees  %% 1 != 0)) {
+      stop("'mtry', 'min_node_size' or 'num_trees' is no integer!")
+    }
   }
   
   # [0-2] replace_rf must be boolean
@@ -306,14 +339,16 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
   fold_ids <- sample(nrow(data$data), nrow(data$data), replace = FALSE)
   
   # [2-2] Create empty lists to store results in!
-  full <- list(); miss1_1 <- list(); miss1_2 <- list(); miss1_3 <- list()
-  miss1_4 <- list(); miss3_1 <- list(); miss3_2 <- list(); miss3_3 <- list()
-  miss3_4 <- list(); single1 <- list()
-  
+  full <- list()
+  miss1_A <- list(); miss1_B <- list(); miss1_C <- list(); miss1_D <- list()
+  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list()
+  miss2_AC <- list(); miss2_AB <- list()
+ 
   # [3] Start the CV, split data to Test and Train and evaluate it!
   for (i in 0:4) {
     
     print(paste0("FOLD: ", as.character(i + 1), "/5 -------------------------"))
+    
     # [1] Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
     #     IDs in 'fold_ids'
     test_ids <- fold_ids[((i * obs_per_fold$amount_test) + 1):(((i + 1) * obs_per_fold$amount_test))]
@@ -400,63 +435,78 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     
     # [8] Start Testing!
     # [8-1] FULL TESTSET - all blocks observed!
+    print("Evaluation full TestSet -------------------------------------------")
     full[[i + 1]] <- do_evaluation(Forest = Forest, testdata = test_df)
     
     # [8-2] TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
     #       everytime before evaluation we need to load the Forest again, as 
     #       previous evaluation could have led to pruned trees 
     #       --> load again for unpruned trees
+    print("Evaluation TestSet w/ 1 missing omics block------------------------")
     Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_1[[i + 1]] <- do_evaluation(Forest = Forest, 
+    miss1_A[[i + 1]] <- do_evaluation(Forest = Forest, 
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
     
     Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_2[[i + 1]] <- do_evaluation(Forest = Forest, 
-                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
+    miss1_B[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata = test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
     
     Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_3[[i + 1]] <- do_evaluation(Forest = Forest, 
+    miss1_C[[i + 1]] <- do_evaluation(Forest = Forest, 
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mutation_block)])
     
     Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_4[[i + 1]] <- do_evaluation(Forest = Forest, 
-                                      testdata =  test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
+    miss1_D[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                      testdata =  test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
     
-    # # [8-3] TESTSET THREE OMICS BLOCKS MISSING - one block is missing in TestData, 
-    # #       everytime before evaluation we need to load the Forest again, 
-    # #       as previous evaluation could have led to pruned trees 
-    # #       --> load again for unpruned trees
-    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    # miss3_1 <- do_evaluation(Forest = Forest,   # CNV block only!
-    #                          testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
-    #                                                                              data$block_name$mutation_block,
-    #                                                                              data$block_name$rna_block))])
-    # 
-    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    # miss3_2 <- do_evaluation(Forest = Forest, # MUTATION only
-    #                          testdata = test_df[,which(colnames(test_df) %in% c(data$block_name$mirna_block,
-    #                                                                             data$block_name$cnv_block,
-    #                                                                             data$block_names$rna_block))])
-    # 
-    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    # miss3_3 <- do_evaluation(Forest = Forest, # RNA only!
-    #                          testdata = test_df[,which(colnames(test_df) %in% c(data$block_name$mutation_block,
-    #                                                                             data$block_name$cnv_block,
-    #                                                                             data$block_name$mirna_block))])
-    # 
-    # Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    # miss3_4 <- do_evaluation(Forest = Forest, # MIRNA only!
-    #                          testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
-    #                                                                              data$block_name$cnv_block,
-    #                                                                              data$block_name$mutation_block))])
+    # [8-3] TESTSET TWO OMICS BLOCKS MISSING - two ommic blocks are missing in
+    #       TestData, everytime before evaluation we need to load the Forest 
+    #       again, as previous evaluation could have led to pruned trees
+    #       --> load again for unpruned trees
+    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss2_CD[[i + 1]] <- do_evaluation(Forest = Forest,
+                                       testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
+                                                                                           data$block_name$mirna_block))])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss2_BD[[i + 1]] <- do_evaluation(Forest = Forest,
+                                       testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
+                                                                                           data$block_names$rna_block))])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss2_BC[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                       testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
+                                                                                           data$block_name$rna_block))])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss2_AD[[i + 1]] <- do_evaluation(Forest = Forest, 
+                                       testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                           data$block_name$mirna_block))])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss2_AC[[i + 1]] <- do_evaluation(Forest = Forest,
+                                       testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                          data$block_name$mutation_block))])
+    
+    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
+    miss2_AB[[i + 1]] <- do_evaluation(Forest = Forest,
+                                       testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                           data$block_name$rna_block))])
   }
   
   # Collect all CV Results in a list!
   res_all <- list("full" = full,
-                  "miss1_1" = miss1_1,
-                  "miss1_2" = miss1_2,
-                  "miss1_3" = miss1_3,
-                  "miss1_4" = miss1_4)
+                  "miss1_A" = miss1_A,
+                  "miss1_B" = miss1_B,
+                  "miss1_C" = miss1_C,
+                  "miss1_D" = miss1_D,
+                  "miss2_CD" = miss2_CD,
+                  "miss2_BD" = miss2_BD,
+                  "miss2_BC" = miss2_BC,
+                  "miss2_AD" = miss2_AD,
+                  "miss2_AC" = miss2_AC,
+                  "miss2_AB" = miss2_AB)
   
   # Collect the Settings, used to do the CV!
   settings <- list("data_path"     = data_path,
@@ -476,11 +526,12 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
 a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda",
-                    response = "gender", seed = 1312, num_trees = as.integer(15),
-                    mtry = as.integer(15), min_node_size = as.integer(5), 
+                    response = "gender", seed = 1312, num_trees = as.integer(100),
+                    mtry = NULL, min_node_size = as.integer(5), 
                     unorderd_factors = "ignore", replace_rf = TRUE)
 end_time <- Sys.time()
-end_time - start_time # ~5min...
+end_time - start_time # ~5min... w/ 15trees & 10 mtry!
+                      # ~ min... w/ 100trees and mtry = NULL
 
 sapply(names(a$res_all), FUN = function(x) mean(a$res_all[[x]][[1]]$F1, 
                                                 a$res_all[[x]][[2]]$F1, 
