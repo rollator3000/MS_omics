@@ -13,12 +13,12 @@ Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)
 ```
 In this setting imputation is only reliable if:
     - set of covariates highly overlap
+    
     - different datasets are not too heterogenous
 <p/>
 We compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation!
 For Details regarinding methods, data situations etc. please have a look at<p/>
     --> the MasterThesis itself or the code in the repository
-<p/>
 
 ## Code
 Short describtion of the scripts in './code'!
