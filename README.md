@@ -11,14 +11,8 @@ Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)
 - Hospital_2: Clinical + CopyNumberVariation Data
 - Hospital_3: Clinical + CopyNumberVariation + Mutation Data
 ```
-In this setting imputation is only reliable if:
-    - set of covariates highly overlap
-    
-    - different datasets are not too heterogenous
-<p/>
-We compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation!
-For Details regarinding methods, data situations etc. please have a look at<p/>
-    --> the MasterThesis itself or the code in the repository
+In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation (which is often unreliable in these kind of settings) <p/>
+For Details regarinding methods, data situations etc. please have a look at: MasterThesis itself / code in the repository
 
 ## Code
 Short describtion of the scripts in './code'!
