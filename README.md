@@ -3,16 +3,17 @@ This is the README to the repository of Frederik Ludwigs' Master-Thesis, supervi
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
 ## Project description
-This project compares different methods to deal with blockwise missing data! In a dataset with blockwise missingness, for different folds *(collection of observations)* different features were collected! So basically, multiple training-sets *(not necessarily sharing features)* with the same response! In these settings it could be benefical for prediciton models to incorporate the different features from the different folds/ training-sets ! <p/>
+This project compares different methods to deal with blockwise missing data! In a dataset with blockwise missingness, for different folds *(collection of observations)* different features were collected! So basically, multiple training-sets *(not necessarily sharing features)* with the same response! In these settings it could be benefical for prediciton models to incorporate the different features from the different folds/ training-sets! Imputation in these settings is only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap!
+
 **Example:**
-Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals *(different folds)* do not collect the same features:
+Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals *(different folds)* do not necessarily collect the same features:
 ``` 
 - Hospital_1: Clinical + RNA Data
 - Hospital_2: Clinical + CopyNumberVariation Data
 - Hospital_3: Clinical + CopyNumberVariation + Mutation Data
 ```
 In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation *(often unreliable these settings)* <p/>
-For Details regarinding methods, data situations etc. please have a look at: <br> 
+For Details regarinding the methods, data situations etc. please have a look at: <br> 
     - MasterThesis / code in repository
 
 ## Code
