@@ -17,8 +17,7 @@ In this setting imputation is only reliable if:
 <p/>
 We compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation!
 For Details regarinding methods, data situations etc. please have a look at<p/>
-    --> the MasterThesis itself <p/>
-    --> the Repository
+    --> the MasterThesis itself or the code in the repository
 <p/>
 
 ## Code
