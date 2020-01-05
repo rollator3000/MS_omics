@@ -1,40 +1,38 @@
 # A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
-This is the README to the repository of Frederik Ludwigs' Master-Thesis, supervised by: <p/>
+This is the README to the repository of Frederik Ludwigs' Master-Thesis, supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
-<p/>
+
 ## Project description
-This project compares different methods to deal with blockwise missing data! In a dataset with blockwise missingness, for different folds *(collection of observations)* different features were collected! So basically, think of multiple training-sets *(not necessarily sharing features)* with the same response! In these settings it could be benefical for prediciton models to incorporate the different features from the different folds/ training-sets ! <p/>
+This project compares different methods to deal with blockwise missing data! In a dataset with blockwise missingness, for different folds *(collection of observations)* different features were collected - so basically, multiple training-sets *(not necessarily sharing features)* with the same response! In these settings classical imputation is only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap! As this is often not the case we try to incorporate the different features from the different folds/ training-sets into a single RandomForest!
+
 **Example:**
-Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals *(different folds)* do not collect the same features:
+Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals *(different folds)* do not necessarily collect the same features:
 ``` 
 - Hospital_1: Clinical + RNA Data
 - Hospital_2: Clinical + CopyNumberVariation Data
 - Hospital_3: Clinical + CopyNumberVariation + Mutation Data
 ```
-In this setting imputation is only reliable if:
-    - set of covariates highly overlap
-    - different datasets are not too heterogenous
-<p/>
-We compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation!
-For Details regarinding methods, data situations etc. please have a look at<p/>
-    --> the MasterThesis itself <p/>
-    --> the Repository
-<p/>
+In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation *(often unreliable these settings)* <p/>
+For Details regarinding the methods, data situations etc. please have a look at: <br> 
+    - MasterThesis / code in repository
 
 ## Code
 Short describtion of the scripts in './code'!
 ``` 
 - 01_data_overview: 
-    Get a overview of the different DFs & extract the ones usable for our project + some extra information to the different DFs
+    Get a overview of the different DFs & extract the ones usable for our project + 
+    some extra information to the different DFs
 
 - 02_predictie_power_on_gender_w_all_feas_of_a_block:
-    Check how good the predicitons of a RF are, when it is trained on single blocks, on all blocks joint, single subsetted blocks,  all subsetted blocks joint....
+    Check how good the predicitons of a RF are, when it is trained on single blocks, 
+    on all blocks joint, single subsetted blocks,  all subsetted blocks joint....
 
 - 03_create_artifical_DF:   
     Create an artifical DF, used for the implementation of the pruning!
 
 - 04_simpleRF_adaption:
-    Implementation of the RF-Adjustment + additional functions needed for evaluation, creating trees, ....
+    Implementation of the RF-Adjustment + additional functions needed for evaluation,
+    creating trees, ....
 
 - 05_RF_Adaption_CV:
     Code to CrossValidate the adjusted RF-Algorithm from Dr. Hornung
