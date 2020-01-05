@@ -11,9 +11,9 @@ Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)
 - Hospital_2: Clinical + CopyNumberVariation Data
 - Hospital_3: Clinical + CopyNumberVariation + Mutation Data
 ```
-In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation *(often unreliable thesesettings)* <p/>
+In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation *(often unreliable these settings)* <p/>
 For Details regarinding methods, data situations etc. please have a look at: <br> 
-MasterThesis / code in repository
+    MasterThesis / code in repository
 
 ## Code
 Short describtion of the scripts in './code'!
