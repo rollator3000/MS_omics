@@ -165,6 +165,39 @@ all_trees_grown_correctly <- function(trees, replace_rf = replace_rf) {
   return(trees)
 }
 
+copy_forrest <- function(Forest) {
+  "Funciton to copy all trees in forest!
+   This is needed, as we change our trees when doing predicitons on data,
+   where we need to prune our trees! 
+   --> Need to copy the fitted forest, before using it to do predicitons 
+       on different testsets!
+       
+    Args:
+      - Forest (list) : list filled with objects of the class 'tree'
+                        e.g. [tree1, tree2, tree3, tree4], where tree1, ..., tree4
+                             are also a lists filled with objects of class 'tree' 
+    Return:
+      - Forest (list) : Same object as passed, but deeply copied!
+  "
+  # [0] Check Arguments
+  for (i in 1:length(Forest)) {
+   classes_in_list <- sapply(Forest[[i]], function(x) "Tree" %in% class(x))
+   if (any(classes_in_list)) {
+     msg <- paste("List", i, "in Forest contains at least one object not of class 'Tree'")
+     stop(msg)
+   }
+  }
+  
+  # [1] Copy the trees!
+  for (i in 1:length(Forest)) {
+    assign(paste0("treescopy", as.character(i)), lapply(Forest[[i]], FUN = function(x) x$copy()))
+  }
+  
+  Forest_copy <- list(treescopy1, treescopy2, treescopy3, treescopy4)
+  
+  return(Forest_copy)
+}
+
 do_evaluation <- function(Forest, testdata) {
   " Get the aggregated predicition from all trees! 
     Evaluate the aggregated predicitons & return metrics!
@@ -224,15 +257,15 @@ do_evaluation <- function(Forest, testdata) {
   return(as.vector(res))
 }
 
+# data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda"
+# response = "gender"
+# seed = 1312
+# num_trees = as.integer(10)
+# mtry = NULL
+# min_node_size = as.integer(5)
+# unorderd_factors = "ignore"
+# replace_rf = TRUE
 
-data_path = "./data/external/Dr_Hornung/Data/ProcessedData/COAD.Rda"
-response = "gender"
-seed = 1312
-num_trees = as.integer(10)
-mtry = NULL
-min_node_size = as.integer(5)
-unorderd_factors = "ignore"
-replace_rf = TRUE
 
 do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
                            response = "gender", seed = 1312, num_trees = as.integer(10),
@@ -379,6 +412,9 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     block4 <- train_df[which(observed_blocks == "Clin, D"), 
                        c(response, data$block_names$clin_block, data$block_names$mirna_block)]
     
+    # [4-3] Create some extra space by removing variables we don't need no more!
+    rm(observed_blocks); rm(test_ids); rm(train_ids); gc()
+    
     # [5] Fit 'num_trees' decision trees on each block!
     # [5-1] Get the Formula we use to fit all DecisionTrees/ partial forrests!
     formula_all <- as.formula(paste(response, " ~ ."))
@@ -423,74 +459,85 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
       x
     }, mc.cores = 1)
     
-    # [6] Check, that all of the trees were grown correctly
+    # [6] Check, that all of the trees were grown correctly & create a forest from it!
     trees1 <- all_trees_grown_correctly(trees1, replace_rf = replace_rf)
     trees2 <- all_trees_grown_correctly(trees2, replace_rf = replace_rf)
     trees3 <- all_trees_grown_correctly(trees3, replace_rf = replace_rf)
     trees4 <- all_trees_grown_correctly(trees4, replace_rf = replace_rf)
     
-    # [7] Add all the trees to a big forrest:
     Forest <- list(trees1, trees2, trees3, trees4)
-    saveRDS(Forest, "./data/interim/tmp_model/tmp_forrest.rds")
     
-    # [8] Start Testing!
-    # [8-1] FULL TESTSET - all blocks observed!
+    # [7] Start Testing!
+    # [7-1] FULL TESTSET - all blocks observed!
+    #       --> copy the forrest, so we don't override original tree!
     print("Evaluation full TestSet -------------------------------------------")
-    full[[i + 1]] <- do_evaluation(Forest = Forest, testdata = test_df)
+    curr_Forest   <- copy_forrest(Forest)
+    full[[i + 1]] <- do_evaluation(Forest = curr_Forest, testdata = test_df)
+    rm(curr_Forest); gc()
     
-    # [8-2] TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
+    # [7-2] TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
     #       everytime before evaluation we need to load the Forest again, as 
     #       previous evaluation could have led to pruned trees 
-    #       --> load again for unpruned trees
+    #       --> load again for unpruned trees [rm before, as else memory errors]
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_A[[i + 1]] <- do_evaluation(Forest = Forest, 
+    curr_Forest      <- copy_forrest(Forest)
+    miss1_A[[i + 1]] <- do_evaluation(Forest   = curr_Forest, 
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
+    rm(curr_Forest); gc()
     
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_B[[i + 1]] <- do_evaluation(Forest = Forest, 
+    curr_Forest      <- copy_forrest(Forest)
+    miss1_B[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
+    rm(curr_Forest); gc()
     
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_C[[i + 1]] <- do_evaluation(Forest = Forest, 
+    curr_Forest      <- copy_forrest(Forest)
+    miss1_C[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mutation_block)])
+    rm(curr_Forest); gc()
     
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss1_D[[i + 1]] <- do_evaluation(Forest = Forest, 
+    curr_Forest      <- copy_forrest(Forest)
+    miss1_D[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
                                       testdata =  test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
+    rm(curr_Forest); gc()
     
-    # [8-3] TESTSET TWO OMICS BLOCKS MISSING - two ommic blocks are missing in
+    # [7-3] TESTSET TWO OMICS BLOCKS MISSING - two ommic blocks are missing in
     #       TestData, everytime before evaluation we need to load the Forest 
     #       again, as previous evaluation could have led to pruned trees
-    #       --> load again for unpruned trees
+    #       --> load again for unpruned trees [rm before, as else memory errors]
     print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss2_CD[[i + 1]] <- do_evaluation(Forest = Forest,
+
+    curr_Forest       <- copy_forrest(Forest)
+    miss2_CD[[i + 1]] <- do_evaluation(Forest = curr_Forest,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
                                                                                            data$block_name$mirna_block))])
+    rm(curr_Forest); gc()
     
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss2_BD[[i + 1]] <- do_evaluation(Forest = Forest,
+    curr_Forest       <- copy_forrest(Forest)
+    miss2_BD[[i + 1]] <- do_evaluation(Forest = curr_Forest,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
                                                                                            data$block_names$rna_block))])
+    rm(curr_Forest); gc()
     
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss2_BC[[i + 1]] <- do_evaluation(Forest = Forest, 
+    curr_Forest       <- copy_forrest(Forest)
+    miss2_BC[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
                                                                                            data$block_name$rna_block))])
-    
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss2_AD[[i + 1]] <- do_evaluation(Forest = Forest, 
+    rm(curr_Forest); gc()
+
+    curr_Forest       <- copy_forrest(Forest)
+    miss2_AD[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                            data$block_name$mirna_block))])
+    rm(curr_Forest); gc()
     
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss2_AC[[i + 1]] <- do_evaluation(Forest = Forest,
+    curr_Forest       <- copy_forrest(Forest)
+    miss2_AC[[i + 1]] <- do_evaluation(Forest = curr_Forest,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                           data$block_name$mutation_block))])
+    rm(curr_Forest); gc()
     
-    Forest <- readRDS("./data/interim/tmp_model/tmp_forrest.rds")
-    miss2_AB[[i + 1]] <- do_evaluation(Forest = Forest,
+    curr_Forest       <- copy_forrest(Forest)
+    miss2_AB[[i + 1]] <- do_evaluation(Forest = curr_Forest,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                            data$block_name$rna_block))])
   }
@@ -530,15 +577,11 @@ a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/S
                     mtry = NULL, min_node_size = as.integer(5), 
                     unorderd_factors = "ignore", replace_rf = TRUE)
 end_time <- Sys.time()
-end_time - start_time # ~5min... w/ 15trees & 10 mtry!
-                      # ~ min... w/ 100trees and mtry = NULL
+end_time - start_time # ~5.5min... w/ 15trees & 10 mtry!
+                      # ~ min... w/ 250trees and mtry = NULL
 
 sapply(names(a$res_all), FUN = function(x) mean(a$res_all[[x]][[1]]$F1, 
                                                 a$res_all[[x]][[2]]$F1, 
                                                 a$res_all[[x]][[3]]$F1, 
                                                 a$res_all[[x]][[4]]$F1,
                                                 a$res_all[[x]][[5]]$F1))
-# --> Average F1 Scores for the different TestingSituations!
-# full      miss1_1   miss1_2   miss1_3   miss1_4 
-# 0.8400000 0.8000000 0.8627451 0.8695652 0.8235294
-# --> reproducible + settings are also extractable!

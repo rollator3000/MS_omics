@@ -204,15 +204,6 @@ do_evaluation_rfsrc <- function(Forest, testdata) {
   return(as.vector(res))
 }
 
-
-data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda"
-response = "gender"
-seed = 1312
-num_trees = as.integer(10)
-mtry = NULL
-min_node_size = as.integer(5)
-replace_rf = TRUE
-
 do_CV_NK_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
                               response = "gender", seed = 1312, num_trees = as.integer(10),
                               mtry = as.integer(10), min_node_size = as.integer(5),
@@ -449,17 +440,13 @@ do_CV_NK_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Proce
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
 a <- do_CV_NK_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda",
-                       response = "gender", seed = 1312, num_trees = as.integer(15),
-                       mtry = as.integer(15), min_node_size = as.integer(5), replace_rf = TRUE)
+                       response = "gender", seed = 1312, num_trees = as.integer(250),
+                       mtry = NULL, min_node_size = as.integer(5), replace_rf = TRUE)
 end_time <- Sys.time()
-end_time - start_time # ~35 sek
+end_time - start_time # ~35 sek w/ 10 trees and mtry 15
 
 sapply(names(a$res_all), FUN = function(x) mean(a$res_all[[x]][[1]]$F1, 
                                                 a$res_all[[x]][[2]]$F1, 
                                                 a$res_all[[x]][[3]]$F1, 
                                                 a$res_all[[x]][[4]]$F1,
                                                 a$res_all[[x]][[5]]$F1))
-# --> Average F1 Scores for the different TestingSituations!
-#       full   miss1_1    miss1_2   miss1_3   miss1_4 
-# 0.8750000  0.8695652  0.8235294 0.8444444 0.7407407
-# --> fully reproducable!
