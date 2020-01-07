@@ -3,10 +3,11 @@ This is the README to the repository of Frederik Ludwigs' Master-Thesis, supervi
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
 ## Project description
-This project compares different methods to deal with blockwise missing data! In a dataset with blockwise missingness, for different folds *(collection of observations)* different features were collected - so basically, multiple training-sets *(not necessarily sharing features)* with the same response! In these settings classical imputation is only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap! As this is often not the case we try to incorporate the different features from the different folds/ training-sets into a single RandomForest!
+This project compares different adaptions of the RandomForest-Method to deal with blockwise missing data! A dataset with blockwise missingness, consists of different folds, where for each fold has different observed features - basically, it's like having different training-sets *(different observed features for each training-set)* for the same response! <br>
+In these settings imputation techniques are only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap! As this is often not the case we try to incorporate the different features from the different folds/ training-sets into a single RandomForest!
 
 **Example:**
-Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals *(different folds)* do not necessarily collect the same features:
+Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals do not necessarily collect the same features - in this setting the data from the different hospitals can be seen as the data from different folds - where none of the folds have the exact same feature space!
 ``` 
 - Hospital_1: Clinical + RNA Data
 - Hospital_2: Clinical + CopyNumberVariation Data
@@ -14,7 +15,7 @@ Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)
 ```
 In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation *(often unreliable these settings)* <p/>
 For Details regarinding the methods, data situations etc. please have a look at: <br> 
-    - MasterThesis / code in repository
+    > MasterThesis / code in repository
 
 ## Code
 Short describtion of the scripts in './code'!

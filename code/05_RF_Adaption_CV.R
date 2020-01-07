@@ -576,7 +576,7 @@ a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/S
                     unorderd_factors = "ignore", replace_rf = TRUE)
 end_time <- Sys.time()
 end_time - start_time # ~5.5min... w/ 15trees & 10 mtry!
-                      # ~ min... w/ 250trees and mtry = NULL
+                      # ~ 31mins... w/ 100trees and mtry = NULL
 
 sapply(names(a$res_all), FUN = function(x) mean(a$res_all[[x]][[1]]$F1, 
                                                 a$res_all[[x]][[2]]$F1, 
