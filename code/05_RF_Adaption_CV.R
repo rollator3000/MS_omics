@@ -198,6 +198,51 @@ copy_forrest <- function(Forest) {
   return(Forest_copy)
 }
 
+get_oob_err_rate <- function(trees) {
+  " Calculate the OOB Error Rate of a list of trees (= partly RF)!
+  
+    Args: 
+      - trees (list) : list filled w/ objects of class 'Tree'
+                       For this list of trees we want to extrat the error rate
+                       to e.g. weight the predicitons when using multiple
+                               trees-lists to create an aggregated prediciton!
+    
+    Return:
+      - average oob-error rate over all trees in 'trees'-list!
+  "
+  # [0] Check Input:
+  #     Make sure 'trees' is a list filled with 'Trees'
+  assert_list(trees, min.len = 1, any.missing = FALSE)
+  if (any(sapply(trees, function(x) 'Tree' %in% class(x)))) {
+    stop("not all elements in 'trees' are of class 'Tree'")
+  }
+  
+  # [1] Calc the OOB ErrorRate
+  # [1-1] Get the OOB Predicitons - first as probability than convert to class!
+  oob_preds_prob <- lapply(trees, function(x){
+    preds_prob <- x$predictOOB()
+    sapply(1:ncol(preds_prob), function(y) {
+      rownames(preds_prob)[which(preds_prob[,y] == max(preds_prob[,y]))]
+    })
+  })
+  
+  # [1-2] Compare predicted Classes with the true classes & get the error rate
+  #       every single tree does --> average them so we know how good the 
+  #       predicitive power of this 'subRF' is!
+  error_rate <- lapply(1:length(trees), function(x) {
+    # get true response and the predicted response!
+    true_resp <- trees[[x]]$data$subset(trees[[x]]$oob_sampleIDs  ,1)
+    predicted <- factor(oob_preds_prob[[x]], levels = levels(true_resp))
+    
+    # use them to get a confusionmatrix and extract the Accuracy!
+    confmat   <- caret::confusionMatrix(true_resp, predicted)
+    errorrate <- 1 - confmat$overall["Accuracy"]
+    errorrate
+  })
+  
+  return(mean(unlist(error_rate)))
+}
+
 do_evaluation <- function(Forest, testdata) {
   " Get the aggregated predicition from all trees! 
     Evaluate the aggregated predicitons & return metrics!
@@ -257,14 +302,14 @@ do_evaluation <- function(Forest, testdata) {
   return(as.vector(res))
 }
 
-# data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda"
-# response = "gender"
-# seed = 1312
-# num_trees = as.integer(10)
-# mtry = NULL
-# min_node_size = as.integer(5)
-# unorderd_factors = "ignore"
-# replace_rf = TRUE
+data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda"
+response = "gender"
+seed = 1312
+num_trees = as.integer(10)
+mtry = NULL
+min_node_size = as.integer(5)
+unorderd_factors = "ignore"
+replace_rf = TRUE
 
 
 do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
@@ -307,7 +352,7 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
                                  replacement!
     Return:
       - list filled w/:
-        - res_all [the CV Results on different testsets]:
+        * 'res_all' [the CV Results on different testsets]:
             - full    : CV Results for each fold on the fully observed testdata!
             - miss1_A : CV Results for each fold on the testdata, w/ 1 missing 
                         omics-block [cnv]!
@@ -329,7 +374,7 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
                         omics-block [cnv & mutation]!
             - miss2_AB: CV Results for each fold on the testdata, w/ 2 missing 
                         omics-block [cnv & rna]!
-        - settings [settings used to do the CV - all arguments!]
+        * 'settings' [settings used to do the CV - all arguments!]
             - datapath, seed, response, mtry,.... 
   "
   # [0] Check Inputs

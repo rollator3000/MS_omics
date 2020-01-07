@@ -204,6 +204,15 @@ do_evaluation_rfsrc <- function(Forest, testdata) {
   return(as.vector(res))
 }
 
+
+data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda"
+response = "gender"
+seed = 1312
+num_trees = as.integer(10)
+mtry = as.integer(10)
+min_node_size = as.integer(5)
+replace_rf = TRUE
+
 do_CV_NK_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
                               response = "gender", seed = 1312, num_trees = as.integer(10),
                               mtry = as.integer(10), min_node_size = as.integer(5),
@@ -238,18 +247,31 @@ do_CV_NK_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Proce
       - replace_rf (bool)   : When growing the tree, shall we draw w/ or w/o 
                               replacement!
     Return:
-      - list filled w/:
-        - full    : CV Results for each fold on the fully observed testdata!
-        - miss1_1 : CV Results for each fold on the testdata, w/ 1 missing 
-                    omics-block [cnv]!
-        - miss1_2 : CV Results for each fold on the testdata, w/ 1 missing 
-                    omics-block [mirna]!
-        - miss1_3 : CV Results for each fold on the testdata, w/ 1 missing 
-                    omics-block [nutation]!
-        - miss1_4 : CV Results for each fold on the testdata, w/ 1 missing 
-                    omics-block [rna]!
-        - MORE TO COME AFTER I'VE TALKED TO ROMAN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  "
+       - list filled w/:
+        * 'res_all' [the CV Results on different testsets]:
+            - full    : CV Results for each fold on the fully observed testdata!
+            - miss1_A : CV Results for each fold on the testdata, w/ 1 missing 
+                        omics-block [cnv]!
+            - miss1_B : CV Results for each fold on the testdata, w/ 1 missing 
+                        omics-block [rna]!
+            - miss1_C : CV Results for each fold on the testdata, w/ 1 missing 
+                        omics-block [mutation]!
+            - miss1_D : CV Results for each fold on the testdata, w/ 1 missing 
+                        omics-block [mirna]!
+            - miss2_CD: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [mutation & mirna]!
+            - miss2_BD: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [rna & mirna]!
+            - miss2_BC: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [rna & mutation]!
+            - miss2_AD: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [cnv & mirna]!
+            - miss2_AC: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [cnv & mutation]!
+            - miss2_AB: CV Results for each fold on the testdata, w/ 2 missing 
+                        omics-block [cnv & rna]!
+        * 'settings' [settings used to do the CV - all arguments!]
+            - datapath, seed, response, mtry,....   "
   # [0] Check Inputs
   # - data_path, seed, response are all checked within 'create_data()'
   # [0-1] mtry, min_node_size & num_trees, should be integers > 0
