@@ -1,11 +1,18 @@
-"Script to crossValidate the adaption of the RF Alogrithm in our use cases!"
+"Script to crossValidate the adaption of Roman's RF Alogrithm!
+ Here for each fold [set of observations w/ the same observed feature space], we
+ train a seperate RF [-> might result in e.g. 4 different RFs]
+ For Testing we prune all the seperate RF [or at least the trees inside]
+ Then we combine the predicitons from the different RFson the testdata to obtain
+ a final prediciton!
+"
 
 # Load Funcitons, Classes, librarys & set the WD!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
+library(pROC)
 source("./code/04_simpleRF_adaption.R")
 
-create_data <- function(path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
-                        seed = 1312, response = 'gender') {
+create_data               <- function(path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
+                                      seed = 1312, response = 'gender') {
   "Function to load data, subset the featurespace - each block will use only 5% 
    of their avaible feas - and returning 1 big DF, of all single (subsetted) 
    blocks!
@@ -76,8 +83,7 @@ create_data <- function(path = "./data/external/Dr_Hornung/Data/ProcessedData/KI
   return(list("data" = df,
               "block_names" = block_variables))
 }
-
-get_obs_per_fold <- function(data) {
+get_obs_per_fold          <- function(data) {
   "Find the amount of observations, we need in each test fold, so we have same
    sized training folds!
    --> This might lead to slightly smaller testfolds than trainingfolds, but the
@@ -127,7 +133,6 @@ get_obs_per_fold <- function(data) {
               "amount_train_fold" = amount_train_fold,
               "amount_test"       = amount_test))
 }
-
 all_trees_grown_correctly <- function(trees, replace_rf = replace_rf) {
   "Function to check, whether all trees, were grown correctly & if not, we grow
    these trees again, as long, as they are grown correctly!
@@ -164,8 +169,7 @@ all_trees_grown_correctly <- function(trees, replace_rf = replace_rf) {
   
   return(trees)
 }
-
-copy_forrest <- function(Forest) {
+copy_forrest              <- function(Forest) {
   "Funciton to copy all trees in forest!
    This is needed, as we change our trees when doing predicitons on data,
    where we need to prune our trees! 
@@ -197,9 +201,8 @@ copy_forrest <- function(Forest) {
   
   return(Forest_copy)
 }
-
-get_oob_err_rate <- function(trees) {
-  " Calculate the OOB Error Rate of a list of trees (= partly RF)!
+get_oob_acc               <- function(trees) {
+  " Calculate the OOB Accuracy of a list of trees (= partly RF)!
   
     Args: 
       - trees (list) : list filled w/ objects of class 'Tree'
@@ -208,7 +211,7 @@ get_oob_err_rate <- function(trees) {
                                trees-lists to create an aggregated prediciton!
     
     Return:
-      - average oob-error rate over all trees in 'trees'-list!
+      - average oob-error Accuracy over all trees in 'trees'-list!
   "
   # [0] Check Input:
   #     Make sure 'trees' is a list filled with 'Trees'
@@ -220,30 +223,63 @@ get_oob_err_rate <- function(trees) {
   # [1] Calc the OOB ErrorRate
   # [1-1] Get the OOB Predicitons - first as probability than convert to class!
   oob_preds_prob <- lapply(trees, function(x){
+    
+    # Get the Predicted Probabilites [from each tree]
     preds_prob <- x$predictOOB()
     sapply(1:ncol(preds_prob), function(y) {
-      rownames(preds_prob)[which(preds_prob[,y] == max(preds_prob[,y]))]
+      
+      # Convert the predicited probabilities to classes
+      # In case of ties between the classes - use the first class!
+      rownames(preds_prob)[which(preds_prob[,y] == max(preds_prob[,y]))[1]]
     })
   })
   
   # [1-2] Compare predicted Classes with the true classes & get the error rate
   #       every single tree does --> average them so we know how good the 
   #       predicitive power of this 'subRF' is!
-  error_rate <- lapply(1:length(trees), function(x) {
+  Accuracy <- lapply(1:length(trees), function(x) {
     # get true response and the predicted response!
     true_resp <- trees[[x]]$data$subset(trees[[x]]$oob_sampleIDs  ,1)
     predicted <- factor(oob_preds_prob[[x]], levels = levels(true_resp))
     
     # use them to get a confusionmatrix and extract the Accuracy!
     confmat   <- caret::confusionMatrix(true_resp, predicted)
-    errorrate <- 1 - confmat$overall["Accuracy"]
-    errorrate
+    confmat$overall["Accuracy"]
   })
   
-  return(mean(unlist(error_rate)))
+  return(mean(unlist(Accuracy)))
 }
-
-do_evaluation <- function(Forest, testdata) {
+mcc_metric                <- function(conf_matrix) {
+  "Function to calculate the MCC Metric
+   [MCC = Matthews correlation coefficient]
+   --> only for binary cases! If the Conf_Matrix has more than
+       2 classes it will return NULL instead of the MCC!
+       
+    Args: 
+      - conf_matrix (confusionMatrix) : Confusion Matrix created with the 
+                                        'caret'-Package!
+    Return: 
+      Matthews correlation coefficient [1 is best, 0 is worst!]
+  "
+  if (nrow(conf_matrix$table) != 2) {
+    warning("Can not calc the MCC-Metric! Return NULL")
+    return(NULL)
+  }
+  
+  
+  TP <- conf_matrix$table[1,1]
+  TN <- conf_matrix$table[2,2]
+  FP <- conf_matrix$table[1,2]
+  FN <- conf_matrix$table[2,1]
+  
+  mcc_num <- (TP*TN - FP*FN)
+  mcc_den <- 
+    as.double((TP+FP))*as.double((TP+FN))*as.double((TN+FP))*as.double((TN+FN))
+  
+  mcc_final <- mcc_num/sqrt(mcc_den)
+  return(mcc_final)
+}
+do_evaluation             <- function(Forest, testdata, weighted) {
   " Get the aggregated predicition from all trees! 
     Evaluate the aggregated predicitons & return metrics!
   
@@ -252,9 +288,12 @@ do_evaluation <- function(Forest, testdata) {
       - testdata (data.frame) : testdata we want to get predicitons for!
                                 Must conatain the response we learned the Forest
                                 on!
+      - weighted (boolean)    : Shall the predicitons be weighted when aggregted
+                                --> Blocks with higher Accuracy, recieve higher
+                                    weight!
       
      Return:
-      - list w/ metrics [accuracy, f1, ...]
+      - list w/ metrics [accuracy, f1, mcc, roc, ...]
   "
   # [1] For each TreeSet in the Forest, we prepare the testdata
   #     Setting factors to same levels, ...
@@ -269,53 +308,65 @@ do_evaluation <- function(Forest, testdata) {
   tree3_pred <- get_pruned_prediction(trees = Forest[[3]], test_set = testdata3)
   tree4_pred <- get_pruned_prediction(trees = Forest[[4]], test_set = testdata4)
   
-  # [3] Aggregate Predictions from the different trees!
-  # [3-1] Get the probabilities of all test obs to be of class '0'
+  # [3] If we want to create weighted ensemble of the predicitons, we need to
+  #     calc the OOB-Accuracy and per 'trees' and use these as weights!
+  #     [lower ACC --> lower weight!]
+  if (weighted) {
+    trees1_acc <- round(get_oob_acc(Forest[[1]]), 2)
+    trees2_acc <- round(get_oob_acc(Forest[[2]]), 2)
+    trees3_acc <- round(get_oob_acc(Forest[[3]]), 2)
+    trees4_acc <- round(get_oob_acc(Forest[[4]]), 2)
+    tree_weights <- c(trees1_acc, trees2_acc, trees3_acc, trees4_acc) 
+  } else {
+    tree_weights <- c(1, 1, 1, 1)
+  }
+  
+  # [4] Aggregate Predictions from the different trees!
+  # [4-1] Get the probabilities of all test obs to be of class '0'
   all_forrest_preds_probs_class_0 <- sapply(1:nrow(testdata), FUN = function(x) {
     
     # Class1
-    prob_class1 <- mean(c(tree1_pred$Probs[[x]][1], tree2_pred$Probs[[x]][1],
-                          tree3_pred$Probs[[x]][1], tree4_pred$Probs[[x]][1]), 
-                        na.rm = TRUE)
+    prob_class1 <- weighted.mean(c(tree1_pred$Probs[[x]][1], tree2_pred$Probs[[x]][1],
+                                   tree3_pred$Probs[[x]][1], tree4_pred$Probs[[x]][1]), 
+                                 w = tree_weights, na.rm = TRUE)
     prob_class1
   })
   
-  # [3-2] Convert the probabilities to class predicitons and convert it to 'class'
+  # [4-2] Convert the probabilities to class predicitons and convert it to 'class'
   all_forrest_preds_class <- ifelse(all_forrest_preds_probs_class_0 >= 0.5, 0, 1)
   all_forrest_preds_class <- factor(all_forrest_preds_class, 
                                     levels = levels(Forest[[1]][[1]]$data$data[,1]))
   
-  # [4] Get Metrics for the current setting!
-  #     Confusion Matrix
+  # [5] Get Metrics for the current setting!
+  # [5-1] Confusion Matrix - from which we can calc/ extract most metrics
   confmat <- caret::confusionMatrix(data      = all_forrest_preds_class, 
                                     reference = testdata[,1])
   
-  # [5] Create a list to collect the results!
+  # [5-2] Are under the ROC Curve
+  roc <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
+                             levels = levels(Forest[[1]][[1]]$data$data[,1])))
+  
+  # [5-3] MCC Matthews correlation coefficient [only for binary cases!]
+  mcc <- mcc_metric(conf_matrix = confmat)
+  
+  # [6] Create a list to collect the results!
   res = list("Accuracy"    = confmat$overall["Accuracy"],
              "Sensitifity" = confmat$byClass["Sensitivity"],
              "Specificity" = confmat$byClass["Specificity"],
              "Precision"   = confmat$byClass["Precision"],
              "Recall"      = confmat$byClass["Recall"],
              "F1"          = confmat$byClass["F1"],
-             "Balance_Acc" = confmat$byClass["Balanced Accuracy"])
+             "Balance_Acc" = confmat$byClass["Balanced Accuracy"],
+             "AUC"         = as.numeric(roc),
+             "MCC"         = mcc)
   
   return(as.vector(res))
 }
-
-data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda"
-response = "gender"
-seed = 1312
-num_trees = as.integer(10)
-mtry = NULL
-min_node_size = as.integer(5)
-unorderd_factors = "ignore"
-replace_rf = TRUE
-
-
-do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
-                           response = "gender", seed = 1312, num_trees = as.integer(10),
-                           mtry = NULL, min_node_size = as.integer(5),
-                           unorderd_factors = "ignore", replace_rf = TRUE) {
+do_CV_setting1            <- function(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
+                                      response = "gender", seed = 1312, weighted = TRUE,
+                                      num_trees = as.integer(10), mtry = NULL, 
+                                      min_node_size = NULL, unorderd_factors = "ignore",
+                                      replace_rf = TRUE) {
   " Function to evaluate RF Adaption on blockwise missing data!
     Data is split into test and train set [curently fixed to 5-fold], with the 
     little adjustment, the amount of traindata can be split into 4 folds w/o rest
@@ -338,13 +389,16 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
       - response (chr)      : The repsonse we want to model - 
                               MUST be in the 'clin'-block!
       - seed (int)          : Seed to keep results reproducible
+      - weighted (bool)     : Shall the different trees be weighted w/ 
+                              OOB Accuracy of the trees
       - num_trees (int)     : amount of trees, we shall grow on each[!] fold
       - mtry (int)          : amount of split-variables we try, when looking for 
-                              a split variable! If 'NULL' is passed sqrt(p) is 
-                              used as mtry!
+                              a split variable! 
+                              If 'NULL': mtry = sqrt(p)
       - min_node_size (int) : Amount of Observations a node must at least 
                               contain, so the model keeps on trying to split 
                               them!
+                              If 'NULL: Set automatically in 'simpleRF()'
       - unorderd_factors (chr) : How to handle non numeric features!
                                  --> must be in ['ignore', 'order_once', 
                                                  'order_split', 'partition']
@@ -380,27 +434,11 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
   # [0] Check Inputs
   # [0-0] data_path, seed, response are all checked within 'create_data()'
   
-  # [0-1] mtry, min_node_size & num_trees, should be integers > 0
-  #    If 'mtry' is null, we don't need to check it and assign sqrt(p) later on!
-  if (!is.null(mtry)) {
-    if (any(mtry < 0 | min_node_size < 0 | num_trees < 0)) {
-      stop("'mtry', 'min_node_size' or 'num_trees' is < 0!")
-    }
-    
-    if (any(mtry %% 1 != 0 | min_node_size  %% 1 != 0 | num_trees  %% 1 != 0)) {
-      stop("'mtry', 'min_node_size' or 'num_trees' is no integer!")
-    } 
-  } else {
-    if (min_node_size < 0 | num_trees < 0) {
-      stop("'mtry', 'min_node_size' or 'num_trees' is < 0!")
-    }
-    if (any(min_node_size  %% 1 != 0 | num_trees  %% 1 != 0)) {
-      stop("'mtry', 'min_node_size' or 'num_trees' is no integer!")
-    }
-  }
+  # [0-1] mtry, min_node_size & num_trees are all checked within simpleRF()
   
-  # [0-2] replace_rf must be boolean
-  assert_logical(replace_rf)
+  # [0-2] replace_rf & weighted must be boolean
+  assert_logical(replace_rf, len = 1)
+  assert_logical(weighted, len = 1)
   
   # [0-3] unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
@@ -517,7 +555,8 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     #       --> copy the forrest, so we don't override original tree!
     print("Evaluation full TestSet -------------------------------------------")
     curr_Forest   <- copy_forrest(Forest)
-    full[[i + 1]] <- do_evaluation(Forest = curr_Forest, testdata = test_df)
+    full[[i + 1]] <- do_evaluation(Forest = curr_Forest, testdata = test_df, 
+                                   weighted = weighted)
     rm(curr_Forest); gc()
     
     # [7-2] TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
@@ -525,22 +564,22 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     #       evaluation can leed to pruned trees [also outside of the function] 
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
     curr_Forest      <- copy_forrest(Forest)
-    miss1_A[[i + 1]] <- do_evaluation(Forest   = curr_Forest, 
+    miss1_A[[i + 1]] <- do_evaluation(Forest   = curr_Forest, weighted = weighted,
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
     rm(curr_Forest); gc()
     
     curr_Forest      <- copy_forrest(Forest)
-    miss1_B[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
+    miss1_B[[i + 1]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
     rm(curr_Forest); gc()
     
     curr_Forest      <- copy_forrest(Forest)
-    miss1_C[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
+    miss1_C[[i + 1]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
                                       testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mutation_block)])
     rm(curr_Forest); gc()
     
     curr_Forest      <- copy_forrest(Forest)
-    miss1_D[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
+    miss1_D[[i + 1]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
                                       testdata =  test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
     rm(curr_Forest); gc()
     
@@ -550,37 +589,37 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
     print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
 
     curr_Forest       <- copy_forrest(Forest)
-    miss2_CD[[i + 1]] <- do_evaluation(Forest = curr_Forest,
+    miss2_CD[[i + 1]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
                                                                                            data$block_name$mirna_block))])
     rm(curr_Forest); gc()
     
     curr_Forest       <- copy_forrest(Forest)
-    miss2_BD[[i + 1]] <- do_evaluation(Forest = curr_Forest,
+    miss2_BD[[i + 1]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
                                                                                            data$block_names$rna_block))])
     rm(curr_Forest); gc()
     
     curr_Forest       <- copy_forrest(Forest)
-    miss2_BC[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
+    miss2_BC[[i + 1]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
                                                                                            data$block_name$rna_block))])
     rm(curr_Forest); gc()
 
     curr_Forest       <- copy_forrest(Forest)
-    miss2_AD[[i + 1]] <- do_evaluation(Forest = curr_Forest, 
+    miss2_AD[[i + 1]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                            data$block_name$mirna_block))])
     rm(curr_Forest); gc()
     
     curr_Forest       <- copy_forrest(Forest)
-    miss2_AC[[i + 1]] <- do_evaluation(Forest = curr_Forest,
+    miss2_AC[[i + 1]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                           data$block_name$mutation_block))])
     rm(curr_Forest); gc()
     
     curr_Forest       <- copy_forrest(Forest)
-    miss2_AB[[i + 1]] <- do_evaluation(Forest = curr_Forest,
+    miss2_AB[[i + 1]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                            data$block_name$rna_block))])
   }
@@ -601,7 +640,8 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
   # Collect the Settings, used to do the CV!
   settings <- list("data_path"     = data_path,
                    "response"      = response, 
-                   "seed"          = seed, 
+                   "seed"          = seed,
+                   "weighted"      = weighted,
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
@@ -615,16 +655,26 @@ do_CV_setting1 <- function(data_path = "./data/external/Dr_Hornung/Data/Processe
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda",
-                    response = "gender", seed = 1312, num_trees = as.integer(100),
-                    mtry = NULL, min_node_size = as.integer(5), 
-                    unorderd_factors = "ignore", replace_rf = TRUE)
+a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
+                    response = "gender", seed = 1312, weighted = TRUE,
+                    num_trees = as.integer(10), mtry = NULL, 
+                    min_node_size = NULL, unorderd_factors = "ignore",
+                    replace_rf = TRUE)
 end_time <- Sys.time()
 end_time - start_time # ~5.5min... w/ 15trees & 10 mtry!
+                      # ~6.7min... w/ 10 trees & NULL mtry & KIRC.Rda 
                       # ~ 31mins... w/ 100trees and mtry = NULL
 
-sapply(names(a$res_all), FUN = function(x) mean(a$res_all[[x]][[1]]$F1, 
-                                                a$res_all[[x]][[2]]$F1, 
-                                                a$res_all[[x]][[3]]$F1, 
-                                                a$res_all[[x]][[4]]$F1,
-                                                a$res_all[[x]][[5]]$F1))
+sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$F1, 
+                                                  a$res_all[[x]][[2]]$F1, 
+                                                  a$res_all[[x]][[3]]$F1, 
+                                                  a$res_all[[x]][[4]]$F1,
+                                                  a$res_all[[x]][[5]]$F1),
+                                                na.rm = TRUE))
+
+sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$Accuracy, 
+                                                  a$res_all[[x]][[2]]$Accuracy, 
+                                                  a$res_all[[x]][[3]]$Accuracy, 
+                                                  a$res_all[[x]][[4]]$Accuracy,
+                                                  a$res_all[[x]][[5]]$Accuracy),
+                                                na.rm = TRUE))

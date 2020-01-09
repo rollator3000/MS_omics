@@ -767,11 +767,11 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
   # [2-2] min_node_size - choose depening on class of response 
   if (is.null(min_node_size)) {
     if (treetype == "Probability") {
-      min_node_size <- 10
+      min_node_size <- as.integer(10)
     } else if (treetype == "Regression") {
-      min_node_size <- 5
+      min_node_size <- as.integer(5)
     } else if (treetype == "Survival") {
-      min_node_size <- 3
+      min_node_size <- as.integer(3)
     }
   } else {
     assert_int(min_node_size, lower = 1, upper = nrow(data))

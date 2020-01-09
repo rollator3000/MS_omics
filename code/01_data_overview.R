@@ -1,5 +1,5 @@
 "A raw Script, that is used to get a basic overview over the data!
- Data is preprocessed already, by the work of Dr. Roman Hornung!
+ Data we use is already preprocessed, by the work of Dr. Roman Hornung!
 "
 # Set the WD to the main folder, that holds all things for "Master OmicsDaten"
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
