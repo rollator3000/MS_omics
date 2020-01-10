@@ -1,0 +1,230 @@
+TO DO-----------------------------------------------------------------------------------------------
+-------------------------------- UNTIL 9. January 
+
+	RUN THE 2.5% SUBSETS --- RUN THE 2.5% SUBSETS --- RUN THE 2.5% SUBSETS --- RUN THE 2.5% SUBSETS 
+
+	- Single block prediciton performance when using 5% subsets of 'RNA' & 'CNV' to predict gender!
+		Data	Block	Dim			OOB					Test
+		BLCA	rna		248 x 1155	0.99111353489479	1
+		BLCA	cnv		248 x 2899	0.992059571209442	0.951612903225806
+		COAD	rna		280 x 1111	0.557739695613671	0.585714285714286
+		COAD	cnv		280 x 2899	0.99208643583717	0.985714285714286
+		ESCA	rna		97 x 1276	0.879406458729472	875
+		ESCA	cnv		97 x 2899	0.936783376423589	1
+		HNSC	rna		329 x 1077	0.726097980971852	0.817073170731707
+		HNSC	cnv		329 x 2899	0.986798761409153	0.98780487804878
+		KIRC	rna		258 x 1150	0.889781528175074	0.9375
+		KIRC	cnv		258 x 2899	0.999537141619628	1
+		KIRP	rna		199 x 1627	0.788311274226075	0.78
+		KIRP	cnv		199 x 2899	0.987958040143576	1
+		LIHC	rna		238 x 1051	0.958512886368515	0.95
+		LIHC	cnv		238 x 2899	0.98531140397218	0.95
+		LGG		rna		363 x 1116	0.870284119676932	0.912087912087912
+		LGG		cnv		363 x 2899	0.999303469858727	0.989010989010989
+		LUAD	rna		339 x 1185	0.96279039691095	0.964705882352941
+		LUAD	cnv		339 x 2899	0.995217025181418	1
+		LUSC	rna		292 x 1177	0.93779038849357	0.972602739726027
+		LUSC	cnv		292 x 2899	0.987395189112513	1
+		PAAD	rna		114 x 1118	0.734291466272828	0.785714285714286
+		PAAD	cnv		114 x 2899	0.972499439347605	1
+		SARC	rna		146 x 1143	0.55319549575662	0.648648648648649
+		SARC	cnv		146 x 2899	0.987215685534988	0.972972972972973
+		SKCM	rna		211 x 1113	0.705456497304125	0.60377358490566
+		SKCM	cnv		211 x 2899	0.97170606253448	0.981132075471698
+		STAD	rna		227 x 1302	0.792619935460653	0.666666666666667
+		STAD	cnv		227 x 2899	0.985472218002639	0.982456140350877
+
+	- Single block prediciton performance when using 2.5% subsets of 'RNA' & 'CNV' to predict gender!
+
+	- Whole Blocks prediction performance when using 5% subsets of 'RNA' & 'CNV' +
+	  10% subsets of 'MIRNA' & 'MUTATION' to predict the gender 
+	  	Data	Dim			OOB					Test
+		BLCA	248 x 6000	0.994429204564377	0.951612903225806
+		COAD	280 x 6068	0.992102848699765	0.985714285714286
+		ESCA	97 x 5766	0.847719471356981	0.791666666666667
+		HNSC	329 x 5838	0.986292087716205	0.98780487804878
+		KIRC	258 x 5322	0.997326164920777	1
+		KIRP	199 x 5745	0.989514977656297	1
+		LIHC	238 x 5619	0.98664062808693	0.95
+		LGG		363 x 5417	0.997253557396563	0.989010989010989
+		LUAD	339 x 6060	0.996481336343524	1
+		LUSC	292 x 6048	0.986941175816832	1
+		PAAD	114 x 5365	0.977835134275904	1
+		SARC	146 x 5367	0.961432126562129	0.972972972972973
+		SKCM	211 x 6060	0.975630403906031	0.981132075471698
+		STAD	227 x 6193	0.979436380196083	0.982456140350877
+
+	- Whole Blocks prediction performance when using 2.5% subsets of 'RNA' & 'CNV' +
+	  10% subsets of 'MIRNA' & 'MUTATION' to predict the gender 
+
+	- Finish the simpleRF Implementation!
+		- DONE other arguments than 'ignore' & 'order_once' for unordered factors
+		- DONE get Forrest Predicitons from single Trees 
+		- DONE prune forrests 
+		- DONE Tree Implementation + adjustment
+		- DONE Cross Validation:	- splitting works to test/ train wokrs [folds have same size]
+									- induction of blockwise missingness pattern:
+										--> works for specific patterns 
+										  	--> own function for each pattern?!
+										  		--> Know the patterns, but need more details!
+									- evaluation:
+										- full/fraction of testdata to get performance!
+											--> which settings exactly?!
+										- save model and reload it all the time, to prune and 
+										  get predictions on each specail testsubset!
+
+
+	- Questions for Roman
+		- model comparison [snigle block, full, ...]
+		- Implemetnations of Norberts Method?!
+
+	- Implemntation of Norberts Method
+		- Used the "randomForestSRC" <--> ´better for comparison, if we use the simpleRF?!
+		- Pack the whole workflow into a function and that's it!
+
+
+	- Create Reduced DFs --> CURRENTLY DONE DIRECTLY WITHIN THE EVALUATION!
+						 - from each block only 5% of the original features are used!
+						 - create these subsets & only use these instead of subsetting in each
+						   step!
+						 
+
+
+
+-------------------------------- IN GENERAL not too urgent!
+	- Tunable Parameters w/ Roman: see 'Improved Outcome Prediciton'
+			- ntree    - high as possible [e.g. 500]            - no need to tune it?!
+			- mtry     - fixed   --> sqrt(p)
+			- nodesize - tuning! --> the higher the more robust - no need to tune it?!
+
+	- RealLife Data with an categorical response:
+		--> childhood asthma find features [Promotion-Thesis Dr. Krautenbacher]
+		--> Cancer Atlas, use e.g. 2 Sets and predict type of cancer
+
+
+____________________________________________________________________________________________________
+____________________________________________________________________________________________________
+____________________________________________________________________________________________________
+DONE -----------------------------------------------------------------------------------------------
+	- DONE Finsih Script to inspect the data & get a brief overview of the data
+	- DONE init repository; doing right now, takes some time, as i added data
+	- DONE try RF for Survival- there is an R package!
+	- DONE read into the Romans Method
+	- DONE add MARKDOWN Preview to sublime!
+	- DONE add a README.md
+	- DONE finish "Bi level multisource learning ..." - XIANG [behind Dr. Hornung Work]
+	- DONE finsih "recursive partioning on incomplete..."- Hapfelmeier
+	- DONE finish "Random Survival Trees"
+	- DONE save folder on USB for savety - update GIT 
+	- DONE Finish "block forrests"
+	- DONE "supervised learning for multi-block..." --> finish before meeting on tuesday! 
+	- DONE Read 5. & 6. Chapter of Krautenbachers Dr. Thesis!
+	- DONE Read MS. Thesis
+	- DONE Sketch the different approaches 
+	       (especially with the RF approaches, as thkere are many different Ideas!)
+    - DONE Think of an standard approach we can use as baseline! ask Roman  
+    - DONE How shall the Evaluation be done? [CV, Measures, found features etc..]
+    - DONE Check, how good the predicitve power of classifier is, that uses all features of a single
+	       block to predict the gender! 
+	  	   	--> Computer crashes w/ more than 12,5k feas per block! --> SERVER FOR THESIS
+	  	   	--> Do it based on blocks w/ less than 12,5k feas 		--> Performance wasn't too good
+	- DONE Check, whether the genetical features in the different DFs are the same?!
+	       [e.g. same transcriptor features as in the other blocks] 
+	  		--> Matrix, with the fraction of overlaps between e.g. the different mirna blocks!
+	- DONE Think of Testing-& Traing-Situations (which cases can which models handle)
+		--> TestTrain Split before inducing blockwise missingness pattern!
+		--> Settings recorded in Notes to Meetings
+		--> Jonas: - exchange simulated data in the end?!
+					 --> Jonas trying to tackle regression, classification & survival!
+	- DONE Basic Layout for my MasterThesis to write [overleaf]
+	- DONE Get a general performance on a reduced feature space
+		- predict gender based on all blocks [seperatly] using only 10% subset of feature space
+			--> Code works! Results:
+				        mirna _oob mutation _oob  cnv _oob  rna _oob mirna_test mutation_test  cnv_test  rna_test
+				Min.     0.5273522     0.4910043 0.9276355 0.7453204  0.5058824     0.4385965 0.9500000 0.7600000
+				1st Qu.  0.5534848     0.5793497 0.9827035 0.7961745  0.5302198     0.5897781 0.9832707 0.8493209
+				Median   0.6346850     0.6268961 0.9889288 0.8782544  0.6108108     0.6524493 0.9945055 0.9195812
+				Mean     0.6412414     0.6369885 0.9849936 0.8715443  0.6503939     0.6549070 0.9882644 0.9019398
+				3rd Qu.  0.7145702     0.6992017 0.9923972 0.9407613  0.7653425     0.7378082 1.0000000 0.9775670
+				Max.     0.8206045     0.8328249 0.9998293 0.9716218  0.8709677     0.8225806 1.0000000 1.0000000
+
+		- use all 10% subsets of blocks of a single DF to predcit the Outcome 
+			--> Code works! Results:
+				   Data         Dim               OOB              Test             Time
+				1  BLCA 248 x 10052 0.99165156757889  0.967741935483871  1.97144574721654
+				2  COAD 280 x 10077 0.991809331530688 0.985714285714286  2.0108102162679
+				3  ESCA   97 x 9938 0.908596785909803                 1  1.57403351465861
+				4  HNSC  329 x 9812 0.990038084732971  0.98780487804878  2.0177655339241
+				5  KIRC  258 x 9368 0.999927674401902                 1  1.73252973556519
+				6  KIRP 199 x 10269 0.989438830699873                 1  1.92231401602427
+				7  LIHC  238 x 9566 0.987307415336553              0.95  1.71965341567993
+				8   LGG  363 x 9430 0.999782238450009 0.989010989010989  1.9150926510493
+				9  LUAD 339 x 10142 0.996572591528517                 1  2.23058315118154
+				10 LUSC 292 x 10122 0.988314216936215                 1  2.14085286458333
+				11 PAAD  114 x 9381  0.98042625403792                 1  1.41762288411458
+				12 SARC  146 x 9407 0.976368700392587 0.972972972972973  1.54067685206731
+				13 SKCM 211 x 10071 0.983168801057835                 1  1.92308160066605
+				14 STAD 227 x 10394 0.980767387851144 0.982456140350877  2.15125979979833
+	-DONE Adjust simpleRF Package, so we can grow trees, see their splits and can reduce them!
+			- ran through the whole code for a classification example [iris]
+				--> understood the way it is built up
+					--> Try to create a own Function that is building up on the code
+						--> Then we can try to adjust this function for our needs!
+							--> Adjust Methods in the "Tree"-Classes, so we can more easily understand
+							    which child node belongs to which node etc.
+							    --> should be easier to prune the!
+				--> !!! The split_var_IDs always start WITH the response, so 1 is reponse, and 2 is the 
+				        second colum in the orderd model.data!!! 
+				--> !!! If curr_x_split_var <= splitvalue OR %in% values_left -->  left child node
+				    !!! Else                                                  --> right child node  
+				--> More or less done now!!!
+____________________________________________________________________________________________________
+____________________________________________________________________________________________________
+____________________________________________________________________________________________________
+
+METHODS:
+-------------------------------- USABLE 
+	* RF Adaption from Roman *
+		- take all observations, with the same features and train on each of these sets
+		  a RandomForrest	--> RF for single blocks, and combinations of the different
+		                        blocks 
+		- Prediction: Based on the features in x_test, we prune all our trees, from the
+		              different RFs, and use the remaining trees for prediciton!
+		- Further Adaptions:
+			- Weights based on the single blocks!
+			- Favor Clinical Variables!
+
+	* RF Adaption from Krautenbacher *
+		- train a single RF on each block
+		- weight the predictions of the single blocks by how much 'predicitive power' the
+		  block has! [--> CV of the block: higher accuracy --> higher predicive power] 
+		- Further Adaptions
+			- Favor Clinical Variables
+			- Do no weighting at all
+
+	* Hieke: 'integrating multiple molecular sources...' * 
+		- need overlap in the train data + testset needs same layout
+		- Method Integrated already
+			--> possible for Classification aswell?!
+	
+	* mdd-sPLS Imputation Method! *
+		- code is open source 
+			--> should be possible to do!	
+		- MICE or any other Imputation Method could be tried!
+			--> need overlap to do meaningful imputation!
+
+	* Single Block Model *
+		- Only use one single block to train a classifer!
+			--> create to see the 'added predictive value'
+			--> create baseline, as it can not combine the blockwise information, 
+			    and we can show our superiority!
+
+	* Fully Observed *
+		- Before introducing the blockwise missingness, we can fit a model on the 
+		  whole data to recieve like some upper bound of the performance!
+		  	--> Jonas:"Gold-Standard"
+
+-------------------------------- NOT USABLE 
+	* bi-level multisource learning for heterogenous blockwise missing data *
+		- TestSet needs same Layout as one of the Blocks in the training! 
+		- not integrated yet..!
