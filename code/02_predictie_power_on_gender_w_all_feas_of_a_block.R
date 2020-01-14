@@ -32,7 +32,6 @@ eval_res <- data.frame("Data"  = character(),  "Block" = character(),
                        "Test"  = numeric(),    "Time"  = numeric(), # in minutes
                        stringsAsFactors = F)
 
-
 # [2] Loop over all DFs w/ gender in their clinical variables!
 #     For Blocks w/ more than 12.5k feas, we skip them, as it would crash!
 for (df in DFs_w_gender) {
@@ -92,7 +91,7 @@ for (df in DFs_w_gender) {
 }
 
 # Save the results!
-write.csv2(eval_res, "./docs/performance_RF_whole_single_blocks_gender_classif.csv",
+write.csv2(eval_res, "./docs/explorative_subsets/performance_RF_whole_single_blocks_gender_classif.csv",
            row.names = FALSE)
 # Single 10% subsetted Omics-Blocks as features to RF                        ----
 "Use single Blocks w/ 10% of the original features & get performance, runtime...
@@ -169,12 +168,12 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub, "./docs/performance_RF_10percent_single_blocks_gender_classif.csv",
+write.csv2(eval_res_sub, "./docs/explorative_subsets/performance_RF_10percent_single_blocks_gender_classif.csv",
            row.names = FALSE)
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub = read.csv2("./docs/performance_RF_10percent_single_blocks_gender_classif.csv", 
+eval_res_sub = read.csv2("./docs/explorative_subsets/performance_RF_10percent_single_blocks_gender_classif.csv", 
                          stringsAsFactors = F)
 
 # [4-1] convert to numeric:
@@ -282,12 +281,12 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub_all, "./docs/performance_RF_10percent_all_blocks_gender_classif.csv",
+write.csv2(eval_res_sub_all, "./docs/explorative_subsets/performance_RF_10percent_all_blocks_gender_classif.csv",
            row.names = FALSE)
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub_all = read.csv2("./docs/performance_RF_10percent_all_blocks_gender_classif.csv", 
+eval_res_sub_all = read.csv2("./docs/explorative_subsets/performance_RF_10percent_all_blocks_gender_classif.csv", 
                              stringsAsFactors = F)
 
 # [4-1] convert to correct types:
@@ -371,12 +370,12 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub_2, "./docs/performance_RF_5percent_rna_cnv_single_block_gender_classif.csv",
+write.csv2(eval_res_sub_2, "./docs/explorative_subsets/performance_RF_5percent_rna_cnv_single_block_gender_classif.csv",
            row.names = FALSE)
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub_2 = read.csv2("./docs/performance_RF_5percent_rna_cnv_single_block_gender_classif.csv",
+eval_res_sub_2 = read.csv2("./docs/explorative_subsets/performance_RF_5percent_rna_cnv_single_block_gender_classif.csv",
                          stringsAsFactors = F)
 
 # [4-1] convert to numeric:
@@ -494,12 +493,12 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub_all2, "./docs/performance_RF_10percent_mirna_mutation_5percent_rna_cnv_all_blocks_gender_classif.csv",
+write.csv2(eval_res_sub_all2, "./docs/explorative_subsets/performance_RF_10percent_mirna_mutation_5percent_rna_cnv_all_blocks_gender_classif.csv",
            row.names = FALSE)
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub_all = read.csv2("./docs/performance_RF_10percent_mirna_mutation_5percent_rna_cnv_all_blocks_gender_classif.csv", 
+eval_res_sub_all = read.csv2("./docs/explorative_subsets/performance_RF_10percent_mirna_mutation_5percent_rna_cnv_all_blocks_gender_classif.csv", 
                              stringsAsFactors = F)
 
 # [4-1] convert to correct types:
@@ -586,12 +585,12 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub_2, "./docs/performance_RF_2.5percent_rna_cnv_single_block_gender_classif.csv",
+write.csv2(eval_res_sub_2, "./docs/explorative_subsets/performance_RF_2.5percent_rna_cnv_single_block_gender_classif.csv",
            row.names = FALSE)
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub_2 = read.csv2("./docs/performance_RF_2.5percent_rna_cnv_single_block_gender_classif.csv",
+eval_res_sub_2 = read.csv2("./docs/explorative_subsets/performance_RF_2.5percent_rna_cnv_single_block_gender_classif.csv",
                          stringsAsFactors = F)
 
 # [4-1] convert to numeric:
@@ -708,13 +707,13 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub_all2, "./docs/performance_RF_10percent_mirna_mutation_2.5percent_rna_cnv_all_blocks_gender_classif.csv",
+write.csv2(eval_res_sub_all2, "./docs/explorative_subsets/performance_RF_10percent_mirna_mutation_2.5percent_rna_cnv_all_blocks_gender_classif.csv",
            row.names = FALSE)
 
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub_all = read.csv2("./docs/performance_RF_10percent_mirna_mutation_2.5percent_rna_cnv_all_blocks_gender_classif.csv", 
+eval_res_sub_all = read.csv2("./docs/explorative_subsets/performance_RF_10percent_mirna_mutation_2.5percent_rna_cnv_all_blocks_gender_classif.csv", 
                              stringsAsFactors = F)
 
 # [4-1] convert to correct types:
@@ -799,12 +798,12 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub_2, "./docs/performance_RF_0.1percent_cnv_single_block_gender_classif.csv",
+write.csv2(eval_res_sub_2, "./docs/explorative_subsets/performance_RF_0.1percent_cnv_single_block_gender_classif.csv",
            row.names = FALSE)
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub_2 = read.csv2("./docs/performance_RF_0.1percent_cnv_single_block_gender_classif.csv",
+eval_res_sub_2 = read.csv2("./docs/explorative_subsets/performance_RF_0.1percent_cnv_single_block_gender_classif.csv",
                            stringsAsFactors = F)
 
 # [4-1] convert to numeric:
@@ -935,13 +934,13 @@ for (df in DFs_w_gender) {
 }
 
 # [3] Save the results!
-write.csv2(eval_res_sub_all2, "./docs/performance_RF_10percent_mirna_mutation_2.5percent_rna_0.1percent_cnv_all_blocks_gender_classif.csv",
+write.csv2(eval_res_sub_all2, "./docs/explorative_subsets/performance_RF_10percent_mirna_mutation_2.5percent_rna_0.1percent_cnv_all_blocks_gender_classif.csv",
            row.names = FALSE)
 
 
 # [4] Litte analyse w/ results:
 # [4-0] Load the results!
-eval_res_sub_all = read.csv2("./docs/performance_RF_10percent_mirna_mutation_2.5percent_rna_0.1percent_cnv_all_blocks_gender_classif.csv ", 
+eval_res_sub_all = read.csv2("./docs/explorative_subsets/performance_RF_10percent_mirna_mutation_2.5percent_rna_0.1percent_cnv_all_blocks_gender_classif.csv ", 
                              stringsAsFactors = F)
 
 # [4-1] convert to correct types:

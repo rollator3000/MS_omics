@@ -2,10 +2,18 @@
  Here for each fold [set of observations w/ the same observed feature space], we
  train a seperate RF [-> might result in e.g. 4 different RFs]
  For Testing we prune all the seperate RF [or at least the trees inside]
- Then we combine the predicitons from the different RFson the testdata to obtain
- a final prediciton!
+ Pruning: When a tree uses a split variable that is not avaible in the data we
+          shall do predicitons with, we use the terminal node, before the tree 
+          uses not avaible splitvar., as new terminal node! 
+          If the 1. splitvar. is not known the tree can not be used at all!
+  
+ Then we combine the predicitons from the different RFs to obtain a final 
+ prediciton! The Prediciton of a single tree in a RF is the terminal node the 
+ test observation ends up in!
+ 
+ > CV: Train RF-Adaption on TrainData w/ blockwise missingness!
+       Then test it based on testobs. w/ all feas avaible/ 1 block missing / ...
 "
-
 # Load Funcitons, Classes, librarys & set the WD!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 library(pROC)

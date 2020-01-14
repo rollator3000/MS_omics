@@ -15,7 +15,7 @@ Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)
 ```
 In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation *(often unreliable these settings)* <p/>
 For Details regarinding the methods, data situations etc. please have a look at: <br> 
-    > MasterThesis / code in repository
+     MasterThesis / code in repository
 
 ## Code
 Short describtion of the scripts in './code'!
@@ -29,7 +29,11 @@ Short describtion of the scripts in './code'!
     on all blocks joint, single subsetted blocks,  all subsetted blocks joint....
 
 - 03_create_artifical_DF:   
-    Create an artifical DF, used for the implementation of the pruning!
+    1. Create an artifical DF, used for the implementation of the pruning!
+    2. Do final Subsets of the processed omics data
+    3. Get the Performance of the final subsets when fitting a model on
+        - all omics blocks joint together
+        - each single omics block! 
 
 - 04_simpleRF_adaption:
     Implementation of the RF-Adjustment + additional functions needed for evaluation,
@@ -87,7 +91,16 @@ Short describtion of the scripts in './code'!
     │   └── PDF            <- All sources that could be saved/ dowloaded as PDF
     │
     └── docs               <- Documents used within this repository! 
-                              Explainatory/ Describtive material, Notes etc.
-
-
+        │                   Explainatory/ Describtive material, Notes etc.
+        │ 
+        ├ explorative_subsets <- Performance of a RF with differnt percent 
+        │                        of subsets! --> Explorative Results! To find
+        │                        out which blocks do need which subsets for 
+        │                        our project!
+        │
+        └── performance_final_subsets <- RF Performance on the final subsetted DFs
+                                         -> once for joint blocks
+                                            [all blocks as features to RF]
+                                         -> once for single blocks
+                                            [fit a seperate RF on each of the blocks!] 
 --------
