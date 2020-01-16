@@ -326,6 +326,13 @@ do_evaluation                 <- function(Forest, testdata, weighted) {
   tree3_pred <- get_pruned_prediction(trees = Forest[[3]], test_set = testdata3)
   tree4_pred <- get_pruned_prediction(trees = Forest[[4]], test_set = testdata4)
   
+  # 2-1 Check that there are still trees existing!
+  if (all(is.na(tree1_pred$Class)) & all(is.na(tree2_pred$Class)) &
+      all(is.na(tree3_pred$Class)) & all(is.na(tree4_pred$Class))) {
+    print("None of the trees are usable for predictions!")
+    return("No Predictions possible as all trees are pruned at the 1. splitvar!")
+  }
+  
   # [3] If we want to create weighted ensemble of the predicitons, we need to
   #     calc the OOB-Accuracy per 'trees' and use these as weights!
   #     [lower ACC --> lower weight!]
@@ -334,8 +341,9 @@ do_evaluation                 <- function(Forest, testdata, weighted) {
     trees2_acc <- round(get_oob_acc(Forest[[2]]), 2)
     trees3_acc <- round(get_oob_acc(Forest[[3]]), 2)
     trees4_acc <- round(get_oob_acc(Forest[[4]]), 2)
-    # sum_all    <- sum(trees1_acc, trees2_acc, trees3_acc, trees4_acc)
-    tree_weights <- c(trees1_acc, trees2_acc, trees3_acc, trees4_acc)
+    sum_all    <- sum(trees1_acc, trees2_acc, trees3_acc, trees4_acc)
+    tree_weights <- c(trees1_acc/sum_all, trees2_acc/sum_all, 
+                      trees3_acc/sum_all, trees4_acc/sum_all)
   } else {
     tree_weights <- c(1, 1, 1, 1)
   }
@@ -345,10 +353,10 @@ do_evaluation                 <- function(Forest, testdata, weighted) {
   all_forrest_preds_probs_class_0 <- sapply(1:nrow(testdata), FUN = function(x) {
     
     # Class1
-    prob_class1 <- weighted.mean(c(tree1_pred$Probs[[x]][1], tree2_pred$Probs[[x]][1],
+    prob_class0 <- weighted.mean(c(tree1_pred$Probs[[x]][1], tree2_pred$Probs[[x]][1],
                                    tree3_pred$Probs[[x]][1], tree4_pred$Probs[[x]][1]), 
                                  w = tree_weights, na.rm = TRUE)
-    prob_class1
+    prob_class0
   })
   
   # 4-2 Convert the probabilities to class predicitons and convert it to 'class'
@@ -464,6 +472,25 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                         omics-block [cnv & mutation]!
             - miss2_AB: CV Results for each fold on the testdata, w/ 2 missing 
                         omics-block [cnv & rna]!
+            - miss3_ABC: CV Results for each fold on the testdata, w/ 3 missing 
+                         omics-block [cnv & rna & mutation]!
+            - miss3_ACD: CV Results for each fold on the testdata, w/ 3 missing 
+                         omics-block [cnv & mutation & mirna]!
+            - miss3_ABD: CV Results for each fold on the testdata, w/ 3 missing 
+                         omics-block [cnv & rna & mirna]!
+            - miss3_BCD: CV Results for each fold on the testdata w/ 3 missing 
+                         omics -bloc [rna & mutation & mirna]
+            - single_CL: CV-Results for each fold on the testdata w/ only 
+                         clinical features
+            - single_A:  CV-Results for each fold on the testdata w/ only 
+                         block A features [CNV]
+            - single_B:  CV-Results for each fold on the testdata w/ only 
+                         block B features [RNA]
+            - single_C:  CV-Results for each fold on the testdata w/ only 
+                         block C features [Mutation]
+            - single_D:  CV-Results for each fold on the testdata w/ only 
+                         block D features [Mirna]
+                         
         * 'settings' [settings used to do the CV - all arguments!]
             - datapath, seed, response, mtry,.... 
   "
@@ -514,7 +541,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
   miss3_ABC <- list(); miss3_ABD <- list(); miss3_ACD <- list(); miss3_BCD <- list()
   
   # 2-2-5 Single BlockTestSet
-  single_A <- list(); single_B <- list(); single_clin <- list() 
+  single_A <- list(); single_B <- list(); single_CL <- list() 
   single_C <- list(); single_D <- list()
  
   # [3] Start the CV, split data to Test and Train and evaluate it! ------------
@@ -563,7 +590,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                        min_node_size = min_node_size, replace = TRUE,  
                        splitrule = NULL, unordered_factors = unorderd_factors)
     trees1 <- mclapply(trees1, function(x) {
-      x$grow(replace = TRUE)
+      x$grow(replace = TRUE, seed = seed)
       x
     }, mc.cores = 1)
     
@@ -573,7 +600,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                        min_node_size = min_node_size, replace = TRUE,  
                        splitrule = NULL, unordered_factors = unorderd_factors)
     trees2 <- mclapply(trees2, function(x) {
-      x$grow(replace = TRUE)
+      x$grow(replace = TRUE, seed = seed)
       x
     }, mc.cores = 1)
 
@@ -583,7 +610,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                        min_node_size = min_node_size, replace = TRUE,  
                        splitrule = NULL, unordered_factors = unorderd_factors)
     trees3 <- mclapply(trees3, function(x) {
-      x$grow(replace = TRUE)
+      x$grow(replace = TRUE, seed = seed)
       x
     }, mc.cores = 1)
     
@@ -593,7 +620,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                        min_node_size = min_node_size, replace = TRUE,  
                        splitrule = NULL, unordered_factors = unorderd_factors)
     trees4 <- mclapply(trees4, function(x) {
-      x$grow(replace = TRUE)
+      x$grow(replace = TRUE, seed = seed)
       x
     }, mc.cores = 1)
     
@@ -614,7 +641,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                                    weighted = weighted)
     rm(curr_Forest); gc()
     
-    # 7-2 TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
+    # 6-2 TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
     #     everytime before evaluation we need to copy the Forest, as the 
     #     evaluation can leed to pruned trees [also outside of the function] 
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
@@ -638,7 +665,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                                       testdata =  test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
     rm(curr_Forest); gc()
     
-    # 7-3 TESTSET TWO OMICS BLOCKS MISSING - two ommic blocks are missing in
+    # 6-3 TESTSET TWO OMICS BLOCKS MISSING - two ommic blocks are missing in
     #     TestData, everytime before evaluation we need to copy the Forest, 
     #     as the  evaluation can leed to pruned trees [also outside of the function] 
     print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
@@ -678,7 +705,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                            data$block_name$rna_block))])
     
-    # 7-4 TESTSET TWO OMICS BLOCKS MISSING - three omic blocks are missing in
+    # 6-4 TESTSET THREE OMICS BLOCKS MISSING - three omic blocks are missing in
     #     TestData, everytime before evaluation we need to copy the Forest, 
     #     as the  evaluation can leed to pruned trees [also outside of the function] 
     print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
@@ -710,20 +737,66 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                                                                                             data$block_name$mutation_block,
                                                                                             data$block_name$mirna_block))])
     rm(curr_Forest); gc()
+    
+    
+    # 7-5 TESTSET THREE OMICS BLOCKS MISSING - three omic blocks are missing in
+    #     TestData, everytime before evaluation we need to copy the Forest, 
+    #     as the  evaluation can leed to pruned trees [also outside of the function] 
+    print("Evaluation TestSet w/ only 1 observed Block -----------------------")
+    
+    curr_Forest        <- copy_forrest(Forest)
+    single_A[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
+                                                                                            data$block_name$mutation_block,
+                                                                                            data$block_name$mirna_block,
+                                                                                            data$block_names$clin_block))])
+    rm(curr_Forest); gc()
+    
+    curr_Forest        <- copy_forrest(Forest)
+    single_B[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                            data$block_name$mutation_block,
+                                                                                            data$block_name$mirna_block,
+                                                                                            data$block_names$clin_block))])
+    rm(curr_Forest); gc()
+    
+    curr_Forest        <- copy_forrest(Forest)
+    single_C[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
+                                                                                            data$block_name$cnv_block,
+                                                                                            data$block_name$mirna_block,
+                                                                                            data$block_names$clin_block))])
+    rm(curr_Forest); gc()
+    
+    curr_Forest        <- copy_forrest(Forest)
+    single_D[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
+                                                                                            data$block_name$mutation_block,
+                                                                                            data$block_name$cnv_block,
+                                                                                            data$block_names$clin_block))])
+    rm(curr_Forest); gc()
+    
+    curr_Forest         <- copy_forrest(Forest)
+    single_CL[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
+                                                                                            data$block_name$mutation_block,
+                                                                                            data$block_name$mirna_block,
+                                                                                            data$block_names$cnv_block))])
+    rm(curr_Forest); gc()
   }
   
   # Collect all CV Results in a list!
   res_all <- list("full" = full,
-                  "miss1_A" = miss1_A,
-                  "miss1_B" = miss1_B,
-                  "miss1_C" = miss1_C,
-                  "miss1_D" = miss1_D,
-                  "miss2_CD" = miss2_CD,
-                  "miss2_BD" = miss2_BD,
-                  "miss2_BC" = miss2_BC,
-                  "miss2_AD" = miss2_AD,
-                  "miss2_AC" = miss2_AC,
-                  "miss2_AB" = miss2_AB)
+                  "miss1_A" = miss1_A, "miss1_B" = miss1_B,
+                  "miss1_C" = miss1_C, "miss1_D" = miss1_D,
+                  "miss2_CD" = miss2_CD, "miss2_BD" = miss2_BD,
+                  "miss2_BC" = miss2_BC, "miss2_AD" = miss2_AD,
+                  "miss2_AC" = miss2_AC, "miss2_AB" = miss2_AB,
+                  "miss3_ABC" = miss3_ABC, "miss3_ABD" = miss3_ABD,
+                  "miss3_ACD" = miss3_ACD, "miss3_BCD" = miss3_BCD,
+                  "single_A" = single_A, "single_B" = single_B,
+                  "single_C" = single_C, "single_D" = single_D,
+                  "single_CL" = single_CL)
   
   # Collect the Settings, used to do the CV!
   settings <- list("data_path"     = data_path,
@@ -745,23 +818,8 @@ start_time <- Sys.time()
 a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
                     response = "gender", seed = 1312, weighted = TRUE,
                     num_trees = as.integer(10), mtry = NULL, 
-                    min_node_size = NULL, unorderd_factors = "ignore",
-                    replace_rf = TRUE)
+                    min_node_size = NULL, unorderd_factors = "ignore")
 end_time <- Sys.time()
 end_time - start_time # ~5.5min... w/ 15trees & 10 mtry!
                       # ~6.7min... w/ 10 trees & NULL mtry & KIRC.Rda 
                       # ~ 31mins... w/ 100trees and mtry = NULL
-
-sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$F1, 
-                                                  a$res_all[[x]][[2]]$F1, 
-                                                  a$res_all[[x]][[3]]$F1, 
-                                                  a$res_all[[x]][[4]]$F1,
-                                                  a$res_all[[x]][[5]]$F1),
-                                                na.rm = TRUE))
-
-sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$Accuracy, 
-                                                  a$res_all[[x]][[2]]$Accuracy, 
-                                                  a$res_all[[x]][[3]]$Accuracy, 
-                                                  a$res_all[[x]][[4]]$Accuracy,
-                                                  a$res_all[[x]][[5]]$Accuracy),
-                                                na.rm = TRUE))

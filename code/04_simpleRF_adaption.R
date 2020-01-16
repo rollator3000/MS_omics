@@ -53,7 +53,7 @@ fields = list(
   split_levels_left = "list"), 
 
 methods = list(
-  grow = function(replace) {
+  grow = function(replace, seed) {
     "Method to grow a tree based on data and formula
       - draw obs. w/ | w/o replacment for growing and OOB
       - call splitNode then on the 1. Node!
@@ -69,6 +69,7 @@ methods = list(
     
     # Draw 'num_bootstrap_samples' Obs. from all Observations to grow the tree 
     # with! Unused Obs. will be used as OOB-Samples!
+    set.seed(seed)
     bootstrap_sample <- sample(num_samples, num_bootstrap_samples, replace = replace)
     oob_sampleIDs    <<- (1:num_samples)[-bootstrap_sample]
     
