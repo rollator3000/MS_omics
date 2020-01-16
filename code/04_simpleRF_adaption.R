@@ -243,9 +243,16 @@ methods = list(
         
       }
       
-      ## Add to prediction
-      predictions[[i]] <- getNodePrediction(nodeID)
+      # Grt Prediciton for the terminal node! If the tree was pruned 
+      # in its frst split split var. we do no prediciton, as this 
+      # would only represent the distribution in the first node!
+      if (nodeID == 1) {
+        predictions[[i]] <- NA
+      } else {
+        predictions[[i]] <- getNodePrediction(nodeID)
+      }
     }
+    
     return(simplify2array(predictions))
   },
   

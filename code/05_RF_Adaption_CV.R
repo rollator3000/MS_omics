@@ -206,27 +206,51 @@ get_oob_acc                   <- function(trees) {
     stop("not all elements in 'trees' are of class 'Tree'")
   }
   
-  # [1] Calc the OOB ErrorRate
-  # 1-1 Get the OOB Predicitons - first as probability than convert to class!
-  oob_preds_prob <- lapply(trees, function(x){
+  # [1] Get the OOB Predicitons - first as probability than convert to class!
+  # 1-1 Get the trees, that are usable - not pruned in the first split_variable!
+  usable_trees <- sapply(trees, function(x) {
     
-    # Get the Predicted Probabilites [from each tree]
-    preds_prob <- x$predictOOB()
-    sapply(1:ncol(preds_prob), function(y) {
-      
-      # Convert the predicited probabilities to classes
-      # In case of ties between the classes - use the first class!
-      rownames(preds_prob)[which(preds_prob[,y] == max(preds_prob[,y]))[1]]
-    })
+    # Check whether the first split_var was pruned!
+    if (x$child_nodeIDs[1] == "pruned") {
+      return(FALSE)
+    } else {
+      return(TRUE)
+    }
   })
   
-  # 1-2 Compare predicted Classes with the true classes & get the error rate
+  # 1-2 Get the Index of the usable trees!
+  usable_trees <- which(usable_trees)
+  
+  # 1-2-1 If all the trees were pruned in the first node, we can not do
+  #       any OOB predictions --> OOB-Accuracy = 0
+  if (length(usable_trees) < 1) return(0)
+  
+  # 1-3 Loop over the remaining trees [that can create meaningful preds] 
+  #     & convert the probs to classes!
+  predicted_classes <- lapply(usable_trees, function(x) {
+    
+    # Get the OOB Predicitions as Probabilities!
+    prob_preds <- trees[[x]]$predictOOB()
+    
+    # For each OOB Prediciton [1 col each] get the class with the highest prob
+    # In case of tie, we use the first class as default!
+    sapply(1:ncol(prob_preds), function(y) {
+      rownames(prob_preds)[[which(prob_preds[,y] == max(prob_preds[,y]))[1]]]
+    })
+  })
+
+  # [2] Compare predicted Classes with the true classes & get the error rate
   #     every single tree does --> average them so we know how good the 
   #     predicitive power of this 'subRF' is!
-  Accuracy <- lapply(1:length(trees), function(x) {
+  Accuracy <- lapply(1:length(predicted_classes), function(x) {
+    
+    # Get the corresponding tree to the prediction 
+    # [which tree was used to get this prediction!]
+    curr_tree <- trees[[usable_trees[x]]]
+    
     # get true response and the predicted response!
-    true_resp <- trees[[x]]$data$subset(trees[[x]]$oob_sampleIDs  ,1)
-    predicted <- factor(oob_preds_prob[[x]], levels = levels(true_resp))
+    true_resp <- curr_tree$data$subset(curr_tree$oob_sampleIDs  ,1)
+    predicted <- factor(predicted_classes[[x]], levels = levels(true_resp))
     
     # use them to get a confusionmatrix and extract the Accuracy!
     confmat   <- caret::confusionMatrix(true_resp, predicted)
@@ -294,21 +318,24 @@ do_evaluation                 <- function(Forest, testdata, weighted) {
   testdata3 <- process_test_data(tree = Forest[[3]][[1]], test_data = testdata)
   testdata4 <- process_test_data(tree = Forest[[4]][[1]], test_data = testdata)
   
-  # [2] Get a prediction for every observation in TestData from all the tree
+  # [2] Get a prediction for every observation in TestData from all the trees
+  #     Obacht: the prediction is based on the amount of usable trees! 
+  #             --> this might reduce the forrest even to a single tree!
   tree1_pred <- get_pruned_prediction(trees = Forest[[1]], test_set = testdata1)
   tree2_pred <- get_pruned_prediction(trees = Forest[[2]], test_set = testdata2)
   tree3_pred <- get_pruned_prediction(trees = Forest[[3]], test_set = testdata3)
   tree4_pred <- get_pruned_prediction(trees = Forest[[4]], test_set = testdata4)
   
   # [3] If we want to create weighted ensemble of the predicitons, we need to
-  #     calc the OOB-Accuracy and per 'trees' and use these as weights!
+  #     calc the OOB-Accuracy per 'trees' and use these as weights!
   #     [lower ACC --> lower weight!]
   if (weighted) {
     trees1_acc <- round(get_oob_acc(Forest[[1]]), 2)
     trees2_acc <- round(get_oob_acc(Forest[[2]]), 2)
     trees3_acc <- round(get_oob_acc(Forest[[3]]), 2)
     trees4_acc <- round(get_oob_acc(Forest[[4]]), 2)
-    tree_weights <- c(trees1_acc, trees2_acc, trees3_acc, trees4_acc) 
+    # sum_all    <- sum(trees1_acc, trees2_acc, trees3_acc, trees4_acc)
+    tree_weights <- c(trees1_acc, trees2_acc, trees3_acc, trees4_acc)
   } else {
     tree_weights <- c(1, 1, 1, 1)
   }
