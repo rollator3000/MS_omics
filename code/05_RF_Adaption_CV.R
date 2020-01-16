@@ -561,7 +561,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
     
     # [3] Induce blockwise missingness [SCENARIO_1]
     # 3-1 Sample equally sized 'observed' blocks [according to SCENARIO_1]
-    set.seed(seed)
+    set.seed(seed + i)
     observed_blocks <- sample(c(rep("Clin, A", obs_per_fold$amount_train_fold), 
                                 rep("Clin, B", obs_per_fold$amount_train_fold),
                                 rep("Clin, C", obs_per_fold$amount_train_fold), 
@@ -570,7 +570,6 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
     
     # 3-2 Split Traindata into observed blocks! The resulting blocks will only
     #     contain the features, in the blocks!
-    #     A = cnv_block; B = rna_block; C = mutation_block; D = mirna_block!
     block1 <- train_df[which(observed_blocks == "Clin, A"), 
                        c(response, data$block_names$clin_block, data$block_names$cnv_block)]
     block2 <- train_df[which(observed_blocks == "Clin, B"), 
