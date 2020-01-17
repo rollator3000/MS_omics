@@ -1,10 +1,12 @@
 # A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
-This is the README to the repository of Frederik Ludwigs' Master-Thesis, supervised by: <br>
+This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
+***A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values*** <br> 
+supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
 ## Project description
-This project compares different adaptions of the RandomForest-Method to deal with blockwise missing data! A dataset with blockwise missingness, consists of different folds, where for each fold has different observed features - basically, it's like having different training-sets *(different observed features for each training-set)* for the same response! <br>
-In these settings imputation techniques are only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap! As this is often not the case we try to incorporate the different features from the different folds/ training-sets into a single RandomForest!
+This project compares different adaptions of the RandomForest-Method & other approaches to deal with blockwise missing data! A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response! *(different observed features for each training-set, where each trainingset has the same response value)*  <br>
+As in these settings imputation techniques are only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap, we try a new approach by trying to incorporate the different features from the different folds/ training-sets into a single RandomForest / Approach!
 
 **Example:**
 Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals do not necessarily collect the same features - in this setting the data from the different hospitals can be seen as the data from different folds - where none of the folds have the exact same feature space!
@@ -13,7 +15,6 @@ Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)
 - Hospital_2: Clinical + CopyNumberVariation Data
 - Hospital_3: Clinical + CopyNumberVariation + Mutation Data
 ```
-In this setting we compare different adaptions of the RandomForest algorithm to deal with these kind of settings without imputation *(often unreliable these settings)* <p/>
 For Details regarinding the methods, data situations etc. please have a look at: <br> 
      MasterThesis / code in repository
 
@@ -40,10 +41,14 @@ Short describtion of the scripts in './code'!
     creating trees, ....
 
 - 05_RF_Adaption_CV:
-    Code to CrossValidate the adjusted RF-Algorithm from Dr. Hornung
+    Code to CrossValidate the adjusted RF-Algorithm from Dr. Hornung for different
+    Training Settings & all possible combinations of blockwise missingness in 
+    the TestSet
 
 - 06_RF_Krautenbacher_CV:
-    Code to CrossValidate the adjusted RF-Algorithm from Dr. Krautenbacher
+    Code to CrossValidate the adjusted RF-Algorithm from Dr. Krautenbacher 
+    for different Training Settings & all possible combinations of blockwise 
+    missingness in the TestSet
 ```
 
 ## Project Organization
@@ -54,8 +59,8 @@ Short describtion of the scripts in './code'!
     │                         this repository
     │
     ├── code               <- Folder w/ all the R-Code needed to run this 
-    │   │                     repository! For an overview & details see 'Code'
-    │   │                     section in this README
+    │   │                     repository! For an overview see:
+    │   │                     'Code' section in this README
     │   │
     │   ├── get_data      <- Code from Dr. Hornung to preprocess and download 
     │   │                    multi-omics data used in this project!
@@ -72,8 +77,7 @@ Short describtion of the scripts in './code'!
     │   │   ├── example_data <- data used for investigation & adjusting code!
     │   │   | 
     │   │   └─ Dr_Hornung <- Clinical Omics-Data in preprocessed form, used
-    │   │      │             in this project! - Code to download and preprocess
-    │   │      │             by Dr.Hornung [also in './code/get_data'] 
+    │   │      │             in this project!
     │   │      │
     │   │      └─ Data/ProcessedData  <- processed data used in this project!
     │   │
@@ -91,12 +95,13 @@ Short describtion of the scripts in './code'!
     │   └── PDF            <- All sources that could be saved/ dowloaded as PDF
     │
     └── docs               <- Documents used within this repository! 
-        │                   Explainatory/ Describtive material, Notes etc.
+        │                      Explainatory/ Describtive material, Notes etc.
         │ 
-        ├ explorative_subsets <- Performance of a RF with differnt percent 
-        │                        of subsets! --> Explorative Results! To find
-        │                        out which blocks do need which subsets for 
-        │                        our project!
+        ├─ explorative_subsets <- Performance of a RF with differnt percent 
+        │                         of subsets! 
+        │                         --> Explorative Results! To find out which
+        │                             blocks do need which subsets for our 
+        │                             project!
         │
         └── performance_final_subsets <- RF Performance on the final subsetted DFs
                                          -> once for joint blocks
