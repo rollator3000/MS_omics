@@ -53,9 +53,9 @@ load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/
   # 1-3 Extract the colnames of the single blocks & save them in list:
   block_variables <- list("clin_block"     = colnames(clin_),
                           "cnv_block"      = colnames(cnv_sub),
-                          "mirna_block"    = colnames(mirna_sub),
+                          "rna_block"      = colnames(rna_sub),
                           "mutation_block" = colnames(mutation_sub),
-                          "rna_block"      = colnames(rna_sub))
+                          "mirna_block"    = colnames(mirna_sub))
   
   # [2] Return list with the df & the colnames of the single blocks ------------
   return(list("data" = df,
@@ -589,16 +589,38 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-a <- do_CV_NK_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda",
-                       response = "gender", seed = 1312, weighted = TRUE,
-                       num_trees = as.integer(10), mtry = NULL, 
+a <- do_CV_NK_setting1(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
+                       response = "gender", seed = 1312, weighted = FALSE,
+                       num_trees = as.integer(100), mtry = NULL, 
                        min_node_size = 10)
 end_time <- Sys.time()
 end_time - start_time # ~60 sek w/ 10 trees and mtry = NULL; min_node_size = 10
+                      # ~25 sek w/ 100 trees and mtry = NULL; min_node_size = 10
 
 sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$F1, 
                                                   a$res_all[[x]][[2]]$F1, 
                                                   a$res_all[[x]][[3]]$F1, 
                                                   a$res_all[[x]][[4]]$F1,
                                                   a$res_all[[x]][[5]]$F1),
+                                                na.rm = TRUE))
+
+sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$Sensitifity, 
+                                                  a$res_all[[x]][[2]]$Sensitifity, 
+                                                  a$res_all[[x]][[3]]$Sensitifity, 
+                                                  a$res_all[[x]][[4]]$Sensitifity,
+                                                  a$res_all[[x]][[5]]$Sensitifity),
+                                                na.rm = TRUE))
+
+sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$Specificity, 
+                                                  a$res_all[[x]][[2]]$Specificity, 
+                                                  a$res_all[[x]][[3]]$Specificity, 
+                                                  a$res_all[[x]][[4]]$Specificity,
+                                                  a$res_all[[x]][[5]]$Specificity),
+                                                na.rm = TRUE))
+
+sapply(names(a$res_all), FUN = function(x) mean(c(a$res_all[[x]][[1]]$Accuracy, 
+                                                  a$res_all[[x]][[2]]$Accuracy, 
+                                                  a$res_all[[x]][[3]]$Accuracy, 
+                                                  a$res_all[[x]][[4]]$Accuracy,
+                                                  a$res_all[[x]][[5]]$Accuracy),
                                                 na.rm = TRUE))
