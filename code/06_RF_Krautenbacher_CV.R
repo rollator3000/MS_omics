@@ -11,14 +11,14 @@ library(checkmate)
 load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
                                           seed = 1312, response = 'gender') {
   "Function to load (the already subsetted) data & returning 1 big DataFrame, 
-   of all single (already subsetted) blocks!
+   of all single blocks incl. the colnames to each block!
    
    Args:
-    - path (char)     : path to a DF w/ block structure! Shall contain
-                        'rna_subset', 'cnv_subset', 'mirna_subset', 'clin' & 'mutation_subset' block!
+    - path (char)     : path to a DF w/ block wise structure! 
+                        Shall contain 'rna_subset', 'cnv_subset', 'mirna_subset',
+                        'clin' & 'mutation_subset' block!
     - seed (int)      : seed, so the subsetting of single blocks is reproducable
     - response (char) : feature used as reponse class - must be in 'clin' block!
-                        and MUST be binary
    
    Return:
     list with 2 entrances:  
@@ -32,7 +32,7 @@ load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/
   load(path)
   if (any(!exists('clin_') & !exists('cnv_sub') & !exists('mirna_sub') & 
           !exists('mutation_sub') & !exists('rna_sub'))) {
-    stop("'path' led to a DF with missing block!")
+    stop("'path' led to a DF with at least one missing block!")
   }
   
   # 0-2 Check that the response is in the clincial block!
@@ -67,23 +67,24 @@ get_obs_per_fold              <- function(data) {
    --> This might lead to smaller testfolds than trainingfolds!
        
   Args:
-    - data (data.frame) : dataframe on which we want to do CV oon blockwise
+    - data (data.frame) : dataframe on which we want to do CV on blockwise
                           missingness patterns!
   Return:
     - list filled with:
-      -'amount_train':       amount of Observations used for Training in total!
+      - 'amount_train':      amount of Observations used for Training in total!
       - 'amount_train_fold': amount of Observations in each Trainfold!
       - 'amount_test':       amount of Observations in each Testfold
   "
   # [0] Check Inputs -----------------------------------------------------------
   assert_data_frame(data, min.rows = 1)
   
-  # [1] Get the amount of Obs. in each Trainings- & Testfold, so the Trainig-
-  #     folds have the same size!
-  #     Amount of trainig observations we use must be dividable by 4! 
-  #     Increase the amount of observations in trainingfolds by 1 & 
-  #     Reduce the amount of observations in testfold by 1 until, amount of 
-  #     observations in trainingfoldsis dividable by 4!
+  # [1] Calculat the amount of Obs. in Test & Train Fold -----------------------
+  #     Get the amount of Obs. in each Trainings- & Testfold, so the 
+  #     Trainigfolds have the same size!
+  #     Amount of trainig observations must be dividable by 4, so all folds
+  #     are equally sized! If this is not true increase the amount of obs. in 
+  #     trainingfolds by 1, as long as it is dividable by 4
+  #     The remaining obs. are used as TestSet
   # 1-1 Split to Train & Test
   amount_train <- floor(4/5 * nrow(data)) 
   
@@ -102,30 +103,40 @@ get_obs_per_fold              <- function(data) {
                     " Observations will be used for training --> ", 
                     amount_train_fold, " Observations per Trainingsfold"))
   
-  # [2] Return the amount of observations needed in each fold, to create equally
-  #     sized trainingfolds! ---------------------------------------------------
+  # [2] Return Train- / Test-fold sizes ----------------------------------------
   return(list("amount_train"      = amount_train,
               "amount_train_fold" = amount_train_fold,
               "amount_test"       = amount_test))
 }
 mcc_metric                    <- function(conf_matrix) {
-  "Function to calculate the MCC Metric
-   [MCC = Matthews correlation coefficient]
-   --> only for binary cases! If the Conf_Matrix has more than
-       2 classes it will return NULL instead of the MCC!
+  "Function to calculate the MCC [Matthews correlation coefficient] Metric
+   --> only for binary cases! If the Conf_Matrix has more than 2 classes 
+       it will return NULL instead of the MCC!
+       
+    Definition of the Metric:
+      MCC takes into account true and false positives and negatives and is 
+      generally regarded as a balanced measure which can be used even if the 
+      classes are of very different sizes.
        
     Args: 
       - conf_matrix (confusionMatrix) : Confusion Matrix created with the 
                                         'caret'-Package!
     Return: 
-      Matthews correlation coefficient [1 is best, 0 is worst!]
+      Matthews correlation coefficient [1 is best, -1 is worst!]
   "
+  # [0] Check Inputs -----------------------------------------------------------
+  # 0-1 check amount of classes:
   if (nrow(conf_matrix$table) != 2) {
     warning("Can not calc the MCC-Metric! Return NULL")
     return(NULL)
   }
   
+  # 0-2 Check class of conf_matrix
+  if (class(conf_matrix) != "confusionMatrix") {
+    stop("conf_matrix not of class 'confusionMatrix'")
+  }
   
+  # [1] Calc the Score ---------------------------------------------------------
   TP <- conf_matrix$table[1,1]
   TN <- conf_matrix$table[2,2]
   FP <- conf_matrix$table[1,2]
@@ -136,6 +147,8 @@ mcc_metric                    <- function(conf_matrix) {
     as.double((TP+FP))*as.double((TP+FN))*as.double((TN+FP))*as.double((TN+FN))
   
   mcc_final <- mcc_num/sqrt(mcc_den)
+  
+  # [2] Return it --------------------------------------------------------------
   return(mcc_final)
 }
 do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
@@ -169,7 +182,7 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
   # 1-1 Get the feas of the testdata and remove all trees using any feature 
   #     not in the testdata [--> can't do predicitons then!]
   test_cols     <- colnames(testdata)
-  forrest_to_rm <- sapply(Forest, FUN = function(x) !any(x$xvar.names %in% test_cols))
+  forrest_to_rm <- sapply(Forest, FUN = function(x) any(!(x$xvar.names %in% test_cols)))
   if (any(forrest_to_rm)) Forest <- Forest[-c(which(forrest_to_rm))]
   
   
@@ -214,8 +227,18 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
                                     reference = testdata[,1])
   
   # [5-2] Are under the ROC Curve
-  roc <- pROC::auc(pROC::roc(testdata[,1], prob_class0, 
-                             levels = levels(testdata[,1])))
+  # 5-2-1 ROC Curve with comparison in one direction
+  roc1 <- pROC::auc(pROC::roc(testdata[,1], prob_class0, 
+                              levels = levels(testdata[,1]), 
+                              direction = ">"))
+  
+  # 5-2-2 ROC Curve with comparison in the other direction
+  roc2 <- pROC::auc(pROC::roc(testdata[,1], prob_class0, 
+                              levels = levels(testdata[,1]), 
+                              direction = "<"))
+  
+  # 5-2-3 Average ROC Score
+  roc <- mean(c(as.numeric(roc1), as.numeric(roc2)))
   
   # [5-3] MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
@@ -240,6 +263,15 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
   
   return(as.vector(res))
 }
+
+data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData"
+response = "gender"
+seed = 1312
+weighted = TRUE
+num_trees = as.integer(10)
+mtry = NULL
+min_node_size = 10
+
 do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
                                           response = "gender", seed = 1312, weighted = TRUE,
                                           num_trees = as.integer(10), mtry = NULL, 
@@ -254,7 +286,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     each fold has an observed clinical block & an one observed omics block!
     Then we train a serperate RandomForest on  each of the feature blocks 
     [clin, omicsblock1,...] and ensemble the predicitons from these RFs to a 
-    single prediciton and rate these w/ Accuracy, Precision, Specifity, F1-Socre,....
+    single prediciton and rate these w/ Accuracy, Precision, F1-Socre,....
     The TestingSituations are different, as we can test the models on fully 
     observed testdata, on testdata w/ 1 missing block etc. etc.
     
@@ -402,27 +434,32 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     # 4-1 Clincal Block
     RF_clin <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                      data = clin_block, ntree = num_trees, mtry = mtry, 
-                     nodesize = min_node_size, samptype = "swr")
+                     nodesize = min_node_size, samptype = "swr",
+                     seed = seed)
     
     # 4-1-2 On CNV Block
     RF_cnv <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                     data = cnv_block, ntree = num_trees, mtry = mtry, 
-                    nodesize = min_node_size, samptype = "swr")
+                    nodesize = min_node_size, samptype = "swr",
+                    seed = seed)
     
      # 4-1-3 On RNA Block only
     RF_rna <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                     data = rna_block, ntree = num_trees, mtry = mtry, 
-                    nodesize = min_node_size, samptype = "swr")
+                    nodesize = min_node_size, samptype = "swr",
+                    seed = seed)
     
     # 4-1-4 On Mutation Block only
     RF_mutation <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                          data = mutation_block, ntree = num_trees, mtry = mtry, 
-                         nodesize = min_node_size, samptype = "swr")
+                         nodesize = min_node_size, samptype = "swr",
+                         seed = seed)
     
     # 4-1-5 On Mirna Block only
     RF_mirna <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
-                         data = mirna_block, ntree = num_trees, mtry = mtry, 
-                         nodesize = min_node_size, samptype = "swr")
+                      data = mirna_block, ntree = num_trees, mtry = mtry, 
+                      nodesize = min_node_size, samptype = "swr",
+                      seed = seed)
     
     # 4-2 Collect all single RFs to the Forest!
     Forest <- list(RF_clin, RF_cnv, RF_rna, RF_mutation, RF_mirna)
