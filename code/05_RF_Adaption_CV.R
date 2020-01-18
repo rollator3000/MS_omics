@@ -1491,8 +1491,8 @@ do_CV_setting3                <- function(data_path = "data/external/Dr_Hornung/
     train_ids <- fold_ids[-which(fold_ids %in% test_ids)]
     train_df  <- data$data[train_ids,]
     
-    # [3] Induce blockwise missingness [SCENARIO_2] 
-    # 3-1 Sample equally sized 'observed' blocks [according to SCENARIO_2]
+    # [3] Induce blockwise missingness [SCENARIO_3] 
+    # 3-1 Sample equally sized 'observed' blocks [according to SCENARIO_3]
     set.seed(seed + i)
     observed_blocks <- sample(c(rep("fold1", obs_per_fold$amount_train_fold), 
                                 rep("fold2", obs_per_fold$amount_train_fold),
@@ -2010,9 +2010,21 @@ do_CV_setting4                <- function(data_path = "data/external/Dr_Hornung/
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-a <- do_CV_setting1(data_path = "./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                    response = "gender", seed = 1312, weighted = TRUE,
-                    num_trees = as.integer(10), mtry = NULL, 
-                    min_node_size = NULL, unorderd_factors = "ignore")
+a1 <- do_CV_setting1(num_trees = as.integer(100))
 end_time <- Sys.time()
-end_time - start_time # --> 
+a1_time <- end_time - start_time 
+
+start_time <- Sys.time()
+a2 <- do_CV_setting2(num_trees = as.integer(100))
+end_time <- Sys.time()
+a2_time <- end_time - start_time 
+
+start_time <- Sys.time()
+a3 <- do_CV_setting3(num_trees = as.integer(100))
+end_time <- Sys.time()
+a3_time <- end_time - start_time 
+
+start_time <- Sys.time()
+a4 <- do_CV_setting4(num_trees = as.integer(100))
+end_^!time <- Sys.time()
+a4_time <- end_time - start_time 
