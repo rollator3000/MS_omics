@@ -714,7 +714,7 @@ do_CV_NK_setting2             <- function(data_path = "data/external/Dr_Hornung/
   # 2-3 Randomly assign the omics blocks to the letters 'A', 'B', 'C', 'D', 
   #     as SCEANRIO2, highly depens on which block is where!
   #     ['A' only observed in 1.fold, whereas 'D' is observed in all folds]
-  #     --> This is something, we do not want to do manually --> Randomly!
+  set.seed(seed)
   letter_feas <- sample(c("data$block_names$cnv_block", "data$block_names$rna_block", 
                           "data$block_names$mutation_block", "data$block_names$mirna_block"), 
                         4, replace = FALSE)
@@ -1042,14 +1042,16 @@ do_CV_NK_setting3             <- function(data_path = "data/external/Dr_Hornung/
   #     Randomly assign the 'observed' blocks to the 4 different folds!
   #     The Index of TRUE / FALSE are indicators, whether the blocks are observed
   #     [1] = clinical; [2] = CNV; [3] = RNA; [4] = Mutation; [5] = Mirna
-  #     NO SEED, to make it completly random! For reproduction, we save the 
-  #     the observed blocks per fold!
+  set.seed(seed)
   fold1_obs <- sample(c(TRUE, FALSE), size = 5, replace = T, prob = c(2/3, 1/3))
   names(fold1_obs) <- c("Clin", "A", "B", "C", "D")
+  set.seed(seed + 1)
   fold2_obs <- sample(c(TRUE, FALSE), size = 5, replace = T, prob = c(2/3, 1/3))
   names(fold2_obs) <- c("Clin", "A", "B", "C", "D")
+  set.seed(seed + 2)
   fold3_obs <- sample(c(TRUE, FALSE), size = 5, replace = T, prob = c(2/3, 1/3))
   names(fold3_obs) <- c("Clin", "A", "B", "C", "D")
+  set.seed(seed + 3)
   fold4_obs <- sample(c(TRUE, FALSE), size = 5, replace = T, prob = c(2/3, 1/3))
   names(fold4_obs) <- c("Clin", "A", "B", "C", "D")
   
@@ -1393,6 +1395,7 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
   # [3] Assign which of the omics blocks should belong together! ---------------
   #     Randomly sample the letters "cnv", "rna", "mutation" & "mirna" & 
   #     bind the first 2 together and the last 2!
+  set.seed(seed)
   blocks_together <- sample(c("cnv_block", "rna_block", "mutation_block", "mirna_block"),
                             size = 4, replace = F)
   
@@ -1511,22 +1514,26 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-a1 <- do_CV_NK_setting1(num_trees = as.integer(250))
+a1 <- do_CV_NK_setting1(num_trees = as.integer(250),
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a1_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a2 <- do_CV_NK_setting2(num_trees = as.integer(250))
+a2 <- do_CV_NK_setting2(num_trees = as.integer(250),
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a2_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a3 <- do_CV_NK_setting3(num_trees = as.integer(250))
+a3 <- do_CV_NK_setting3(num_trees = as.integer(250),
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a3_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a4 <- do_CV_NK_setting4(num_trees = as.integer(250))
+a4 <- do_CV_NK_setting4(num_trees = as.integer(250),
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a4_time <- end_time - start_time 
 
