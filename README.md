@@ -49,6 +49,10 @@ Short describtion of the scripts in './code'!
     Code to CrossValidate the adjusted RF-Algorithm from Dr. Krautenbacher 
     for different Training Settings & all possible combinations of blockwise 
     missingness in the TestSet
+
+- 07_Vizualize_results:
+    Code to plot the results of the different approaches!
+    [explorative results + real CV Results]
 ```
 
 ## Project Organization
@@ -97,15 +101,24 @@ Short describtion of the scripts in './code'!
     └── docs               <- Documents used within this repository! 
         │                      Explainatory/ Describtive material, Notes etc.
         │ 
-        ├─ explorative_subsets <- Performance of a RF with differnt percent 
-        │                         of subsets! 
-        │                         --> Explorative Results! To find out which
-        │                             blocks do need which subsets for our 
-        │                             project!
-        │
-        └── performance_final_subsets <- RF Performance on the final subsetted DFs
-                                         -> once for joint blocks
-                                            [all blocks as features to RF]
-                                         -> once for single blocks
-                                            [fit a seperate RF on each of the blocks!] 
---------
+        └─ CV_Res          <- Results of different CVs/ explorative subsetting 
+            │
+            └── gender    <- all results where gender was the response
+                  │
+                  ├── explorative  <- results from the subsetting, we did 
+                  │                   to find out which blocks predict how
+                  │                   strong!
+                  │
+                  ├── final_subsets <- RF Performance on the final subsetted DFs
+                  │                    [want to use them to CV new approaches]
+                  │                     -> once for joint blocks
+                  │                        [all blocks as features to RF]
+                  │                     -> once for single blocks
+                  │                        [fit a seperate RF on each of the blocks!] 
+                  │
+                  ├── Norbert_final_subsets <- Results w/ the approach from Norberts
+                  │                            RF Adjustment 
+                  │
+                  └── Roman_final_subsets   <- Results w/ the approach from Romans
+                                               RF Adjustment
+-------- 

@@ -11,6 +11,7 @@
 # Load Packages & define Functions!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis")
 library(randomForest)
+library(randomForestSRC)
 
 # [1] Create artifical DF for investigation                                  ----
 # 1-1 Load raw 'iris' data
@@ -104,18 +105,20 @@ for (DF in DFs_w_gender) {
 
 # [3] Get Test& OOB Performance on the subsetted DFs - JOINT BLOCKS          ----
 # 3-1 Table to save the results in
-eval_res <- data.frame("Data"  = character(),  "Dim"   = numeric(),    
-                       "OOB"   = numeric(),    "Test"  = numeric(),    
-                       "Time"  = numeric(), # in minutes
+eval_res <- data.frame("Data"     = character(), 
+                       "Dim"      = numeric(),   "OOB_Acc"  = numeric(),   
+                       "Test_Acc" = numeric(),   "Test_F1"  = numeric(), 
+                       "Time"     = numeric(), # min
                        stringsAsFactors = F)
+
 # 3-2 Define File- & Foldernames!
-DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
-                  "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
+DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
+                         "LGG", "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
-subset_folder <- "./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/"
+subset_folder       <- "./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/"
 
 # 3-3 Loop over the DFs, fit a RF & get the OOB- & Test-Error JOINT FEATURES
-for (df in DFs_w_gender_subset) {
+for (df in DFs_w_gender_subset) {  
   
   writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
   
@@ -128,59 +131,54 @@ for (df in DFs_w_gender_subset) {
                   eval(as.symbol(omics_blocks[5])))
   
   # 3-3-2 Use 10% as TestSubset!
-  test  <- DF_all[(round((nrow(DF_all)*0.8)) + 1):nrow(DF_all),]
-  train <- DF_all[1:round(nrow(DF_all)*0.8),]
+  set.seed(12345)
+  train_ind <- sample(x = seq_len(nrow(DF_all)), size = round(nrow(DF_all) * 0.8))
+  test_ind  <- which(!(1:nrow(DF_all) %in% train_ind))
+  train  <- DF_all[train_ind,]; test <- DF_all[test_ind,]
+  
+  # 3-3-2-1 Print dimension of TrainingDF
+  dim_train <- paste(dim(train), collapse = " x ")
+  print(paste("Dimension of Train-DF:", dim_train))
   
   # 3-3-3 Fit a model [standard settings] on the train DF & take the time:
   start        <- Sys.time()
-  curr_forrest <- randomForest(as.factor(gender) ~ ., data = train)
+  curr_forrest <- rfsrc(as.factor(gender) ~ ., data = train, seed = 123,
+                        ntree = 250)
   end          <- Sys.time()
   time_diff    <- difftime(end, start, units = 'mins')
   
   # 3-3-4 Evaluate the Model:
-  # OOB:      Get OOB Accuracy of each of the 500 trees and average it!
-  curr_OOB_ACC <- mean(1 - curr_forrest$err.rate[,1])
+  # OOB:      Get OOB Accuracy!
+  curr_OOB_ACC <- 1 - curr_forrest$err.rate[length(curr_forrest$err.rate)]
   
   # TESTSET:  Get the ErrorRates w/ TestSet
-  prediction   <- predict(curr_forrest, test)
+  prob_preds   <- predict(curr_forrest, test)$predicted
+  pred_class   <- ifelse(prob_preds > 0.5, 1, 0)
   truth        <- as.factor(test$gender)
-  res          <- cbind(prediction, truth)
+  pred_class   <- factor(pred_class, levels = levels(truth))
+  res          <- cbind(pred_class, truth)
   test_acc     <- sum(res[,1] == res[,2]) / nrow(res)
+  test_F1      <- caret::confusionMatrix(data      = pred_class, 
+                                         reference = truth)$byClass["F1"]
+  if (is.na(test_F1)) test_F1 <- 0 
   
   # 3-3-5 Add results of this block to the Results-DF!
-  dim_train <- paste(dim(DF_all), collapse = " x ")
   eval_res[nrow(eval_res) + 1, ] <- c(df, dim_train, curr_OOB_ACC, 
-                                      test_acc, time_diff)
-  
+                                      test_acc, test_F1, time_diff)
 }
 
-write.csv2(eval_res, "./docs/performance_final_subsets/joint_blocks_seed1234.csv",
+write.csv2(eval_res, "./docs/CV_Res/gender/performance_final_subsets/joint_blocks_seed1312.csv",
            row.names = FALSE)
 
-# 3-4 Analyse Results
-eval_res <- read.csv2("./docs/performance_final_subsets/joint_blocks_seed1234.csv", 
-                      stringsAsFactors = F)
-
-# 3-4-1 Convert type of features!
-cols_ <- c("OOB", "Test", "Time")
-eval_res[cols_] <- sapply(eval_res[cols_], as.numeric)
-eval_res$Data <- as.factor(eval_res$Data)
-
-# 3-4-2 Get average Test/OOB Accuracy  
-#       TEST
-TEST <- summary(eval_res$Test)
-#        OOB
-OOB <- summary(eval_res$OOB)
-
-# 3-4-3 General Overview of Performance on the single blocks!
-cbind(OOB, TEST)
 
 # [4] Get Test& OOB Performance on the subsetted DFs - SINGLE BLOCKS         ----
-# 4-1 Table to save the results in
-eval_res <- data.frame("Data"  = character(),  "Dim"   = numeric(),
-                       "Block" = character(),  "OOB"   = numeric(),    
-                       "Test"  = numeric(),    "Time"  = numeric(), # in minutes
+# 4-1 Empty DF - for all results of the Evaluation
+eval_res <- data.frame("Data"     = character(), "Block"    = numeric(), 
+                       "Dim"      = numeric(),   "OOB_Acc"  = numeric(),   
+                       "Test_Acc" = numeric(),   "Test_F1"  = numeric(), 
+                       "Time"     = numeric(), # min
                        stringsAsFactors = F)
+
 # 4-2 Define File- & Foldernames!
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
@@ -194,23 +192,23 @@ for (df in DFs_w_gender_subset) {
   
   # 4-3-1 Load 'df' & get names of the single blocks & extract response!
   omics_blocks <- load(paste0(subset_folder, df))
-  gender <- eval(as.symbol("clin_"))
-  gender <- gender$gender
+  gender <- eval(as.symbol("clin_"))["gender"]
   
   # 4-3-2 Loop over all blocks in 'omics_blocks' of current 'df'
-  for (curr_block in  omics_blocks) {
+  for (curr_block in omics_blocks) {
     
     writeLines(paste0("Current OmicsBlock: \n", curr_block))
     
     # 4-3-3 Bind gender from the clin block & the current omics block! 
     DF <- cbind(gender, eval(as.symbol(curr_block)))
-    
-    # 4-3-4 Convert to DF, and name the response variable
-    DF <- as.matrix(DF); colnames(DF)[1] <- "gender"
+    colnames(DF)[1] <- "gender"
+    DF <- as.data.frame(DF)
     
     # 4-3-5 Split to train and test set [80:20] 
-    test  <- DF[(round((nrow(DF)*0.8)) + 1):nrow(DF),]
-    train <- DF[1:round(nrow(DF)*0.8),]
+    set.seed(12345)
+    train_ind <- sample(x = seq_len(nrow(DF)), size = round(nrow(DF) * 0.8))
+    test_ind  <- which(!(1:nrow(DF) %in% train_ind))
+    train  <- DF[train_ind,]; test <- DF[test_ind,]
     
     # 4-3-6 Print dimension of TrainingDF
     dim_train <- paste(dim(train), collapse = " x ")
@@ -218,52 +216,32 @@ for (df in DFs_w_gender_subset) {
     
     # 4-3-7 Fit a model [standard settings] on the train DF & take the time:
     start        <- Sys.time()
-    curr_forrest <- randomForest(as.factor(gender) ~ ., data = train)
+    curr_forrest <- rfsrc(as.factor(gender) ~ ., data = train, seed = 123,
+                          ntree = 250)
     end          <- Sys.time()
     time_diff    <- difftime(end, start, units = 'mins')
     
     # 4-3-8 Evaluate the Model:
     # OOB:      Get OOB Accuracy of each of the 500 trees and average it!
-    curr_OOB_ACC <- mean(1 - curr_forrest$err.rate[,1])
+    curr_OOB_ACC <- 1 - curr_forrest$err.rate[length(curr_forrest$err.rate)]
     
     # TESTSET:  Get the ErrorRates w/ TestSet
-    prediction   <- predict(curr_forrest, test)
-    truth        <- as.factor(test[,1])
-    res          <- cbind(prediction, truth)
+    prob_preds   <- predict(curr_forrest, test)$predicted
+    pred_class   <- ifelse(prob_preds > 0.5, 1, 0)
+    truth        <- as.factor(test$gender)
+    pred_class   <- factor(pred_class, levels = levels(truth))
+    res          <- cbind(pred_class, truth)
     test_acc     <- sum(res[,1] == res[,2]) / nrow(res)
+    test_F1      <- caret::confusionMatrix(data      = pred_class, 
+                                           reference = truth)$byClass["F1"]
+    if (is.na(test_F1)) test_F1 <- 0
     
     # 4-3-9 Add results of this block to the Results-DF!
     eval_res[nrow(eval_res) + 1, ] <- c(df, dim_train, curr_block, curr_OOB_ACC, 
-                                        test_acc, time_diff)
+                                        test_acc, test_F1, time_diff)
     
   }
-  
-  
 }
 
-write.csv2(eval_res, "./docs/performance_final_subsets/single_blocks_seed1234.csv",
+write.csv2(eval_res, "./docs/CV_Res/gender/performance_final_subsets/single_blocks_seed1234.csv",
            row.names = FALSE)
-
-# 4-4 Analyse the Results
-eval_res <- read.csv2("./docs/performance_final_subsets/single_blocks_seed1234.csv", 
-                      stringsAsFactors = F)
-
-# 4-4-1 Convert type of features!
-cols_ <- c("OOB", "Test", "Time")
-eval_res[cols_] <- sapply(eval_res[cols_], as.numeric)
-eval_res$Data <- as.factor(eval_res$Data)
-
-# 4-4-2 Get average Test/OOB Accuracy  
-#       TEST
-TEST <- sapply(unique(eval_res$Block),
-               FUN = function(x) summary(eval_res$Test[eval_res$Block == x]))
-#        OOB
-OOB <- sapply(unique(eval_res$Block),
-              FUN = function(x) summary(eval_res$OOB[eval_res$Block == x]))
-
-# 4-4-3 Apply meaningful names and check the data
-colnames(OOB)  <- paste0(colnames(OOB), "_oob")
-colnames(TEST) <- paste0(colnames(TEST), "_test")
-
-# 4-4-4 General Overview of Performance on the single blocks!
-cbind(OOB, TEST)

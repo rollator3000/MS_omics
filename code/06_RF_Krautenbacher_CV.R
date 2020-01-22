@@ -1515,25 +1515,25 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
 a1 <- do_CV_NK_setting1(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
 end_time <- Sys.time()
 a1_time <- end_time - start_time 
 
 start_time <- Sys.time()
 a2 <- do_CV_NK_setting2(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
 end_time <- Sys.time()
 a2_time <- end_time - start_time 
 
 start_time <- Sys.time()
 a3 <- do_CV_NK_setting3(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
 end_time <- Sys.time()
 a3_time <- end_time - start_time 
 
 start_time <- Sys.time()
 a4 <- do_CV_NK_setting4(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
 end_time <- Sys.time()
 a4_time <- end_time - start_time 
 
@@ -1543,6 +1543,13 @@ sapply(names(a1$res_all), FUN = function(x) mean(c(a1$res_all[[x]][[1]]$F1,
                                                   a1$res_all[[x]][[4]]$F1,
                                                   a1$res_all[[x]][[5]]$F1),
                                                 na.rm = TRUE))
+
+sapply(names(a1$res_all), FUN = function(x) mean(c(a1$res_all[[x]][[1]]$Accuracy, 
+                                                   a1$res_all[[x]][[2]]$Accuracy, 
+                                                   a1$res_all[[x]][[3]]$Accuracy, 
+                                                   a1$res_all[[x]][[4]]$Accuracy,
+                                                   a1$res_all[[x]][[5]]$Accuracy),
+                                                 na.rm = TRUE))
 
 sapply(names(a2$res_all), FUN = function(x) mean(c(a2$res_all[[x]][[1]]$F1, 
                                                    a2$res_all[[x]][[2]]$F1, 
