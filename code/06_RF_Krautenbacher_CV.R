@@ -1535,39 +1535,38 @@ start_time <- Sys.time()
 a4 <- do_CV_NK_setting4(num_trees = as.integer(250),
                         data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
 end_time <- Sys.time()
-a4_time <- end_time - start_time 
+a4_time <- end_time - start_time
 
-sapply(names(a1$res_all), FUN = function(x) mean(c(a1$res_all[[x]][[1]]$F1, 
-                                                  a1$res_all[[x]][[2]]$F1, 
-                                                  a1$res_all[[x]][[3]]$F1, 
-                                                  a1$res_all[[x]][[4]]$F1,
-                                                  a1$res_all[[x]][[5]]$F1),
-                                                na.rm = TRUE))
 
-sapply(names(a1$res_all), FUN = function(x) mean(c(a1$res_all[[x]][[1]]$Accuracy, 
-                                                   a1$res_all[[x]][[2]]$Accuracy, 
-                                                   a1$res_all[[x]][[3]]$Accuracy, 
-                                                   a1$res_all[[x]][[4]]$Accuracy,
-                                                   a1$res_all[[x]][[5]]$Accuracy),
-                                                 na.rm = TRUE))
+res_all <- list(a1, a2, a3, a4)
+save(res_all, file = "./docs/CV_Res/gender/Norbert_final_subsets/1312_subset.RData")
 
-sapply(names(a2$res_all), FUN = function(x) mean(c(a2$res_all[[x]][[1]]$F1, 
-                                                   a2$res_all[[x]][[2]]$F1, 
-                                                   a2$res_all[[x]][[3]]$F1, 
-                                                   a2$res_all[[x]][[4]]$F1,
-                                                   a2$res_all[[x]][[5]]$F1),
-                                                 na.rm = TRUE))
 
-sapply(names(a3$res_all), FUN = function(x) mean(c(a3$res_all[[x]][[1]]$F1, 
-                                                   a3$res_all[[x]][[2]]$F1, 
-                                                   a3$res_all[[x]][[3]]$F1, 
-                                                   a3$res_all[[x]][[4]]$F1,
-                                                   a3$res_all[[x]][[5]]$F1),
-                                                 na.rm = TRUE))
 
-sapply(names(a4$res_all), FUN = function(x) mean(c(a4$res_all[[x]][[1]]$F1, 
-                                                   a4$res_all[[x]][[2]]$F1, 
-                                                   a4$res_all[[x]][[3]]$F1, 
-                                                   a4$res_all[[x]][[4]]$F1,
-                                                   a4$res_all[[x]][[5]]$F1),
-                                                 na.rm = TRUE))
+# -------------------------------------------------- 1234 seed no2
+start_time <- Sys.time()
+a1 <- do_CV_NK_setting1(num_trees = as.integer(250), seed = 1234,
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+end_time <- Sys.time()
+a1_time <- end_time - start_time 
+
+start_time <- Sys.time()
+a2 <- do_CV_NK_setting2(num_trees = as.integer(250), seed = 1234,
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+end_time <- Sys.time()
+a2_time <- end_time - start_time 
+
+start_time <- Sys.time()
+a3 <- do_CV_NK_setting3(num_trees = as.integer(250), seed = 1234,
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+end_time <- Sys.time()
+a3_time <- end_time - start_time 
+
+start_time <- Sys.time()
+a4 <- do_CV_NK_setting4(num_trees = as.integer(250), seed = 1234,
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+end_time <- Sys.time()
+a4_time <- end_time - start_time
+
+res_all2 <- list(a1, a2, a3, a4)
+save(res_all2, file = "./docs/CV_Res/gender/Norbert_final_subsets/1234_subset.RData")

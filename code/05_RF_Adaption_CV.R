@@ -2013,24 +2013,24 @@ do_CV_setting4                <- function(data_path = "data/external/Dr_Hornung/
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-a1 <- do_CV_setting1(num_trees = as.integer(250), seed = 1234)
+set_1 <- do_CV_setting1(num_trees = as.integer(250), seed = 1312)
 end_time <- Sys.time()
 a1_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a2 <- do_CV_setting2(num_trees = as.integer(250), seed = 1234)
+set_2 <- do_CV_setting2(num_trees = as.integer(250), seed = 1312)
 end_time <- Sys.time()
 a2_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a3 <- do_CV_setting3(num_trees = as.integer(250), seed = 1234)
+set_3 <- do_CV_setting3(num_trees = as.integer(250), seed = 1312)
 end_time <- Sys.time()
 a3_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a4 <- do_CV_setting4(num_trees = as.integer(250), seed = 1234)
+set_4 <- do_CV_setting4(num_trees = as.integer(250), seed = 1312)
 end_time <- Sys.time()
 a4_time <- end_time - start_time
 
-all_res_roman <- list(a1, a2, a3, a4)
+all_res_roman <- list(set_1, set_2, set_3, set_4)
 save(all_res_roman, file = "Roman_1312seed_res_for_sublime.RData")
