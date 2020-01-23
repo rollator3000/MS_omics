@@ -436,18 +436,11 @@ do_evaluation                 <- function(Forest, testdata, weighted) {
                                     reference = testdata[,1])
   
   # 5-2 Are under the ROC Curve
-  # 5-2-1 ROC Curve with comparison in one direction
-  roc1 <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
-                        levels = levels(Forest[[1]][[1]]$data$data[,1]), 
-                        direction = ">"))
-  
-  # 5-2-2 ROC Curve with comparison in the other direction
-  roc2 <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
-                              levels = levels(Forest[[1]][[1]]$data$data[,1]), 
-                              direction = "<"))
-  
-  # 5-2-3 Average ROC Score
-  roc <- mean(c(as.numeric(roc1), as.numeric(roc2)))
+  #     Select 'direction = "auto"' and it will choose the class to be positive
+  #     automatically!
+  roc <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
+                             levels = levels(Forest[[1]][[1]]$data$data[,1]), 
+                             direction = "auto"))
   
   # 5-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
