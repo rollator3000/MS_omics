@@ -6,15 +6,20 @@ supervised by: <br>
 
 ## Project description
 This project compares different adaptions of the RandomForest-Method & other approaches to deal with blockwise missing data! A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response! *(different observed features for each training-set, where each trainingset has the same response value)*  <br>
-As in these settings imputation techniques are only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap, we try a new approach by trying to incorporate the different features from the different folds/ training-sets into a single RandomForest / Approach!
+As in these settings imputation technique are only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap, we try a new approach by trying to incorporate the different features from the different folds/ training-sets into a single RandomForest / Approach! Neverless we will also use one Method to impute the missing values and compare the performance to this approach!
 
 **Example:**
-Different hospitals do reseach regarding the same response *(e.g. Breast Cancer)*, but the different hospitals do not necessarily collect the same features - in this setting the data from the different hospitals can be seen as the data from different folds - where none of the folds have the exact same feature space!
+Different hospitals do reseach regarding the same response *(e.g. different Cancertypes)*, but the different hospitals do not necessarily collect the same features - in this setting the data from the different hospitals can be seen as the data from different folds - where none of the folds have the exact same feature space!
 ``` 
 - Hospital_1: Clinical + RNA Data
 - Hospital_2: Clinical + CopyNumberVariation Data
 - Hospital_3: Clinical + CopyNumberVariation + Mutation Data
 ```
+Now it would benefical to create a model, that uses all of the avaible features for the different folds! <br>
+RandomForest(Cancertype ~ Clinical + RNA + CopyNumberVariation + Mutation) <br>
+Besides taking features, which are not observed for all observations, the model should also be able to predict on testobs, that have all blocks as features, or just 1 block, or a combination of 2 blocks that were not avaible in the training data *(e.g. testdata with RNA + Clinical + CopyNumberVariation)*
+
+
 For Details regarinding the methods, data situations etc. please have a look at: <br> 
      MasterThesis / code in repository
 
