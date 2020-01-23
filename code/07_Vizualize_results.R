@@ -294,10 +294,10 @@ DF2 <- eval(as.symbol(DF2))
 
 # 1-3 Extract the Metrics and TestSetting as desired:
 # 1-3-1 ACCURACY
-curr_res      <- unpack_list_res(x = DF1, metric = "F1", trainsetting = 1)
+curr_res      <- unpack_list_res(x = DF1, metric = "F1", trainsetting = 2)
 curr_res$seed <- "1234"
 
-curr_res2      <- unpack_list_res(x = DF2, metric = "F1", trainsetting = 1)
+curr_res2      <- unpack_list_res(x = DF2, metric = "F1", trainsetting = 2)
 curr_res2$seed <- "1312"
 
 

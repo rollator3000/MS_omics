@@ -115,7 +115,7 @@ eval_res <- data.frame("Data"     = character(),
 DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                          "LGG", "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
-subset_folder       <- "./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/"
+subset_folder       <- "./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/"
 
 # 3-3 Loop over the DFs, fit a RF & get the OOB- & Test-Error JOINT FEATURES
 for (df in DFs_w_gender_subset) {  
@@ -142,7 +142,7 @@ for (df in DFs_w_gender_subset) {
   
   # 3-3-3 Fit a model [standard settings] on the train DF & take the time:
   start        <- Sys.time()
-  curr_forrest <- rfsrc(as.factor(gender) ~ ., data = train, seed = 123,
+  curr_forrest <- rfsrc(as.factor(gender) ~ ., data = train, seed = 1312,
                         ntree = 250)
   end          <- Sys.time()
   time_diff    <- difftime(end, start, units = 'mins')
@@ -167,7 +167,7 @@ for (df in DFs_w_gender_subset) {
                                       test_acc, test_F1, time_diff)
 }
 
-write.csv2(eval_res, "./docs/CV_Res/gender/performance_final_subsets/joint_blocks_seed1312.csv",
+write.csv2(eval_res, "./docs/CV_Res/gender/performance_final_subsets/joint_blocks_DFseed1234.csv",
            row.names = FALSE)
 
 
@@ -183,7 +183,7 @@ eval_res <- data.frame("Data"     = character(), "Block"    = numeric(),
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
-subset_folder <- "./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/"
+subset_folder <- "./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/"
 
 # 4-3 Loop over the DFs, fit a RF & get the OOB- & Test-Error SINGLE BLOCK FEAS
 for (df in DFs_w_gender_subset) {
@@ -216,7 +216,7 @@ for (df in DFs_w_gender_subset) {
     
     # 4-3-7 Fit a model [standard settings] on the train DF & take the time:
     start        <- Sys.time()
-    curr_forrest <- rfsrc(as.factor(gender) ~ ., data = train, seed = 123,
+    curr_forrest <- rfsrc(as.factor(gender) ~ ., data = train, seed = 1312,
                           ntree = 250)
     end          <- Sys.time()
     time_diff    <- difftime(end, start, units = 'mins')
@@ -243,5 +243,5 @@ for (df in DFs_w_gender_subset) {
   }
 }
 
-write.csv2(eval_res, "./docs/CV_Res/gender/performance_final_subsets/single_blocks_seed1234.csv",
+write.csv2(eval_res, "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed1312.csv",
            row.names = FALSE)

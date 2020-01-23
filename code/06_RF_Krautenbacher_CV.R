@@ -945,6 +945,7 @@ do_CV_NK_setting3             <- function(data_path = "data/external/Dr_Hornung/
       - response (char)     : The repsonse we want to model - 
                               MUST be in the 'clin'-block!
       - seed (int)          : Seed to keep results reproducible
+                              needed when the tree is fit!
       - weighted (bool)     : Shall the predicitons from the different blocks be
                               weighted by the oob accuracy of the blocks?!
       - num_trees (int)     : amount of trees, we shall grow on each[!] fold
@@ -1305,6 +1306,7 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
       - response (char)     : The repsonse we want to model - 
                               MUST be in the 'clin'-block!
       - seed (int)          : Seed to keep results reproducible
+                              needed when the tree is fit!
       - weighted (bool)     : Shall the predicitons from the different blocks be
                               weighted by the oob accuracy of the blocks?!
       - num_trees (int)     : amount of trees, we shall grow on each[!] fold
@@ -1545,26 +1547,26 @@ save(res_all, file = "./docs/CV_Res/gender/Norbert_final_subsets/1312_subset.RDa
 
 # -------------------------------------------------- 1234 seed no2
 start_time <- Sys.time()
-a1 <- do_CV_NK_setting1(num_trees = as.integer(250), seed = 1234,
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+a1 <- do_CV_NK_setting1(num_trees = as.integer(250),
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a1_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a2 <- do_CV_NK_setting2(num_trees = as.integer(250), seed = 1234,
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+a2 <- do_CV_NK_setting2(num_trees = as.integer(250),
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a2_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a3 <- do_CV_NK_setting3(num_trees = as.integer(250), seed = 1234,
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+a3 <- do_CV_NK_setting3(num_trees = as.integer(250),
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a3_time <- end_time - start_time 
 
 start_time <- Sys.time()
-a4 <- do_CV_NK_setting4(num_trees = as.integer(250), seed = 1234,
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData")
+a4 <- do_CV_NK_setting4(num_trees = as.integer(250), 
+                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1312/KIRC_Subset.RData")
 end_time <- Sys.time()
 a4_time <- end_time - start_time
 
