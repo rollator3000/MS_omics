@@ -1505,7 +1505,6 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
               "settings" = settings))
 }
 
-
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
 a1 <- do_CV_NK_setting1(num_trees = as.integer(250),
