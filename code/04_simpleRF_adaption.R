@@ -873,7 +873,7 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
   #     x$unordered_factors <- unordered_factors
   #     x$data              <- Data$new(data = model.data)
   #   })
-  # } else if (treetype == "Survival") { # TO - DO TO - DO TO - DO TO - DO TO - DO TO - DO TO - DO TO - DO TO - DO TO - DO TO - DO
+  # } else if (treetype == "Survival") { 
   #   idx.death <- model.data[, 1][, 2] == 1
   #   timepoints <- sort(unique(model.data[idx.death, 1][, 1]))
   #   forest <- ForestSurvival$new(num_trees = as.integer(num_trees), mtry = as.integer(mtry), 

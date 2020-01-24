@@ -232,8 +232,10 @@ for (seed in seeds) {
     writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
     
     # 4-3-1 Load 'df' & get names of the single blocks & extract response!
+    #       + remove response from clinical block!
     omics_blocks <- load(paste0(subset_folder, df))
     resp         <- as.factor(clin_$gender)
+    clin_$gender <- NULL
     
     # 4-3-2 Loop over all blocks in 'omics_blocks' of current 'df'
     for (curr_block in omics_blocks) {
@@ -241,7 +243,7 @@ for (seed in seeds) {
       writeLines(paste0("Current OmicsBlock: \n", curr_block))
       
       # 4-3-3 Bind gender from the clin block & the current omics block
-      #       and make response to be a factor!
+      #       and make response to be a factor
       DF     <- cbind(resp, eval(as.symbol(curr_block)))
       DF     <- as.data.frame(DF)
       DF[,1] <- as.factor(DF[,1])

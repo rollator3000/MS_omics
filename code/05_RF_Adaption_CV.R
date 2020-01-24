@@ -28,7 +28,6 @@ load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/
     - path (char)     : path to a DF w/ block wise structure! 
                         Shall contain 'rna_subset', 'cnv_subset', 'mirna_subset',
                         'clin' & 'mutation_subset' block!
-    - seed (int)      : seed, so the subsetting of single blocks is reproducable
     - response (char) : feature used as reponse class - must be in 'clin' block!
                         + MUST be binary - else it will throw an error!
    
@@ -510,7 +509,7 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
         
         # Get the oob F1 of the current tree
         curr_oob_f1     <- round(get_oob_F1(trees = Forest[[i]]), 3)
-        tree_weights[i] <- curr_oob_acc
+        tree_weights[i] <- curr_oob_f1
         
         sum_all <- sum_all + curr_oob_f1
       }
@@ -2260,22 +2259,26 @@ do_CV_setting4                <- function(data_path = "data/external/Dr_Hornung/
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-set_1 <- do_CV_setting1(num_trees = as.integer(250), seed = 1312)
+set_1 <- do_CV_setting1(num_trees = as.integer(250),
+                        weight_metric = "Acc")
 end_time <- Sys.time()
 a1_time <- end_time - start_time 
 
 start_time <- Sys.time()
-set_2 <- do_CV_setting2(num_trees = as.integer(250), seed = 1312)
+set_2 <- do_CV_setting2(num_trees = as.integer(250),
+                        weight_metric = "Acc")
 end_time <- Sys.time()
 a2_time <- end_time - start_time 
 
 start_time <- Sys.time()
-set_3 <- do_CV_setting3(num_trees = as.integer(250), seed = 1312)
+set_3 <- do_CV_setting3(num_trees = as.integer(250),
+                        weight_metric = "Acc")
 end_time <- Sys.time()
 a3_time <- end_time - start_time 
 
 start_time <- Sys.time()
-set_4 <- do_CV_setting4(num_trees = as.integer(250), seed = 1312)
+set_4 <- do_CV_setting4(num_trees = as.integer(250),
+                        weight_metric = "Acc")
 end_time <- Sys.time()
 a4_time <- end_time - start_time
 
