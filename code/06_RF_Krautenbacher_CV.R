@@ -1654,8 +1654,6 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
       weights <- c(weights, single_CL[[i + 1]][[weight_metric]])
       weights <- c(weights, single_A[[i + 1]][[weight_metric]])
       weights <- c(weights, single_B[[i + 1]][[weight_metric]])
-      weights <- c(weights, single_C[[i + 1]][[weight_metric]])
-      weights <- c(weights, single_D[[i + 1]][[weight_metric]])
     } else {
       weights <- rep(1, times = 5)
     }
@@ -1706,7 +1704,7 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
 start_time <- Sys.time()
 a1 <- do_CV_NK_setting1(num_trees = as.integer(250),
                         data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                        weighting = TRUE, weight_metric = "F1")
+                        weighted = TRUE, weight_metric = "F1")
 end_time <- Sys.time()
 a1_time <- end_time - start_time 
 
@@ -1720,14 +1718,14 @@ a2_time <- end_time - start_time
 start_time <- Sys.time()
 a3 <- do_CV_NK_setting3(num_trees = as.integer(250),
                         data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                        weighting = TRUE, weight_metric = "F1")
+                        weighted = TRUE, weight_metric = "F1")
 end_time <- Sys.time()
 a3_time <- end_time - start_time 
 
 start_time <- Sys.time()
 a4 <- do_CV_NK_setting4(num_trees = as.integer(250),
                         data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                        weighting = TRUE, weight_metric = "F1")
+                        weighted = TRUE, weight_metric = "F1")
 end_time <- Sys.time()
 a4_time <- end_time - start_time
 
