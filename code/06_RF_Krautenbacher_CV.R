@@ -9,7 +9,7 @@ library(randomForestSRC)
 library(checkmate)
 
 load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                                         seed = 1312, response = 'gender') {
+                                          response = 'gender') {
   "Function to load (the already subsetted) data & returning 1 big DataFrame, 
    of all single blocks incl. the colnames to each block!
    
@@ -17,7 +17,6 @@ load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/
     - path (char)     : path to a DF w/ block wise structure! 
                         Shall contain 'rna_subset', 'cnv_subset', 'mirna_subset',
                         'clin' & 'mutation_subset' block!
-    - seed (int)      : seed, so the subsetting of single blocks is reproducable
     - response (char) : feature used as reponse class - must be in 'clin' block!
                         + MUST be binary - else it will throw an error!
    
@@ -44,9 +43,6 @@ load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/
     stop("The selected Response doesn't have 2 levels! 
          Please choose a binary response from the 'clin'-block!")
   }
-  
-  # 0-3 Check the 'seed' argument!
-  if (seed %% 1 != 0 ) stop("'seed' must be an integer!")
   
   # [1] Create single DF -------------------------------------------------------
   # 1-1 Extract the response from the clinical block & rm tehe col from the df
@@ -160,7 +156,7 @@ mcc_metric                    <- function(conf_matrix) {
   # [2] Return it --------------------------------------------------------------
   return(mcc_final)
 }
-do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
+do_evaluation_rfsrc           <- function(Forest, testdata, weights) {
   " Get the aggregated predicition from all trees!
     Evaluate the aggregated predicitons & return metrics!
   
@@ -169,9 +165,14 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
       - testdata (data.frame) : testdata we want to get predicitons for!
                                 Must conatain the response we learned the Forest
                                 on in the first column!
-      - weighted (bool)       : Shall the predicitons from the different RFs
-                                be weighted according to their accuracy?!
-                                [higher Acc --> higher weight!]
+      - weights (vector)      : The weights for the different BlockWise RFs!
+                                As some of the blockwise RFs (in Forest) have a 
+                                higher Accuracy/ F1/ ... than others, it means
+                                that they have a higher predictive power!
+                                  --> give weights to them!
+                                  --> if we want equally weighted blocks, pass
+                                      a vector filled w/ '1'
+                                --> needs same length as Forest!
       
      Return:
       - list w/ metrics [accuracy, f1, ...]
@@ -186,13 +187,25 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
   if (any(sapply(Forest, FUN = function(x) !("rfsrc" %in% class(x))))) {
     stop("not all elements in 'Forest' are of class 'rfsrc'")
   }
+  
+  # 0-3 weights should be vector of exactly the length of 'Forest'
+  assert_vector(weights, len = length(Forest))
+  if (any(sapply(weights, function(x) !is.numeric(x)))) {
+    print("'weights:\n")
+    print(weights)
+    stop("'weights' is not only filled with numerics!")
+  }
 
-  # [1] Remove Trees, that use split variables not avaible in the testdata! ----
-  # 1-1 Get the feas of the testdata and remove all trees using any feature 
+  # [1] Remove RFs, that use split variables not avaible in the testdata!  ----
+  # 1-1 Get the feas of the testdata and remove all RFs using any feature 
   #     not in the testdata [--> can't do predicitons then!]
+  #     ---> remove the corresponding weights to the RFs we removed
   test_cols     <- colnames(testdata)
   forrest_to_rm <- sapply(Forest, FUN = function(x) any(!(x$xvar.names %in% test_cols)))
-  if (any(forrest_to_rm)) Forest <- Forest[-c(which(forrest_to_rm))]
+  if (any(forrest_to_rm)) {
+    Forest  <- Forest[-c(which(forrest_to_rm))]
+    weights <- weights[-c(which(forrest_to_rm))]
+  } 
   
   
   # 1-2 Check whether there are any forrests left to do predicitons with 
@@ -200,18 +213,7 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
   if (length(Forest) < 1) stop("Forest can not predicit on TestData, as all 
                                 trees use split vars not avaible in 'testdata'")
   
-  print(paste(sum(forrest_to_rm), "RFs had to be removed from 'Forest', as these use splitvars, not in 'testdata'"))
-  
-  # 1-3 Get the OOB-Accuracy of the remaining trees - if weighted is activated
-  # 1-3-1 Initial the list!
-  weights <- rep(1, times = length(Forest))
-  if (weighted) {
-    for (i in 1:length(Forest)) {
-      weights[i] <- 1 - Forest[[i]]$err.rate[nrow(Forest[[i]]$err.rate), 1]
-    }
-    # normalize the weights!
-    weights <- weights / sum(weights)
-  }
+  print(paste0(sum(forrest_to_rm), "/5 blockwise RFs had to be removed from 'Forest', as these use splitvars, not in 'testdata'"))
   
   # [2] Use the remaining trees to create a prediciton -------------------------
   predicitions <- lapply(Forest, FUN = function(x) predict(x, testdata))
@@ -246,15 +248,15 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
   mcc <- mcc_metric(conf_matrix = confmat)
   
   # [6] Create a list to collect the results!
-  res = list("Accuracy"    = confmat$overall["Accuracy"],
-             "Sensitifity" = confmat$byClass["Sensitivity"],
-             "Specificity" = confmat$byClass["Specificity"],
-             "Precision"   = confmat$byClass["Precision"],
-             "Recall"      = confmat$byClass["Recall"],
-             "F1"          = confmat$byClass["F1"],
-             "Balance_Acc" = confmat$byClass["Balanced Accuracy"],
-             "AUC"         = as.numeric(roc),
-             "MCC"         = mcc)
+  res <- list("Accuracy"    = confmat$overall["Accuracy"],
+              "Sensitifity" = confmat$byClass["Sensitivity"],
+              "Specificity" = confmat$byClass["Specificity"],
+              "Precision"   = confmat$byClass["Precision"],
+              "Recall"      = confmat$byClass["Recall"],
+              "F1"          = confmat$byClass["F1"],
+              "Balance_Acc" = confmat$byClass["Balanced Accuracy"],
+              "AUC"         = as.numeric(roc),
+              "MCC"         = mcc)
   
   # 6-1 If the F1-Score/ Precision/ Recall is NA, then we set it to 0 [-1 for MCC]! 
   if (is.na(res$F1))        res$F1        <- 0
@@ -265,7 +267,8 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weighted) {
   return(as.vector(res))
 }
 do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                                          response = "gender", seed = 1312, weighted = TRUE,
+                                          response = "gender", seed = 1312, 
+                                          weighted = TRUE, weight_metric = NULL,
                                           num_trees = as.integer(10), mtry = NULL, 
                                           min_node_size = 10) {
   
@@ -290,9 +293,16 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
                               [details see 'create_data()']
       - response (char)     : The repsonse we want to model - 
                               MUST be in the 'clin'-block!
-      - seed (int)          : Seed to keep results reproducible
+      - seed (int)          : Needed for shuffeling the rows of data before CV,
+                              & the assignment of obs to folds[diff folds diff feas] 
+                              in a reproducable way! Aswell needed so the RFs on
+                              the different blocks to train in a reproducable way!
       - weighted (bool)     : Shall the predicitons from the different blocks be
                               weighted by the oob accuracy of the blocks?!
+      - weight_metric (chr) : Which Metric shall be used to weight the different 
+                              RFs - the better the single blocks according to the
+                              metric, the higher their weight when ensembling!
+                              Must be in c('Accuracy', 'F1')
       - num_trees (int)     : amount of trees, we shall grow on each[!] fold
       - mtry (int)          : amount of split-variables we try, when looking for 
                               a split variable!
@@ -347,16 +357,32 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
         * 'settings' [settings used to do the CV - all arguments!]
             - datapath, seed, response, mtry,....   "
   # [0] Check Inputs -----------------------------------------------------------
-  # 0-0 data_path, seed, response are all checked within 'create_data()'
+  # 0-0 data_path, response are all checked within 'load_data_extract_block_names()'
   # 0-1 mtry, min_node_size & num_trees are all checked within 'randomForestSRC()'
   
-  # 0-2 weighted must be boolean
+  # 0-2 weighted must be boolean & seed an integer
   assert_logical(weighted)
+  assert_int(seed)
+  
+  # 0-3 Check weight_metric to be meaningful [if weighted is true at all]!
+  if (weighted) {
+    # check that it is character
+    assert_character(weight_metric)
+    
+    # check that it is of length 1
+    if (length(weight_metric) != 1) {
+      stop("'weight_metric' has more than 1 element!")
+    }
+    
+    # check it has a valid value!
+    if (!(weight_metric %in% c("Accuracy", "F1"))) {
+      stop("'weight_metric' must be 'Accuracy' or 'F1'!")
+    }
+  }
   
   # [1] Get the data & dimensions of train & test folds! -----------------------
   # 1-1 Load Data & the names of the single blocks in the data!
-  data <- load_data_extract_block_names(path = data_path, seed = seed, 
-                                        response = response)
+  data <- load_data_extract_block_names(path = data_path, response = response)
   
   # 1-2 Get Obs. per fold [Train & Test]
   obs_per_fold <- get_obs_per_fold(data = data$data)
@@ -436,7 +462,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
                     nodesize = min_node_size, samptype = "swr",
                     seed = seed)
     
-     # 4-1-3 On RNA Block only
+    # 4-1-3 On RNA Block only
     RF_rna <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                     data = rna_block, ntree = num_trees, mtry = mtry, 
                     nodesize = min_node_size, samptype = "swr",
@@ -457,101 +483,128 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     # 4-2 Collect all single RFs to the Forest!
     Forest <- list(RF_clin, RF_cnv, RF_rna, RF_mutation, RF_mirna)
     
-    # [6] Get (unweighted) predicitons on the different testsets!
-    # 6-1 Full TestSet
-    print("Evaluation full TestSet -------------------------------------------")
-    full[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, testdata = test_df, 
-                                         weighted = weighted) # FULL TESTSET
-    
-    # 6-2 TestSet, where one of the omics blocks is missing!
-    print("Evaluation TestSet w/ 1 missing omics block------------------------")
-    miss1_A[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
-    
-    miss1_B[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
-                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
-    
-    miss1_C[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mutation_block)])
-    
-    miss1_D[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
-    
-    # 6-3 TestSet, where two of the omics blocks are missing!
-    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
-    miss2_CD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
-                                                                                                 data$block_name$mirna_block))])
-    
-    miss2_BD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
-                                                                                                 data$block_names$rna_block))])
-    
-    miss2_BC[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
-                                                                                                 data$block_name$rna_block))])
-    
-    miss2_AD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
-                                                                                                 data$block_name$mirna_block))])
-    
-    miss2_AC[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
-                                                                                                 data$block_name$mutation_block))])
-    
-    miss2_AB[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
-                                                                                                 data$block_name$rna_block))])
-    # 6-4 TestSet, where three of the omics blocks are missing!
-    print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
-    miss3_ABC[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted,
-                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
-                                                                                                  data$block_name$rna_block,
-                                                                                                  data$block_name$mutation_block))])
-    miss3_ACD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
-                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
-                                                                                                  data$block_name$mutation_block,
-                                                                                                  data$block_name$mirna_block))])
-    
-    miss3_ABD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
-                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
-                                                                                                  data$block_name$rna_block,
-                                                                                                  data$block_name$mirna_block))])
-    
-    miss3_BCD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
-                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
-                                                                                            data$block_name$mutation_block,
-                                                                                            data$block_name$mirna_block))])
-    
-    # 6-5 TestSet, when there is only one observed block
+    # [6] Get predicitons on the different testsets!
+    # 6-1 TestSet, when there is only one observed block! 
+    #     Also done to extract the predictive performance of the different RFs,
+    #     that were fitted to the single blocks! 
+    #     As testset has 1 block only, we don't need to weight the different 
+    #     blockwise RFs, as only one single block is used to obtain predicitons!
+    #     --> the resulting performance will be used as weight for the remaining
+    #         testsettings!
     print("Evaluation TestSet w/ 1 observed block only------------------------")
+    print("Obtain performance & corresponding weights on the single blocks!")
     
-    single_A[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
+    single_A[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1),
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                   data$block_name$mutation_block,
                                                                                                   data$block_name$mirna_block,
                                                                                                   data$block_names$clin_block))])
-    single_B[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
+    
+    single_B[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1), 
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                                   data$block_name$mutation_block,
                                                                                                   data$block_name$mirna_block,
                                                                                                   data$block_names$clin_block))])
     
-    single_C[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
+    single_C[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1),
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                   data$block_name$cnv_block,
                                                                                                   data$block_name$mirna_block,
                                                                                                   data$block_names$clin_block))])
-    single_D[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
+    
+    single_D[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1), 
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                   data$block_name$mutation_block,
                                                                                                   data$block_name$cnv_block,
                                                                                                   data$block_names$clin_block))])
-    single_CL[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weighted = weighted, 
+    single_CL[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1),
                                                testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                    data$block_name$mutation_block,
                                                                                                    data$block_name$mirna_block,
                                                                                                    data$block_names$cnv_block))])
+    
+    # 6-1-2 Extract the weights from the single block performance - weighted is true!
+    weights <- c()
+    if (weighted) {
+      weights <- c(weights, single_CL[[i + 1]][[weight_metric]])
+      weights <- c(weights, single_A[[i + 1]][[weight_metric]])
+      weights <- c(weights, single_B[[i + 1]][[weight_metric]])
+      weights <- c(weights, single_C[[i + 1]][[weight_metric]])
+      weights <- c(weights, single_D[[i + 1]][[weight_metric]])
+    } else {
+      weights <- rep(1, times = 5)
+    }
+    
+    # 6-1-3 Norm the weights
+    weights <- weights / sum(weights)
+    
+    print("Extracted weights for different blocks [CL, A, B, C, D] & normalized them")
+    print(weights)
+    
+    # 6-2 Full TestSet
+    print("Evaluation full TestSet -------------------------------------------")
+    full[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, testdata = test_df, 
+                                         weights = weights) # FULL TESTSET
+    
+    # 6-3 TestSet, where one of the omics blocks is missing!
+    print("Evaluation TestSet w/ 1 missing omics block------------------------")
+    miss1_A[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
+    
+    miss1_B[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights, 
+                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$rna_block)])
+    
+    miss1_C[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mutation_block)])
+    
+    miss1_D[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                            testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
+    
+    # 6-4 TestSet, where two of the omics blocks are missing!
+    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
+    miss2_CD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
+                                                                                                 data$block_name$mirna_block))])
+    
+    miss2_BD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mirna_block,
+                                                                                                 data$block_names$rna_block))])
+    
+    miss2_BC[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
+                                                                                                 data$block_name$rna_block))])
+    
+    miss2_AD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                                 data$block_name$mirna_block))])
+    
+    miss2_AC[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                                 data$block_name$mutation_block))])
+    
+    miss2_AB[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                             testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                                 data$block_name$rna_block))])
+    # 6-5 TestSet, where three of the omics blocks are missing!
+    print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
+    miss3_ABC[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                                  data$block_name$rna_block,
+                                                                                                  data$block_name$mutation_block))])
+    miss3_ACD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights, 
+                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                                  data$block_name$mutation_block,
+                                                                                                  data$block_name$mirna_block))])
+    
+    miss3_ABD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights, 
+                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
+                                                                                                  data$block_name$rna_block,
+                                                                                                  data$block_name$mirna_block))])
+    
+    miss3_BCD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights, 
+                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
+                                                                                            data$block_name$mutation_block,
+                                                                                            data$block_name$mirna_block))])
   }
   
   # [4] Return the results & settings of parameters used to do CV! -------------
