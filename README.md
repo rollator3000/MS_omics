@@ -15,11 +15,12 @@ Different hospitals do reseach regarding the same response *(e.g. different Canc
 - Hospital_2: Clinical + CopyNumberVariation Data
 - Hospital_3: Clinical + CopyNumberVariation + Mutation Data
 ```
-Now it would benefical to create a model, that uses all of the avaible features for the different folds! <br>
-RandomForest(Cancertype ~ Clinical + RNA + CopyNumberVariation + Mutation) <br>
-Besides taking features, which are not observed for all observations, the model should also be able to predict on testobs, that have all blocks as features, or just 1 block, or a combination of 2 blocks that were not avaible in the training data *(e.g. testdata with RNA + Clinical + CopyNumberVariation)*
-
-
+Now it would benefical to have a model, that can learn with all the avaible features for the different folds!
+```
+RandomForest(Cancertype ~ Clinical + RNA + CopyNumberVariation + Mutation) 
+```
+Besides taking all features into account - eventhough most features were not observed for all -, the model should also be able to predict on test-obs.,with all blocks as features, or even just 1 block, or a combination of 2 blocks that were not avaible in the training data!
+<br>
 For Details regarinding the methods, data situations etc. please have a look at: <br> 
      MasterThesis / code in repository
 
