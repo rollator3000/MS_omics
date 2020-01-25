@@ -626,7 +626,10 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
                    "seed"          = seed, 
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
-                   "min_node_size" = min_node_size)
+                   "min_node_size" = min_node_size,
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "block_weights" = weights)
   
   # Return both lists!
   return(list("res_all" = res_all, 
@@ -1003,7 +1006,10 @@ do_CV_NK_setting2             <- function(data_path = "data/external/Dr_Hornung/
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
-                   "block_letters" = letter_feas)
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "block_letters" = letter_feas, 
+                   "block_weights" = weights)
   
   # Return both lists!
   return(list("res_all" = res_all, 
@@ -1410,7 +1416,10 @@ do_CV_NK_setting3             <- function(data_path = "data/external/Dr_Hornung/
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
-                   "observed_blocks_in_folds" = all_folds)
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "observed_blocks_in_folds" = all_folds,
+                   "block_weights" = weights)
   
   # Return both lists!
   return(list("res_all" = res_all, 
@@ -1571,7 +1580,7 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
   block_B_names <- c(data$block_names[[which(names(data$block_names) == blocks_together[3])]],
                      data$block_names[[which(names(data$block_names) == blocks_together[4])]])
   
-  # [3] Start the CV [5-fold per default!] -------------------------------------
+  # [4] Start the CV [5-fold per default!] -------------------------------------
   for (i in 0:4) {
     
     print(paste0("FOLD: ", as.character(i + 1), "/5 -------------------------"))
@@ -1680,7 +1689,7 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
     
   }
   
-  # [4] Return the results & settings of parameters used to do CV! -------------
+  # [5] Return the results & settings of parameters used to do CV! -------------
   res_all <- list("full" = full,
                   "miss1_A" = miss1_A, "miss1_B" = miss1_B,
                   "single_A" = single_A, "single_B" = single_B,
@@ -1693,6 +1702,9 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "block_weights" = weights,
                    "blocks_together"    = blocks_together) # the first and last two were merged to a single block!
   
   # Return both lists!

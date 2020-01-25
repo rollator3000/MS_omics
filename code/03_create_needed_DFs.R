@@ -53,7 +53,7 @@ DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG",
 data_path <- "./data/external/Dr_Hornung/Data/ProcessedData/"
 
 # 2-2-3 seed for reproductibity
-seed <- 123456789 # OBACHT: there needs to be a folder 'seed_1234' [or whatever seed set]
+seed <- 1240 # OBACHT: there needs to be a folder 'seed_1234' [or whatever seed set]
              #          in '.data/external/Dr_Hornung/Data/ProcessedData_subsets'
 
 # 2-2 Loop over the DFs and create the subsets!
@@ -119,7 +119,7 @@ DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
 
 
 # LOOP OVER ALL SUBSETTED DFS
-seeds <- c(1234, 1235, 1236, 1237, 1238, 123456789)
+seeds <- c(1239, 1240)
 for (seed in seeds) {
   
   # Empty DF to save the Results in!
@@ -209,8 +209,7 @@ DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG",
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
 
 # LOOP OVER ALL SUBSETTED DFS
-seeds <- c(1234, 1235, 1236, 1237, 1238, 123456789)
-
+seeds <- c(1239, 1240)
 for (seed in seeds) {
   
   # Empty DF to store Results!
@@ -300,3 +299,4 @@ for (seed in seeds) {
              paste0("./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed",
                     seed, ".csv"))
 }
+

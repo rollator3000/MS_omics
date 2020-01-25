@@ -212,10 +212,10 @@ plot_df <- melt(DF_all, id.vars = c("Data", "seed"), measure.vars = c("Test_Acc"
 ggplot(data = plot_df, aes(x = seed, y = value, fill = variable)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("Joint Block Performance on the FIXED SUBSETS",
-          subtitle = "finalsubset: 10% mirna & mutation, 5% rna & 2.5% cnv\n --- 5-fold- CV on each of the 14 DFs ") +
+  ggtitle("Joint Block Performance on the 14 fixed DF w/ 5 fold CV",
+          subtitle = "Final-Subset: 10% mirna & mutation, 5% rna & 2.5% cnv") +
   xlab("Seed used to subset") +
-  ylab("metric") +
+  ylab("Metric [Acc & F1]") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 15))
 
@@ -234,7 +234,7 @@ ggplot(data = df_temp, aes(x = seed, y = value, fill = variable)) +
         text = element_text(size = 15))
 
 
-# Analyse the fix subsettet DFs w/ joint blocks!                            ----
+# Analyse the fix subsettet DFs w/ single blocks!                           ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/gender/performance_final_subsets"
 
@@ -279,9 +279,10 @@ ggplot(data = plot_df, aes(x = Block, y = value, fill = variable)) +
   geom_boxplot() + 
   facet_grid(. ~ seed) +
   theme_bw() +
-  ggtitle("EXPLORATIVE - Single Block Performance on all 14 DFs",
-          subtitle = "split by the amount of subset we used as feas") +
+  ggtitle("Single Block Performance on the 14 fixed DFs w/ 5 fold CV",
+          subtitle = "Final-Subset: 10% mirna & mutation, 5% rna & 2.5% cnv \n--- split by the seeds used to subset the featurespace") +
   xlab("Blocks used as Feature Space") +
+  ylab("Metric [Acc & F1]") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 15))
 

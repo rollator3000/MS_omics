@@ -1498,6 +1498,7 @@ do_CV_setting2                <- function(data_path = "data/external/Dr_Hornung/
                    "response"      = response, 
                    "seed"          = seed,
                    "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
@@ -2250,7 +2251,7 @@ do_CV_setting4                <- function(data_path = "data/external/Dr_Hornung/
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
                    "unorderd_factors" = unorderd_factors,
-                   "blocks_together"    = blocks_together) # which blocks belonged together?!
+                   "blocks_together"  = blocks_together) # which blocks belonged together?!
   
   # 4-3 Return both lists!
   return(list("res_all"  = res_all, 
