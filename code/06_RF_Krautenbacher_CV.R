@@ -1714,33 +1714,23 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-a1 <- do_CV_NK_setting1(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                        weighted = TRUE, weight_metric = "F1")
-end_time <- Sys.time()
-a1_time <- end_time - start_time 
+no_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
+                                  data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
+                                  weighted = FALSE, weight_metric = "F1")
+no_weighting_time <- Sys.time() - start_time 
 
 start_time <- Sys.time()
-a2 <- do_CV_NK_setting2(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                        weighted = TRUE, weight_metric = "F1")
-end_time <- Sys.time()
-a2_time <- end_time - start_time 
+acc_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
+                                   data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
+                                   weighted = TRUE, weight_metric = 'Accuracy')
+acc_weighting_time <- Sys.time() - start_time 
 
 start_time <- Sys.time()
-a3 <- do_CV_NK_setting3(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                        weighted = TRUE, weight_metric = "F1")
-end_time <- Sys.time()
-a3_time <- end_time - start_time 
-
-start_time <- Sys.time()
-a4 <- do_CV_NK_setting4(num_trees = as.integer(250),
-                        data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                        weighted = TRUE, weight_metric = "F1")
-end_time <- Sys.time()
-a4_time <- end_time - start_time
+f1_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
+                                  data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
+                                  weighted = TRUE, weight_metric = "F1")
+f1_weighting_time <- Sys.time() - start_time 
 
 
-res_all <- list(a1, a2, a3, a4)
-save(res_all, file = "./docs/CV_Res/gender/Norbert_final_subsets/1312_subset.RData")
+res_all <- list(no_weighting, acc_weighting, f1_weighting)
+save(res_all, file = "Norbert_seed1238_subset_LGG_diff_weight_approaches.RData")

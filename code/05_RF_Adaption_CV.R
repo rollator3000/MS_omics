@@ -465,8 +465,8 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
   
   # [2] Get Predicitons -------------------------------------------------------- 
   #     Get a prediction for every observation in TestData from all the trees
-  #     Obacht: the prediction is based on the amount of usable trees!          MAYBE TO ADJUST TALK TO ROMA
-  #             --> this might reduce the forrest even to a single tree!              TALK TO ROMAN
+  #     Obacht: the prediction is based on the amount of usable trees!          
+  #             --> this might reduce the forrest even to a single tree!        
   tree_preds_all <- list()
   not_usable     <- c()
   for (i in 1:length(Forest)) {
@@ -574,7 +574,7 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
   
   return(as.vector(res))
 }
-do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
+do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LGG_Subset.RData",
                                           response = "gender", seed = 1312, 
                                           weighted = TRUE, weight_metric = NULL,
                                           num_trees = as.integer(10), mtry = NULL, 
@@ -2260,28 +2260,22 @@ do_CV_setting4                <- function(data_path = "data/external/Dr_Hornung/
 
 # Run a example and check the results!                                       ----
 start_time <- Sys.time()
-set_1 <- do_CV_setting1(num_trees = as.integer(250),
-                        weight_metric = "Acc")
-end_time <- Sys.time()
-a1_time <- end_time - start_time 
+no_weight <- do_CV_setting1(num_trees = as.integer(250), weighted = FALSE,
+                            data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData")
+no_weight_time_all <- Sys.time() - start_time 
 
 start_time <- Sys.time()
-set_2 <- do_CV_setting2(num_trees = as.integer(250),
-                        weight_metric = "Acc")
-end_time <- Sys.time()
-a2_time <- end_time - start_time 
+acc_weight <- do_CV_setting1(num_trees = as.integer(250),
+                             weight_metric = "Acc", weighted = TRUE,
+                             data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData")
+acc_weight_time_all <- Sys.time() - start_time 
 
 start_time <- Sys.time()
-set_3 <- do_CV_setting3(num_trees = as.integer(250),
-                        weight_metric = "Acc")
-end_time <- Sys.time()
-a3_time <- end_time - start_time 
+f1_weight <- do_CV_setting1(num_trees = as.integer(250),
+                             weight_metric = "F1", weighted = TRUE,
+                             data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData")
+f1_weight_time_all <- Sys.time() - start_time 
 
-start_time <- Sys.time()
-set_4 <- do_CV_setting4(num_trees = as.integer(250),
-                        weight_metric = "Acc")
-end_time <- Sys.time()
-a4_time <- end_time - start_time
 
-all_res_roman <- list(set_1, set_2, set_3, set_4)
-save(all_res_roman, file = "Roman_1312seed_res_for_sublime.RData")
+all_res_roman <- list(no_weight, acc_weight, f1_weight)
+save(all_res_roman, file = "Roman_seed1238_subset_LGG_diff_weight_approaches.RData")

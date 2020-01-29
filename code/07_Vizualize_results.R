@@ -6,45 +6,53 @@ library(ggplot2)
 require(gridExtra)
 library(reshape2)
 
-unpack_list_res <- function(x, metric, trainsetting) {
-  "unpack the results from a list (x) and store it in regular DFs!
-   x is the list of results we get when doing CV w/ Roman or Norberts Method!
-   Each list entrance is an own Setting!
-   
+extract_metrics <- function(x, metric, train_sit) {
+  "
+  Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
+  to a DF, that we can use for plotting!
+  'x' is the result of a CV of one trainsetting & all has results for all of 
+  the 20 testsettings! From this list we extract the metric for all of the 
+  different trainsettings!
+  
    Args:
     x (list)           : list filled with the metrics for every single 
-                         Itteration in CV
+                         Itteration in CV + the settings it was created from!
+                         Needs the names:
+                         ['res_all' & 'settings']
     metric (str)       : the metric we shall extraxt from the result list!
-                          --> must be in 'x'!
-    trainsetting (int) : the trainsetting we want to extract the results for
-                         [4 different settings in total:
-                          first element  = 1. Trainsetting, ..., 
-                          fourth element = 4. Trainsetting]
-    
+                         Needs to be in:
+                         ['Accuracy', 'Sensitifity', 'Specificity', 'Precision', 
+                          'Recall', 'F1', 'Balance_Acc', 'AUC', 'MCC']
+    train_sit (int)    : Which TrainingSituation do the results come from!
+                         [four different trainsettings in total s. MS Thesis!]
+
    Return:
-    Dataframe suited for plots for the trainsetting 'i' and the 'metric'
+    DF, suited for plotting, with all metric for all testsettings in 'x'
   "
   # [0] Check Inputs 
-  # 0-1 'x' must be a list of length 4 [1 for each TrainSetting]
-  assert_list(x, len = 4)
+  # 0-1 'x' must be a list of length 2 w/ names 'res_all' & 'settings'
+  assert_list(x, len = 2)
+  if (!('res_all' %in% names(x)) | !('settings' %in% names(x))) {
+    stop("'x' needs 2 entrances called 'res_all' & 'settings'")
+  }
   
-  # 0-2 'trainsetting' must be integer within [1; 4]
-  assert_int(trainsetting, lower = 0, upper = 4)
-  
-  # 0-3 Make sure, that 'metric' is within x[['trainsetting']]
+  # 0-2 'metric' must be in 'x'
   assert_string(metric)
-  if (!(metric  %in% names(x[[trainsetting]]$res_all[["full"]][[1]]))) {
+  if (!(metric  %in% names(x$res_all[[1]][[1]]))) {
     print("There exist only the metrics:\n")
-    print(names(x[[trainsetting]]$res_all[["full"]][[1]]))
+    print(names(x$res_all[[1]][[1]]))
     stop("'metric' is not within these!")
   }
   
-  # [1] Unpack the lists and put them into a single regular DF
-  # 1-1 Extract the needed TestSetting & get the settings it was trained on!
-  x_res      <- x[[trainsetting]]$res_all
-  x_settings <- x[[trainsetting]]$settings
+  # 0-3 'train_sit' must be integer [1; 4]
+  assert_int(train_sit, lower = 1, upper = 4)
   
-  # 1-2 Extract the metric from the wanted TrainSetting for all TestSettings!
+  # [1] Unpack the lists and put them into a single regular DF
+  # 1-1 Seperate Results and Settings
+  x_res      <- x$res_all
+  x_settings <- x$settings
+  
+  # 1-2 Extract the metric from the wanted TrainSetting for all 20 TestSettings!
   #     ["full", "miss_1A", ...]
   res_curr_train_set <- sapply(names(x_res), function(x) c(x_res[[x]][[1]][metric],
                                                            x_res[[x]][[2]][metric],
@@ -60,28 +68,44 @@ unpack_list_res <- function(x, metric, trainsetting) {
                          "Fold"           = numeric(),
                          "Metric"         = character())
   
-  # 1-3-1 Loop over each column in 'res_curr_train_set' [= 1 TestSetting each]
-  #       and fill the lists with results!
+  # 1-3-1 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
+  #       & 
   for (j in seq_len(ncol(res_curr_train_set))) {
     
     # 1-3-1-1 Extract TrainSetting, folds, test_situation and the metrics
     #         for the given column!
-    train_sit <- rep(colnames(res_curr_train_set)[j], times = nrow(res_curr_train_set))
-    folds     <- seq_len(nrow(res_curr_train_set))
-    test_sit  <- rep(trainsetting, times = nrow(res_curr_train_set))
-    metric_c  <- unlist(res_curr_train_set[,j])
+    train_sit_ <- rep(train_sit, times = nrow(res_curr_train_set))
+    folds      <- seq_len(nrow(res_curr_train_set))
+    test_sit   <- rep(colnames(res_curr_train_set)[j], times = nrow(res_curr_train_set))
+    metric_c   <- unlist(res_curr_train_set[,j])
     
     # 1-3-1-2 Bind it to the DF with all Results
-    df_current <- data.frame("Trainsituation" = train_sit,
+    df_current <- data.frame("Trainsituation" = train_sit_,
                              "Testsituation"  = test_sit,
                              "Fold"           = folds,
                              "Metric"         = metric_c)
     DF_final <- rbind(DF_final, df_current)
   }
   
-  # [2] Return 'DF_final'
-  # 2-1 Adjust the colname for metric, so we know which metric we extracted!
-  colnames(DF_final)[which(colnames(DF_final) == "Metric")] <- metric
+  # [2] Add the settings that have been used
+  # 2-1 Add used DF and used Seed
+  path_split       <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_final$DF      <- path_split[length(path_split)]
+  DF_final$DF_seed <- path_split[length(path_split) - 1]
+  
+  # 2-2 Add the infos from "x_settings"
+  DF_final$performance_metric <- metric
+  DF_final$reponse            <- x_settings$response
+  DF_final$model_seed         <- x_settings$seed
+  DF_final$num_trees          <- x_settings$num_trees
+  DF_final$mtry               <- x_settings$mtry
+  DF_final$min_node_size      <- x_settings$min_node_size
+  DF_final$weighted_ens       <- x_settings$weighted
+  ifelse(!x_settings$weighted,
+         DF_final$weight_metric <- NA,
+         DF_final$weight_metric <- x_settings$weight_metric)
+  
+  # [3] Return 'DF_final'
   return(DF_final)
 }
 
@@ -197,8 +221,14 @@ DF5$seed <- "1237"
 DF6 <- read.csv2(paste0(data_path, "/", files[6]), stringsAsFactors = F)
 DF6$seed <- "1238"
 
+DF7 <- read.csv2(paste0(data_path, "/", files[7]), stringsAsFactors = F)
+DF7$seed <- "1239"
+
+DF8 <- read.csv2(paste0(data_path, "/", files[8]), stringsAsFactors = F)
+DF8$seed <- "1240"
+
 # 1-3 Bind them to a single DF & convert numeric cols to numeric!
-DF_all <- rbind(DF1, DF2, DF3, DF4, DF5, DF6)
+DF_all <- rbind(DF1, DF2, DF3, DF4, DF5, DF6, DF7, DF8)
 
 numeric_cols <- c("OOB_Acc", "Test_Acc", "Test_F1")
 DF_all[,numeric_cols] <- sapply(numeric_cols, 
@@ -263,8 +293,14 @@ DF5$seed <- "1237"
 DF6 <- read.csv2(paste0(data_path, "/", files[6]), stringsAsFactors = F)
 DF6$seed <- "1238"
 
+DF7 <- read.csv2(paste0(data_path, "/", files[7]), stringsAsFactors = F)
+DF7$seed <- "1239"
+
+DF8 <- read.csv2(paste0(data_path, "/", files[8]), stringsAsFactors = F)
+DF8$seed <- "1240"
+
 # 1-3 Bind them to a single DF & convert numeric cols to numeric!
-DF_all <- rbind(DF1, DF2, DF3, DF4, DF5, DF6)
+DF_all <- rbind(DF1, DF2, DF3, DF4, DF5, DF6, DF7, DF8)
 
 num_cols <- c("OOB_Acc", "Test_Acc", "Test_F1")
 DF_all[,num_cols] <- sapply(num_cols, 
@@ -288,7 +324,7 @@ ggplot(data = plot_df, aes(x = Block, y = value, fill = variable)) +
 
 # Analyse Results of Romans Approach on the fixed DFs                       ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Roman_final_subsets"
+data_path <- "./docs/CV_Res/gender/Roman_final_subsets/TrainSetting1"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
@@ -301,31 +337,42 @@ DF2 <- load(paste0(data_path, "/", files[2]))
 DF2 <- eval(as.symbol(DF2))
 
 # 1-3 Extract the Metrics and TestSetting as desired:
-# 1-3-1 ACCURACY
-curr_res      <- unpack_list_res(x = DF1, metric = "F1", trainsetting = 1)
-curr_res$seed <- "1234"
+# DF1 with LGG DF 
+DF1_1  <- extract_metrics(x = DF1[[1]], metric = "F1", train_sit = 1)
+DF1_12 <- extract_metrics(x = DF1[[1]], metric = "Accuracy", train_sit = 1)
+DF1_2  <- extract_metrics(x = DF1[[2]], metric = "F1", train_sit = 1)
+DF1_22 <- extract_metrics(x = DF1[[2]], metric = "Accuracy", train_sit = 1)
+DF1_3  <- extract_metrics(x = DF1[[3]], metric = "F1", train_sit = 1)
+DF1_32 <- extract_metrics(x = DF1[[3]], metric = "Accuracy", train_sit = 1)
 
-curr_res2      <- unpack_list_res(x = DF2, metric = "F1", trainsetting = 1)
-curr_res2$seed <- "1312"
+# DF2 with LIHC DF
+DF2_1  <- extract_metrics(x = DF2[[1]], metric = "F1", train_sit = 1)
+DF2_12 <- extract_metrics(x = DF2[[1]], metric = "Accuracy", train_sit = 1)
+DF2_2  <- extract_metrics(x = DF2[[2]], metric = "F1", train_sit = 1)
+DF2_22 <- extract_metrics(x = DF2[[2]], metric = "Accuracy", train_sit = 1)
+DF2_3  <- extract_metrics(x = DF2[[3]], metric = "F1", train_sit = 1)
+DF2_32 <- extract_metrics(x = DF2[[3]], metric = "Accuracy", train_sit = 1)
 
+# 1-4 Bind the results to a single DF
+DF1_all <- rbind(DF1_1, DF1_12, DF1_2, DF1_22, DF1_3, DF1_32)
+DF2_all <- rbind(DF2_1, DF2_12, DF2_2, DF2_22, DF2_3, DF2_32)
+DF_all  <- rbind(DF1_all, DF2_all)
 
-# 1-4 Bind the results [different seeds when substting data] to a single DF
-DF_all <- rbind(curr_res, curr_res2)
-
-DF_all[,4] <- as.numeric(DF_all[,4])
-
-ggplot(data = DF_all, aes(x = Trainsituation, y = F1, fill = seed)) +
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, 
+                          fill = performance_metric)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("Romans Method applied to fixed data subsets",
-          subtitle = "split by the amount of subset we used as feas") +
+  ggtitle("Romans Method applied to 2 fixed data subsets",
+          subtitle = "split by the weighting used for ensembling!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
+        text = element_text(size = 15)) +
+  facet_grid(. ~ weight_metric)
+
 
 # Analyse Results of Norberts Approach on the fixed DFs                     ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Norbert_final_subsets"
+data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/TrainSetting1"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
@@ -338,24 +385,34 @@ DF2 <- load(paste0(data_path, "/", files[2]))
 DF2 <- eval(as.symbol(DF2))
 
 # 1-3 Extract the Metrics and TestSetting as desired:
-# 1-3-1 ACCURACY
-curr_res      <- unpack_list_res(x = DF1, metric = "F1", trainsetting = 2)
-curr_res$seed <- "1234"
+# DF1 with LGG DF 
+DF1_1  <- extract_metrics(x = DF1[[1]], metric = "F1", train_sit = 1)
+DF1_12 <- extract_metrics(x = DF1[[1]], metric = "Accuracy", train_sit = 1)
+DF1_2  <- extract_metrics(x = DF1[[2]], metric = "F1", train_sit = 1)
+DF1_22 <- extract_metrics(x = DF1[[2]], metric = "Accuracy", train_sit = 1)
+DF1_3  <- extract_metrics(x = DF1[[3]], metric = "F1", train_sit = 1)
+DF1_32 <- extract_metrics(x = DF1[[3]], metric = "Accuracy", train_sit = 1)
 
-curr_res2      <- unpack_list_res(x = DF2, metric = "F1", trainsetting = 2)
-curr_res2$seed <- "1312"
+# DF2 with LIHC DF
+DF2_1  <- extract_metrics(x = DF2[[1]], metric = "F1", train_sit = 1)
+DF2_12 <- extract_metrics(x = DF2[[1]], metric = "Accuracy", train_sit = 1)
+DF2_2  <- extract_metrics(x = DF2[[2]], metric = "F1", train_sit = 1)
+DF2_22 <- extract_metrics(x = DF2[[2]], metric = "Accuracy", train_sit = 1)
+DF2_3  <- extract_metrics(x = DF2[[3]], metric = "F1", train_sit = 1)
+DF2_32 <- extract_metrics(x = DF2[[3]], metric = "Accuracy", train_sit = 1)
 
+# 1-4 Bind the results to a single DF
+DF1_all <- rbind(DF1_1, DF1_12, DF1_2, DF1_22, DF1_3, DF1_32)
+DF2_all <- rbind(DF2_1, DF2_12, DF2_2, DF2_22, DF2_3, DF2_32)
+DF_all  <- rbind(DF1_all, DF2_all)
 
-# 1-4 Bind the results [different seeds when substting data] to a single DF
-DF_all <- rbind(curr_res, curr_res2)
-
-DF_all[,4] <- as.numeric(DF_all[,4])
-
-ggplot(data = DF_all, aes(x = Trainsituation, y = F1, fill = seed)) +
-  geom_boxplot() + 
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, 
+                          fill = performance_metric)) +
+  geom_boxplot() +
   theme_bw() +
-  ggtitle("Norberts Method applied to fixed data subsets",
-          subtitle = "split by the amount of subset we used as feas") +
+  ggtitle("Norberts Method applied to 2 fixed data subsets",
+          subtitle = "split by the weighting used for ensembling!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
+        text = element_text(size = 15)) +
+  facet_grid(. ~ weight_metric)
