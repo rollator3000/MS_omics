@@ -5,10 +5,10 @@ supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
 ## Project description
-This project compares different approaches to deal with blockwise missing data in trainsets!  A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response! *(different observed features for each training-set, where each trainingset has the same response value)* <br> 
-The Methods we use to deal with these kind of data are all based on the RandomForest approach (Breimann). <br> 
-As a baseline Approach we use a model that only uses the train-obs. that are fully observed regarding the testset *(e.g. testset constits of Clinical Block and 2 Omics Block -> only use observations, that were fully observed in these 3 blocks)* <br>
-We will also try a classical imputation approach with 'missForest', so that we remove all missing datablocks from the train data, so that we can fit a regular RF on it! <br>
+This project compares different approaches to deal with blockwise missing data in trainsets! <br>
+A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response *(different observed features for each training-set, where each trainingset has the same response value)*. <br> 
+As a baseline Approach to tackle problems like this we use a model that only uses the train-obs. that are fully observed regarding the testset *(e.g. testset constits of Clinical Block and 2 Omics Block -> only use train observations, that were fully observed in these 3 blocks)*. <br>
+We will also try a imputation approach with 'missForest', so that we impute all missing datablocks from the train data, so that we can fit a regular RF on it! <br>
 We will also have two RF Adaptions, that can deal with blockwise missingness. These Methods are trying to incorporate the different features from the different folds/ training-sets into a single Approach!
 
 **Example:**
@@ -16,7 +16,7 @@ Different hospitals do reseach regarding the same response *(e.g. different Canc
 ``` 
 - Hospital_1: Clinical + RNA Data
 - Hospital_2: Clinical + CopyNumberVariation Data
-- Hospital_3: Clinical + CopyNumberVariation + Mutation Data
+- Hospital_3: CopyNumberVariation + Mutation Data
 ```
 Now it would benefical to have a model, that can learn with all the avaible features for the different folds!
 ```
