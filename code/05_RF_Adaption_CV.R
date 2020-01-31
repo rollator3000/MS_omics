@@ -1,18 +1,30 @@
-"Script to crossValidate the adaption of Roman's RF Alogrithm!
- Here for each fold [set of observations w/ the same observed feature space], we
- train a seperate RF [-> might result in e.g. 4 different RFs]
- For Testing we prune all the seperate RF [or at least the trees inside]
- Pruning: When a tree uses a split variable that is not avaible in the data we
-          shall do predicitons with, we use the terminal node, before the tree 
-          uses not avaible splitvar., as new terminal node! 
-          If the 1. splitvar. is not known the tree can not be used at all!
+"Script to CrossValidate the Random Forest adaption of Roman Hornung!
+ Here for each fold [set of observations w/ the same observed feature space], 
+ we train a seperate RF [--> seperate RFs for each fold then!]
+ For Testing we prune all the seperate RFs [or at least single trees inside].
+ Pruning: - Select 1 RandomForest
+          - For each tree the RF consits of, we check whether any tree uses a 
+            split variable that is not avaible in the test data
+          - All trees that use splitvriables, that are not avaible in the test-
+            data, will be pruned [cut off tree before it splits w/ this variable]
+          - If a tree was pruned at its first (inital) split variable it can not 
+            be used any more for training! 
+          - If a tree was pruned anywhere else than the first split variable, 
+            than we can still do predicitons by passing the test obs. down the 
+            tree until it is in a terminal node/ a node after that was pruned
   
- Then we combine the predicitons from the different RFs to obtain a final 
- prediciton! The Prediciton of a single tree in a RF is the terminal node the 
- test observation ends up in!
+ To obtain a final prediction by a RF, we combine the predicitons from the 
+ different trees, that were not pruned in the first splitvar., and combine them!
+ For the combination of the different predicitons we combine them unweighted or
+ weighted [e.g. Block w/ higher Accuracy has more influence]
  
  > CV: Train RF-Adaption on TrainData w/ blockwise missingness!
-       Then test it based on testobs. w/ all feas avaible/ 1 block missing / ...
+       For this we load the fully observed data, split it to test and train
+       induce blockwise missingness into the trainset [4 scenarios in total].
+       After fitting the foldwise models on the traindata we evaluate the 
+       performance on the full testdata, testdat w/ 1 missing omics block, test-
+       data w/ 2 missing omics blocks, ..., testdata w/ only one single observed 
+       block!
 "
 # Load Funcitons, Classes, librarys & set the WD!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
@@ -21,7 +33,7 @@ source("./code/04_simpleRF_adaption.R")
 
 load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
                                           response = 'gender') {
-  "Function to load (the already subsetted) data & returning 1 big DataFrame, 
+  "Function to load the (already subsetted) data & returning 1 big DataFrame, 
    of all single blocks incl. the colnames to each block!
    
    Args:
@@ -207,15 +219,17 @@ copy_forrest                  <- function(Forest) {
   # [2] Return deeply copied Forest --------------------------------------------
   return(Forest_copy)
 }
-get_oob_acc                   <- function(trees) {
-  " Calculate the OOB Accuracy of a list of trees!
-    For this list of trees we want to extrat the error rate to e.g. weight the 
-    predicitons when using multiple trees-lists to create an aggregated prediciton!
-  
-    Args: 
-      - trees (list) : list filled w/ objects of class 'Tree'
-                       
+get_oob_weight_metric         <- function(trees, weight_metric) {
+  " Calculate the OOB Metrirc [F1, Acc] of a list of trees! For this we go 
+    through all OOB Predictions and obtain aggregated predicitons from all 
+    trees, where the same observation is also out of bag!
     
+    Args: 
+      - trees (list)        : list filled w/ objects of class 'Tree'
+      - weight_metric (chr) : When assigning weights to the different predictions
+                              which metric to use to calc the weight?!
+                              [- must be 'Acc' or 'F1']
+                       
     Return:
       - average oob-error Accuracy over all trees in 'trees'-list!
   "
@@ -226,137 +240,72 @@ get_oob_acc                   <- function(trees) {
     stop("not all elements in 'trees' are of class 'Tree'")
   }
   
+  # 0-2 Check 'weight_metric' to be one character w/ F1 or Acc
+  #     check that it is character
+  assert_character(weight_metric)
+
+  #     check that it is of length 1
+  if (length(weight_metric) != 1) stop("'weight_metric' has more than 1 element!")
+  
+  #     check it has a valid value!
+  if (!(weight_metric %in% c("Acc", "F1"))) stop("'weight_metric' must be 'Acc' or 'F1'!")
+  
   # [1] Get the OOB Predicitons ------------------------------------------------
   # 1-1 Get the trees, that are usable - not pruned in the first split_variable!
-  usable_trees <- sapply(trees, function(x) {
+  usable_trees <- sapply(1:length(trees), function(x) {
     
     # Check whether the first split_var was pruned!
-    if (x$child_nodeIDs[1] == "pruned") {
-      return(FALSE)
+    if (trees[[x]]$child_nodeIDs[1] == "pruned") {
+      return(NULL)
     } else {
-      return(TRUE)
+      return(x)
     }
   })
   
-  # 1-2 Get the Index of the usable trees!
-  usable_trees <- which(usable_trees)
-  
-  # 1-2-1 If all the trees were pruned in the first node, we can not do
+  # 1-1-1 If all the trees were pruned in the first node, we can not do
   #       any OOB predictions --> OOB-Accuracy = 0
   if (length(usable_trees) < 1) return(0)
   
-  # 1-3 Loop over the remaining trees [that can create meaningful preds] 
-  #     & convert the probs to classes!
-  predicted_classes <- lapply(usable_trees, function(x) {
-    
-    # Get the OOB Predicitions as Probabilities!
-    prob_preds <- trees[[x]]$predictOOB()
-    
-    # For each OOB Prediciton [1 col each] get the class with the highest prob
-    # In case of tie, we use the first class as default!
-    sapply(1:ncol(prob_preds), function(y) {
-      rownames(prob_preds)[[which(prob_preds[,y] == max(prob_preds[,y]))[1]]]
-    })
-  })
-
-  # [2] Compare predicted Classes with the true classes & get the error rate
-  #     every single tree does --> average them so we know how good the 
-  #     predicitive power of this 'subRF' is!
-  Accuracy <- lapply(1:length(predicted_classes), function(x) {
-    
-    # Get the corresponding tree to the prediction 
-    # [which tree was used to get this prediction!]
-    curr_tree <- trees[[usable_trees[x]]]
-    
-    # get true response and the predicted response!
-    true_resp <- curr_tree$data$subset(curr_tree$oob_sampleIDs  ,1)
-    predicted <- factor(predicted_classes[[x]], levels = levels(true_resp))
-    
-    # use them to get a confusionmatrix and extract the Accuracy!
-    confmat   <- caret::confusionMatrix(true_resp, predicted)
-    confmat$overall["Accuracy"]
-  })
+  # 1-2 For all usable trees [not pruned in first split variable] get the IDs
+  #     of the OOB observations. Then collect all and only keep unique IDs!
+  oob_ids_all_trees <- sapply(usable_trees, function(x) trees[[x]]$oob_sampleIDs)
+  unique_oob_ids    <- unique(unlist(oob_ids_all_trees))
   
-  return(mean(unlist(Accuracy)))
-}
-get_oob_F1                    <- function(trees) {
-  " Calculate the F1Score of a list of trees!
-    For this list of trees we want to extrat the OOB observations of each tree
-    and calulate the F1-Score for each of these trees!
-    This can be used e.g. to weight the predicitons when using multiple 
-    trees-lists to create an aggregated prediciton!
-  
-    Args: 
-      - trees (list) : list filled w/ objects of class 'Tree'
-                       
+  # 1-3 Loop over all 'unique_oob_ids' and get the oob predictions from all 
+  #     trees, that have the same OOB observation!
+  all_oob_preds_class0 <- c()
+  for (curr_oob in unique_oob_ids) {
     
-    Return:
-      - average oob-F1-Score over all trees in 'trees'-list!
-  "
-  # [0] Check Input ------------------------------------------------------------
-  # 0-1 Make sure 'trees' is a list filled with 'Trees'
-  assert_list(trees, min.len = 1, any.missing = FALSE)
-  if (any(sapply(trees, function(x) 'Tree' %in% class(x)))) {
-    stop("not all elements in 'trees' are of class 'Tree'")
+    # 1-3-1 Get all trees that have 'curr_oob' as OOB observation!
+    trees_same_oob <- unlist(sapply(usable_trees, function(x) {
+      if (curr_oob %in% trees[[x]]$oob_sampleIDs) x
+    }))
+    
+    # 1-3-2 Get the feas of the observation that is OOB for 'trees_same_oob' 
+    curr_oob_feas <- Data$new(data = trees[[1]]$data$data[curr_oob,])
+    
+    # 1-3-3 Get a Prediciton for the 'curr_oob' from all trees!
+    predicted_probs <- sapply(trees_same_oob, 
+                              function(x) trees[[x]]$predict(curr_oob_feas))
+    
+    # 1-3-4 Aggregate the predictions from the different trees and
+    #       Get the probability for class 0! [First Row is class 0]
+    all_oob_preds_class0 <- c(all_oob_preds_class0, 
+                              sum(predicted_probs[1,]) / length(trees_same_oob))
   }
   
-  # [1] Get the OOB Predicitons ------------------------------------------------
-  # 1-1 Get the trees, that are usable - not pruned in the first split_variable!
-  usable_trees <- sapply(trees, function(x) {
-    
-    # Check whether the first split_var was pruned!
-    if (x$child_nodeIDs[1] == "pruned") {
-      return(FALSE)
-    } else {
-      return(TRUE)
-    }
-  })
+  # 1-4 Convert the probs to classes
+  predicted_oob_classes <- ifelse(all_oob_preds_class0 > 0.5, 0, 1)
+  predicted_oob_classes <- factor(predicted_oob_classes, 
+                                  levels = levels(trees[[1]]$data$data[unique_oob_ids, 1]))
   
-  # 1-2 Get the Index of the usable trees!
-  usable_trees <- which(usable_trees)
+  # [2] Compare predicted Classes with the true classes & get the 'weight_metric'!
+  conf_mat_oob <- caret::confusionMatrix(predicted_oob_classes, 
+                                         trees[[1]]$data$data[unique_oob_ids, 1])
   
-  # 1-2-1 If all the trees were pruned in the first node, we can not do
-  #       any OOB predictions --> OOB-Accuracy = 0
-  if (length(usable_trees) < 1) return(0)
-  
-  # 1-3 Loop over the remaining trees [that can create meaningful preds] 
-  #     & convert the probs to classes!
-  predicted_classes <- lapply(usable_trees, function(x) {
-    
-    # Get the OOB Predicitions as Probabilities!
-    prob_preds <- trees[[x]]$predictOOB()
-    
-    # For each OOB Prediciton [1 col each] get the class with the highest prob
-    # In case of tie, we use the first class as default!
-    sapply(1:ncol(prob_preds), function(y) {
-      rownames(prob_preds)[[which(prob_preds[,y] == max(prob_preds[,y]))[1]]]
-    })
-  })
-  
-  # [2] Compare predicted Classes with the true classes & get the error rate
-  #     every single tree does --> average them so we know how good the 
-  #     predicitive power of this 'subRF' is!
-  F1_Scores <- lapply(1:length(predicted_classes), function(x) {
-    
-    # Get the corresponding tree to the prediction 
-    # [which tree was used to get this prediction!]
-    curr_tree <- trees[[usable_trees[x]]]
-    
-    # get true response and the predicted response!
-    true_resp <- curr_tree$data$subset(curr_tree$oob_sampleIDs  ,1)
-    predicted <- factor(predicted_classes[[x]], levels = levels(true_resp))
-    
-    # use them to get a confusionmatrix and extract the F1-Score!
-    confmat   <- caret::confusionMatrix(true_resp, predicted)
-    res_to_return <- confmat$byClass["F1"]
-    
-    # If the F1-Score is 'NA' replace it by 0
-    if (is.na(res_to_return)) res_to_return <- 0
-    res_to_return
-  })
-  
-  return(mean(unlist(F1_Scores)))
-} 
+  if (weight_metric == "Acc") return(conf_mat_oob$overall["Accuracy"])
+  if (weight_metric == "F1")  return(conf_mat_oob$byClass["F1"])
+}
 mcc_metric                    <- function(conf_matrix) {
   "Function to calculate the MCC [Matthews correlation coefficient] Metric
    --> only for binary cases! If the Conf_Matrix has more than 2 classes 
@@ -487,36 +436,21 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
   }
   
   # [3] If we want to create weighted ensemble of the predicitons, we need to
-  #     calc the OOB-Accuracy per 'trees' and use these as weights!
-  #     [lower ACC --> lower weight!]
+  #     calc the OOB-Accuracy/ OOB-F1--Score per 'trees' [foldwise RF] and use 
+  #     these as weights when assembeling the predicitons!
+  #     [lower ACC --> lower weight | lower F1-Score --> lower weight]
   if (weighted) {
     tree_weights <- c()
     sum_all      <- 0
     
-    if (weight_metric == "Acc") {
-      for (i in 1:length(Forest)) {
-        
-        # Get the oob error of the current tree
-        curr_oob_acc    <- round(get_oob_acc(trees = Forest[[i]]), 3)
-        tree_weights[i] <- curr_oob_acc
-        
-        sum_all <- sum_all + curr_oob_acc
-      }
-    }
-    
-    if (weight_metric == "F1") {
-      for (i in 1:length(Forest)) {
-        
-        # Get the oob F1 of the current tree
-        curr_oob_f1     <- round(get_oob_F1(trees = Forest[[i]]), 3)
-        tree_weights[i] <- curr_oob_f1
-        
-        sum_all <- sum_all + curr_oob_f1
-      }
+    # MAYBE IN PARALLEL
+    for (i in 1:length(Forest)) {
+      tree_weights[i] <- get_oob_weight_metric(trees = Forest[[i]], 
+                                               weight_metric = weight_metric)
     }
     
     # Norm the weights
-    tree_weights <- tree_weights /  sum_all
+    tree_weights <- tree_weights /  sum(tree_weights)
     
   } else {
     tree_weights <- rep(1, times = length(Forest))
@@ -574,6 +508,17 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
   
   return(as.vector(res))
 }
+
+data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LGG_Subset.RData"
+response = "gender"
+seed = 1312
+weighted = TRUE
+weight_metric = "Acc"
+num_trees = as.integer(10)
+mtry = NULL
+min_node_size = NULL
+unorderd_factors = "ignore"
+
 do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LGG_Subset.RData",
                                           response = "gender", seed = 1312, 
                                           weighted = TRUE, weight_metric = NULL,
@@ -687,6 +632,7 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
   
   # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
+    
     # check that it is character
     assert_character(weight_metric)
     
