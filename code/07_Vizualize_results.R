@@ -118,41 +118,36 @@ data_path <- "./docs/CV_Res/gender/explorative_subsets"
 files <- list.files(data_path)
 files <- files[grepl("single", files)]
 
-# 1-2 Add the amount of subsets to each block:
-DF1 <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
-DF1$subset <- 1.25
+# 1-2 Load the data and store it into a single DF!
+DF_all <- data.frame()
+for (curr_file in files) {
+  DF_curr <-  read.csv2(paste0(data_path, "/", curr_file), stringsAsFactors = F)
+  DF_all  <- rbind(DF_all, DF_curr)
+}
 
-DF2 <- read.csv2(paste0(data_path, "/", files[2]), stringsAsFactors = F)
-DF2$subset                         <- 100
-DF2[DF2$Block != "clin", "subset"] <- 10
+# 1-3 Convert features to right data type!
+str(DF_all)
+num_cols <- c("OOB_Acc", "Test_Acc", "Test_F1", "Fraction")
+DF_all[,num_cols] <- sapply(num_cols, function(x) as.numeric(DF_all[,x]))
 
-DF3 <- read.csv2(paste0(data_path, "/", files[3]), stringsAsFactors = F)
-DF3$subset <- 2.5
-
-DF4 <- read.csv2(paste0(data_path, "/", files[4]), stringsAsFactors = F)
-DF4$subset <- 5
-
-DF5 <- read.csv2(paste0(data_path, "/", files[5]), stringsAsFactors = F)
-DF5$subset <- 100
-
-# 1-3 Bind them to a single DF
-DF_all <- rbind(DF1, DF2, DF3, DF4, DF5)
-
-# 1-4 reshape the layout of data for the plot! 
-plot_df <- melt(DF_all, id.vars = c("Block", "subset"), measure.vars = c("Test_Acc", "Test_F1", "subset", "Block"))
+# 1-4 Reshape the layout of data for the plot! 
+plot_df <- melt(DF_all, id.vars = c("Block", "Fraction"), 
+                measure.vars = c("Test_Acc", "Test_F1", "Block"))
 plot_df <- plot_df[plot_df$variable %in% c("Test_Acc", "Test_F1"),]
 plot_df$value <- as.numeric(plot_df$value)
 
-# [2] Do the plot
+# 1-5 Plot the performance 
+#     Split by the fraction we've used to subset the single blocks!
 ggplot(data = plot_df, aes(x = Block, y = value, fill = variable)) + 
   geom_boxplot() + 
-  facet_grid(. ~ subset) +
+  facet_grid(. ~ Fraction) +
   theme_bw() +
-  ggtitle("EXPLORATIVE - Single Block Performance on all 14 DFs",
-          subtitle = "split by the amount of subset we used as feas") +
+  ggtitle("Single Block Performance on all 14 DFs [w/ 5 fold CV]",
+          subtitle = "split by the amount of features we kept") +
   xlab("Blocks used as Feature Space") +
+  ylab("F1 Score // Accuracy") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
+        text = element_text(size = 17))
 
 # Analyse the explorative joint block block Results                         ----
 # [0] Define needed Variables
