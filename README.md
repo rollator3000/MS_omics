@@ -5,11 +5,14 @@ supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
 ## Project description
-This project compares different adaptions of the RandomForest-Method & other approaches to deal with blockwise missing data! A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response! *(different observed features for each training-set, where each trainingset has the same response value)*  <br>
-As in these settings imputation technique are only reliable if the different datasets are not too heterogenous & the set of covariates highly overlap, we try a new approach by trying to incorporate the different features from the different folds/ training-sets into a single RandomForest / Approach! Neverless we will also use one Method to impute the missing values and compare the performance to this approach!
+This project compares different approaches to deal with blockwise missing data in trainsets!  A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response! *(different observed features for each training-set, where each trainingset has the same response value)* <br> 
+The Methods we use to deal with these kind of data are all based on the RandomForest approach (Breimann). <br> 
+As a baseline Approach we use a model that only uses the train-obs. that are fully observed regarding the testset *(e.g. testset constits of Clinical Block and 2 Omics Block -> only use observations, that were fully observed in these 3 blocks)* <br>
+We will also try a classical imputation approach with 'missForest', so that we remove all missing datablocks from the train data, so that we can fit a regular RF on it! <br>
+We will also have two RF Adaptions, that can deal with blockwise missingness. These Methods are trying to incorporate the different features from the different folds/ training-sets into a single Approach!
 
 **Example:**
-Different hospitals do reseach regarding the same response *(e.g. different Cancertypes)*, but the different hospitals do not necessarily collect the same features - in this setting the data from the different hospitals can be seen as the data from different folds - where none of the folds have the exact same feature space!
+Different hospitals do reseach regarding the same response *(e.g. different Cancertypes)*, but the different hospitals do not necessarily collect the same omics features - in this setting the data from the different hospitals can be seen as the data from different folds - where none of the folds have the exact same feature space!
 ``` 
 - Hospital_1: Clinical + RNA Data
 - Hospital_2: Clinical + CopyNumberVariation Data
@@ -21,8 +24,7 @@ RandomForest(Cancertype ~ Clinical + RNA + CopyNumberVariation + Mutation)
 ```
 Besides taking all features into account - eventhough most features were not observed for all -, the model should also be able to predict on test-obs.,with all blocks as features, or even just 1 block, or a combination of 2 blocks that were not avaible in the training data!
 <br>
-For Details regarinding the methods, data situations etc. please have a look at: <br> 
-     MasterThesis / code in repository
+For Details regarinding the methods, data situations etc. please have a look at: **MasterThesis / Repository**
 
 ## Code
 Short describtion of the scripts in './code'!
@@ -59,6 +61,9 @@ Short describtion of the scripts in './code'!
 - 07_Vizualize_results:
     Code to plot the results of the different approaches!
     [explorative results + real CV Results]
+
+- 08_Imputatiojn_CV:
+    Code to CrossValidate the (missforest-) imputation approach! 
 ```
 
 ## Project Organization
