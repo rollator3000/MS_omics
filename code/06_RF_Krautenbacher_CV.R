@@ -7,6 +7,8 @@
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 library(randomForestSRC)
 library(checkmate)
+library(tidyverse)
+library(caret)
 
 load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
                                           response = 'gender') {
@@ -266,6 +268,52 @@ do_evaluation_rfsrc           <- function(Forest, testdata, weights) {
   
   return(as.vector(res))
 }
+get_blockwise_oob_performance <- function(blockwise_RF) {
+  "Funciton to evaluate how good the predicitive performance of 
+   a single block RF is! For this we let the already fitted model 
+   do predicitons on its OOB observations and get metrics! 
+   [use all trees w/ same OOB observation to do a prediciton!]
+   
+    Args:
+      - blockwise_RF (rfsrc) : RF that was alredy fit on data! 
+      
+    Return:
+      - return the OOB_F1_Score and the OOB_Accuracy
+  "
+  # [0] Check Inputs
+  if (!("rfsrc" %in% class(blockwise_RF))) {
+    stop("'blockwise_RF' is not of class 'rfsrc'!")
+  }
+  
+  # [1] Calculate the metrics based on OOB observations! 
+  # 1-1 Get probabilites for class '0' and remove NAs [ID was in no tree oob!]
+  preds_class_0                            <- blockwise_RF$predicted.oob[,1]
+  to_rm_NA                                 <- which(is.na(preds_class_0))
+  if (length(to_rm_NA) >= 1) preds_class_0 <- preds_class_0[-to_rm_NA] 
+  preds_class                              <- ifelse(preds_class_0 > 0.5, 0, 1)
+  
+  # 1-2 Get true classes and remove the ID, which hasn't been OOB at all!
+  true_classes <- blockwise_RF$yvar
+  true_classes <- true_classes[-to_rm_NA]
+  
+  # 1-3 Convert 'preds_class' to factor w/ same levels!
+  preds_class <- factor(preds_class, levels = levels(true_classes))
+  
+  # 1-4 Get Predicitons
+  confmat_ <- caret::confusionMatrix(data      = true_classes, 
+                                     reference = preds_class)
+  
+  # [2] Return the F1-Score and the Accuracy!
+  F1_curr  <- confmat_$byClass["F1"]
+  Acc_curr <- confmat_$overall["Accuracy"]
+  
+  if (is.na(F1_curr)) F1_curr <- 0 
+  
+  oob_results <- c(F1_curr, Acc_curr)
+  names(oob_results) <- c("F1", "Accuracy")
+  
+  return(oob_results)
+}
 do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
                                           response = "gender", seed = 1312, 
                                           weighted = TRUE, weight_metric = NULL,
@@ -277,7 +325,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     
     Data is split into test and train set [5-fold], w/ little adjustment, that
     all train folds have same amount of obs., so the TestFold can be a bit
-    smaller than the testfold!
+    smaller than the testfold
     Then each [equally sized] trainingsfold is censored to scenario 1, so that 
     each fold has an observed clinical block & an one observed omics block!
     
@@ -366,6 +414,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
   
   # 0-3 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
+    
     # check that it is character
     assert_character(weight_metric)
     
@@ -483,6 +532,24 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     # 4-2 Collect all single RFs to the Forest!
     Forest <- list(RF_clin, RF_cnv, RF_rna, RF_mutation, RF_mirna)
     
+    # [5] Get the OOB metrics of the blockwise fitted RFs
+    # 5-1 If weighted, loop over the blockwise RFs and get the oob F1/ Acc
+    #     of each blockwise fitted RF!
+    if (weighted) {
+      weights <- c()
+      
+      # Get OOB F1/ Acc from each Blockwise fitted RF!
+      for (block_RF in Forest) {
+        weights <- c(weights, 
+                     get_blockwise_oob_performance(block_RF)[weight_metric])
+      }
+    } else {
+      weights <- rep(1, times = length(Forest))
+    }
+    
+    # 5-2 Norm the weights
+    weights <- weights / sum(weights)
+    
     # [6] Get predicitons on the different testsets!
     # 6-1 TestSet, when there is only one observed block! 
     #     Also done to extract the predictive performance of the different RFs,
@@ -494,52 +561,34 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     print("Evaluation TestSet w/ 1 observed block only------------------------")
     print("Obtain performance & corresponding weights on the single blocks!")
     
-    single_A[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1),
+    single_A[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                   data$block_name$mutation_block,
                                                                                                   data$block_name$mirna_block,
                                                                                                   data$block_names$clin_block))])
     
-    single_B[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1), 
+    single_B[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = weights, 
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                                   data$block_name$mutation_block,
                                                                                                   data$block_name$mirna_block,
                                                                                                   data$block_names$clin_block))])
     
-    single_C[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1),
+    single_C[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                   data$block_name$cnv_block,
                                                                                                   data$block_name$mirna_block,
                                                                                                   data$block_names$clin_block))])
     
-    single_D[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1), 
+    single_D[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = weights, 
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                   data$block_name$mutation_block,
                                                                                                   data$block_name$cnv_block,
                                                                                                   data$block_names$clin_block))])
-    single_CL[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = c(1, 1, 1, 1, 1),
+    single_CL[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                                testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
                                                                                                    data$block_name$mutation_block,
                                                                                                    data$block_name$mirna_block,
                                                                                                    data$block_names$cnv_block))])
-    
-    # 6-1-2 Extract the weights from the single block performance - weighted is true!
-    weights <- c()
-    if (weighted) {
-      weights <- c(weights, single_CL[[i + 1]][[weight_metric]])
-      weights <- c(weights, single_A[[i + 1]][[weight_metric]])
-      weights <- c(weights, single_B[[i + 1]][[weight_metric]])
-      weights <- c(weights, single_C[[i + 1]][[weight_metric]])
-      weights <- c(weights, single_D[[i + 1]][[weight_metric]])
-    } else {
-      weights <- rep(1, times = 5)
-    }
-    
-    # 6-1-3 Norm the weights
-    weights <- weights / sum(weights)
-    
-    print("Extracted weights for different blocks [CL, A, B, C, D] & normalized them")
-    print(weights)
     
     # 6-2 Full TestSet
     print("Evaluation full TestSet -------------------------------------------")
