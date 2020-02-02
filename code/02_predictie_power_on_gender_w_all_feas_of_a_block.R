@@ -1,8 +1,5 @@
-" Investigate how good the predicitive peroformance of a model is on a single 
-  block / in General! 
-    --> full block with the whole features that are originally in the block!
-    --> block with only 10% | 5% | 2.5%... of the original features!
-    --> all blocks - w/ only 10% | 5% | 2.5%... of original features conecated!
+" Investigate how good the predicitive peroformance of a RF is on a single 
+  block / on joint Blocks for different amount of subsetted features!
 
   For each of these Scenarios, we create a DF, that tracks:
     -the dataframe  
@@ -205,7 +202,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
                        'OOB_Acc'   - Metrics obtained from OOB / CV Testset
                        'Test_Acc'  -               - ' - 
                        'Test_F1'   -               - ' -
-                       'Fold'      - which fold of the 5 fold CV
+                       'Fold'      - which fold of the 5 fold CV  
                        'Time'      - how long did it take to fit a RF on the block
                        'Fraction'  - fraction used to subset the single blocks!
       will be saved to 'docs/CV/gender/explorative_subsets/' the name of the file
@@ -365,164 +362,75 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
 }
 
 # Get Performances w/ single blocks as feature space!                        ----
-# Single fully observed Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 1)
-
-# Single 75% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.75)
-
-# Single 50% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.5)
-# Single 25% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.25)
-
-# Single 15% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.15)
-
-# Single 10% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.10)
-
-# Single 5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.05)
-
-# Single 2.5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.025)
-
-# Single 1.25% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.0125)
-
-# Single 0.5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 12345,
-                          fraction = 0.005)
-
-# Single fully observed Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 1)
-
-# Single 75% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.75)
-
-# Single 50% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.5)
-# Single 25% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.25)
-
-# Single 15% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.15)
-
-# Single 10% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.10)
-
-# Single 5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.05)
-
-# Single 2.5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.025)
-
-# Single 1.25% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.0125)
-
-# Single 0.5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 123456,
-                          fraction = 0.005)
-
-# Single 0.5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 1234,
-                          fraction = 0.005)
-
-# ------------------------------------------ Different Seed!
-
-# Single fully observed Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 1)
-
-# Single 75% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.75)
-
-# Single 50% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.5)
-# Single 25% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.25)
-
-# Single 15% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.15)
-
-# Single 10% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.10)
-
-# Single 5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.05)
-
-# Single 2.5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.025)
-
-# Single 1.25% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.0125)
-
-# Single 0.5% subsetted Omics-Blocks as features to RF
-eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
-                          seed_to_subset = 5678,
-                          fraction = 0.05)
+for (seed in c(1234, 12345, 123456)) {
+  
+  # Single fully observed Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 1)
+  
+  # Single 75% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.75)
+  
+  # Single 50% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.5)
+  # Single 25% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.25)
+  
+  # Single 15% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.15)
+  
+  # Single 10% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.10)
+  
+  # Single 5% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.05)
+  
+  # Single 2.5% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.025)
+  
+  # Single 1.25% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.0125)
+  
+  # Single 0.5% subsetted Omics-Blocks as features to RF
+  eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
+                            seed_to_subset = seed,
+                            fraction = 0.005)
+}
 
 # Get Performances w/ joint subsetted blocks as feature spaces               ----
-# eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, seed_to_subset = 1234,
-#                          fraction_cnv = 0.1, fraction_mirna = 0.5,
-#                          fraction_mutation = 0.5, fraction_rna = 0.1,
-#                          fraction_clin = 1)
-
-
+for (rna_sub in c(0.75, 0.5, 0.25, 0.15)) {
+  for (cnv_sub in c(0.005, 0.0125)) {
+    eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
+                             seed_to_subset = 12345,
+                             fraction_cnv = cnv_sub, 
+                             fraction_mirna = 1,
+                             fraction_mutation = 1, 
+                             fraction_rna = rna_sub,
+                             fraction_clin = 1)
+    
+    eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
+                             seed_to_subset = 12345,
+                             fraction_cnv = cnv_sub, 
+                             fraction_mirna = 0.025,
+                             fraction_mutation = 0.025, 
+                             fraction_rna = rna_sub,
+                             fraction_clin = 1)
+  }
+}

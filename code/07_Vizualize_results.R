@@ -131,7 +131,7 @@ num_cols <- c("OOB_Acc", "Test_Acc", "Test_F1", "Fraction")
 DF_all[,num_cols] <- sapply(num_cols, function(x) as.numeric(DF_all[,x]))
 
 # 1-4 Reshape the layout of data for the plot! 
-plot_df <- melt(DF_all, id.vars = c("Block", "Fraction"), 
+plot_df <- melt(DF_all, id.vars = c("Block", "Fraction", "subset_seed"), 
                 measure.vars = c("Test_Acc", "Test_F1", "Block"))
 plot_df <- plot_df[plot_df$variable %in% c("Test_Acc", "Test_F1"),]
 plot_df$value <- as.numeric(plot_df$value)
@@ -140,7 +140,7 @@ plot_df$value <- as.numeric(plot_df$value)
 #     Split by the fraction we've used to subset the single blocks!
 ggplot(data = plot_df, aes(x = Block, y = value, fill = variable)) + 
   geom_boxplot() + 
-  facet_grid(. ~ Fraction) +
+  facet_grid(subset_seed ~ Fraction) +
   theme_bw() +
   ggtitle("Single Block Performance on all 14 DFs [w/ 5 fold CV]",
           subtitle = "split by the amount of features we kept") +
