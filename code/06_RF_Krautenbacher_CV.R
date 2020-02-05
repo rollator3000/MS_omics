@@ -314,35 +314,30 @@ get_blockwise_oob_performance <- function(blockwise_RF) {
   
   return(oob_results)
 }
-
-data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LUSC_Subset.RData"
-response  = "gender"
-seed      = 1312 
-weighted  = TRUE
-weight_metric = "F1"
-num_trees     = as.integer(10)
-mtry          = NULL 
-min_node_size = 10
-
-
 do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
                                           response = "gender", seed = 1312, 
                                           weighted = TRUE, weight_metric = NULL,
                                           num_trees = as.integer(10), mtry = NULL, 
                                           min_node_size = 10) {
-  
   " Function to evaluate RF Adaption on blockwise missing data from Norbert
     Krautenbacher [proposed in it's Ph.D.] Approach!
     
-    Data is split into test and train set [5-fold], w/ little adjustment, that
-    all train folds have same amount of obs., so the TestFold can be a bit
-    smaller than the testfold
+    Data is split into test and train set [curently fixed to 5-fold], with the 
+    little adjustment, the amount of traindata can be split into 4 folds w/o rest
+      --> All train folds have same amount of observations!
+      --> TestFold can be a bit smaller - not necessarily!
+    
     Then each [equally sized] trainingsfold is censored to scenario 1, so that 
-    each fold has an observed clinical block & an one observed omics block!
+    each fold has exactly an observed clinical block & one omics block!
     
     Then we train a serperate RandomForest on  each of the feature blocks 
     [clin, omicsblock1,...] and ensemble the predicitons from these RFs to a 
     single prediciton and rate these w/ Accuracy, Precision, F1-Socre,....
+    
+    When ensebeling the predicitons from the different fold wise fitted trees we 
+    can assign different weights to these based on the oob performance!
+    --> the better the oob performance, the higher the weight!
+    
     The TestingSituations are different, as we can test the models on fully 
     observed testdata, on testdata w/ 1 missing block etc. etc.
     
@@ -351,18 +346,17 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
                               to a file w/ multiple sub DFs 
                               [details see 'create_data()']
       - response (char)     : The repsonse we want to model - 
-                              MUST be in the 'clin'-block!
+                              MUST be in the 'clin'-block & BINARY!
       - seed (int)          : Needed for shuffeling the rows of data before CV,
-                              & the assignment of obs to folds[diff folds diff feas] 
-                              in a reproducable way! Aswell needed so the RFs on
-                              the different blocks to train in a reproducable way!
+                              & the assignment of obs to folds[diff folds w/ diff feas] 
+                              in a reproducable way!
       - weighted (bool)     : Shall the predicitons from the different blocks be
                               weighted by the oob accuracy of the blocks?!
       - weight_metric (chr) : Which Metric shall be used to weight the different 
                               RFs - the better the single blocks according to the
                               metric, the higher their weight when ensembling!
                               Must be in c('Accuracy', 'F1')
-      - num_trees (int)     : amount of trees, we shall grow on each[!] fold
+      - num_trees (int)     : amount of trees, we shall grow on each[!] block
       - mtry (int)          : amount of split-variables we try, when looking for 
                               a split variable!
                               If NULL: mtry = sqrt(p)
@@ -414,7 +408,8 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
             - single_D:  CV-Results for each fold on the testdata w/ only 
                          block D features [Mirna]
         * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry,....   "
+             - datapath, seed, response, mtry,time, .... 
+  "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-0 data_path, response are all checked within 'load_data_extract_block_names()'
   # 0-1 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
@@ -455,22 +450,16 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
   # 2-2 Create empty lists to store results in!
   # 2-2-1 Full TestSet
   full <- list()
-  
   # 2-2-2 TestSet with 1 missing omics-block
   miss1_A <- list(); miss1_B <- list(); miss1_C <- list(); miss1_D <- list()
-  
   # 2-2-3 TestSet with 2 missing omics-blocks
-  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list()
-  miss2_AC <- list(); miss2_AB <- list()
-  
+  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list(); miss2_AC <- list(); miss2_AB <- list()
   # 2-2-4 TestSet with 3 missing omics-blocks
   miss3_ABC <- list(); miss3_ABD <- list(); miss3_ACD <- list(); miss3_BCD <- list()
-  
   # 2-2-5 Single BlockTestSet
-  single_A <- list(); single_B <- list(); single_CL <- list() 
-  single_C <- list(); single_D <- list()
+  single_A <- list(); single_B <- list(); single_CL <- list(); single_C <- list(); single_D <- list()
   
-  # 2-2-6 Start a timer, so we can take the time needed for whole CV!
+  # 2-3 Start a timer, so we can calc. how long the CV took in total!
   start_time <- Sys.time()
   
   # [3] Start the CV [5-fold per default!] -------------------------------------
@@ -478,17 +467,17 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     
     print(paste0("FOLD: ", as.character(i + 1), "/5 -------------------------"))
     
-    # [1] Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
+    # 3-1 Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
     #     IDs in 'fold_ids'
     test_ids <- fold_ids[((i * obs_per_fold$amount_test) + 1):(((i + 1) * obs_per_fold$amount_test))]
     test_df  <- data$data[test_ids,]
     
-    # [2] Get the TrainSet from 'data' [= IDs not in TestSet] 
+    # 3-2 Get the TrainSet from 'data' [= IDs not in TestSet] 
     train_ids <- fold_ids[-which(fold_ids %in% test_ids)]
     train_df  <- data$data[train_ids,]
     
-    # [3] Induce blockwise missingness [SCENARIO_1]
-    # 3-1 Sample equally sized 'observed' blocks [according to SCENARIO_1]
+    # 3-3 Induce blockwise missingness [SCENARIO_1]
+    # 3-3-1 Sample equally sized 'observed' blocks [SCENARIO_1]
     set.seed(seed + i)
     observed_blocks <- sample(c(rep("Clin, A", obs_per_fold$amount_train_fold), 
                                 rep("Clin, B", obs_per_fold$amount_train_fold),
@@ -510,49 +499,48 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     mirna_block     <- train_df[grep("D", observed_blocks), 
                                 c(response, data$block_names$mirna_block)]
     
-    # [4] Fit RFs on the seperate blocks
+    # 3-4 Fit RFs on the seperate blocks
     #     'Formula' for the fitting has form of 'response ~ .' 
-    #      --> use all cols as features except for the 'response'
-    # 4-1 Clincal Block
+    #      --> use all cols as features except for the 'response'!
+    # 3-4-1 Clincal Block
     RF_clin <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                      data = clin_block, ntree = num_trees, mtry = mtry, 
                      nodesize = min_node_size, samptype = "swr",
-                     seed = seed)
+                     seed = 12345678)
     
-    # 4-1-2 On CNV Block
+    # 3-4-1-2 On CNV Block
     RF_cnv <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                     data = cnv_block, ntree = num_trees, mtry = mtry, 
                     nodesize = min_node_size, samptype = "swr",
-                    seed = seed)
+                    seed = 12345678)
     
-    # 4-1-3 On RNA Block only
+    # 3-4-1-3 On RNA Block only
     RF_rna <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                     data = rna_block, ntree = num_trees, mtry = mtry, 
                     nodesize = min_node_size, samptype = "swr",
-                    seed = seed)
+                    seed = 12345678)
     
-    # 4-1-4 On Mutation Block only
+    # 3-4-1-4 On Mutation Block only
     RF_mutation <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                          data = mutation_block, ntree = num_trees, mtry = mtry, 
                          nodesize = min_node_size, samptype = "swr",
-                         seed = seed)
+                         seed = 12345678)
     
-    # 4-1-5 On Mirna Block only
+    # 3-4-1-5 On Mirna Block only
     RF_mirna <- rfsrc(formula = as.formula(paste(eval(response), "~ .")),
                       data = mirna_block, ntree = num_trees, mtry = mtry, 
                       nodesize = min_node_size, samptype = "swr",
-                      seed = seed)
+                      seed = 12345678)
     
-    # 4-2 Collect all single RFs to the Forest!
+    # 3-4-2 Collect all single RFs to the Forest!
     Forest <- list(RF_clin, RF_cnv, RF_rna, RF_mutation, RF_mirna)
     
-    # [5] Get the OOB metrics of the blockwise fitted RFs
-    # 5-1 If weighted, loop over the blockwise RFs and get the oob F1/ Acc
-    #     of each blockwise fitted RF!
+    # 3-5 Get the OOB metrics of the blockwise fitted RFs
+    # 3-5-1 If weighted, loop over the blockwise RFs and get the oob F1/ Acc
+    #       of each blockwise fitted RF!
     if (weighted) {
       weights <- c()
       
-      # Get OOB F1/ Acc from each Blockwise fitted RF!
       for (block_RF in Forest) {
         weights <- c(weights, 
                      get_blockwise_oob_performance(block_RF)[weight_metric])
@@ -561,16 +549,16 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
       weights <- rep(1, times = length(Forest))
     }
     
-    # 5-2 Norm the weights
+    # 3-5-2 Norm the weights
     weights <- weights / sum(weights)
     
-    # [6] Get predicitons on the different testsets!
-    # 6-1 Full TestSet
+    # 3-6 Get predicitons on the different testsets!
+    # 3-6-1 Full TestSet
     print("Evaluation full TestSet -------------------------------------------")
     full[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, testdata = test_df, 
                                          weights = weights) 
     
-    # 6-2 TestSet, where one of the omics blocks is missing!
+    # 3-6-2 TestSet, where one of the omics blocks is missing!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
     miss1_A[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                             testdata = test_df[,-which(colnames(test_df) %in% data$block_name$cnv_block)])
@@ -584,7 +572,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     miss1_D[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                             testdata = test_df[,-which(colnames(test_df) %in% data$block_name$mirna_block)])
     
-    # 6-3 TestSet, where two of the omics blocks are missing!
+    # 3-6-3 TestSet, where two of the omics blocks are missing!
     print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
     miss2_CD[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$mutation_block,
@@ -609,7 +597,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
     miss2_AB[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                              testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
                                                                                                  data$block_name$rna_block))])
-    # 6-4 TestSet, where three of the omics blocks are missing!
+    # 3-6-4 TestSet, where three of the omics blocks are missing!
     print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
     miss3_ABC[[i + 1]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$cnv_block,
@@ -630,7 +618,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
                                                                                             data$block_name$mutation_block,
                                                                                             data$block_name$mirna_block))])
     
-    # 6-1 TestSet, when there is only one observed block! 
+    # 3-6-5 TestSet, when there is only one observed block! 
     print("Evaluation TestSet w/ 1 observed block only------------------------")
     single_A[[i + 1]]  <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                               testdata = test_df[,-which(colnames(test_df) %in% c(data$block_name$rna_block,
@@ -661,7 +649,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
                                                                                                    data$block_name$mirna_block,
                                                                                                    data$block_names$cnv_block))])
   }
-  
+  # 3-7 Stop the time and take the difference!
   end_time    <- Sys.time()
   time_for_CV <- end_time - start_time
   
@@ -694,6 +682,31 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
   return(list("res_all" = res_all, 
               "settings" = settings))
 }
+# Run a example and check the results!                                       ----
+start_time <- Sys.time()
+no_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
+                                  data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
+                                  weighted = FALSE, weight_metric = "F1")
+no_weighting_time <- Sys.time() - start_time 
+
+start_time <- Sys.time()
+acc_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
+                                   data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
+                                   weighted = TRUE, weight_metric = 'Accuracy')
+acc_weighting_time <- Sys.time() - start_time 
+
+start_time <- Sys.time()
+f1_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
+                                  data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
+                                  weighted = TRUE, weight_metric = "F1")
+f1_weighting_time <- Sys.time() - start_time 
+
+
+res_all <- list(no_weighting, acc_weighting, f1_weighting)
+save(res_all, file = "Norbert_seed1238_subset_LGG_diff_weight_approaches.RData")
+
+# These Functions are not completly done yet                                 ----
+# If all is correct in Situation1 we can complete these functions!!
 do_CV_NK_setting2             <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
                                           response = "gender", seed = 1312,
                                           weighted = TRUE, weight_metric = NULL,
@@ -1770,26 +1783,3 @@ do_CV_NK_setting4             <- function(data_path = "data/external/Dr_Hornung/
   return(list("res_all" = res_all, 
               "settings" = settings))
 }
-
-# Run a example and check the results!                                       ----
-start_time <- Sys.time()
-no_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
-                                  data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
-                                  weighted = FALSE, weight_metric = "F1")
-no_weighting_time <- Sys.time() - start_time 
-
-start_time <- Sys.time()
-acc_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
-                                   data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
-                                   weighted = TRUE, weight_metric = 'Accuracy')
-acc_weighting_time <- Sys.time() - start_time 
-
-start_time <- Sys.time()
-f1_weighting <- do_CV_NK_setting1(num_trees = as.integer(250),
-                                  data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1238/LGG_subset.RData",
-                                  weighted = TRUE, weight_metric = "F1")
-f1_weighting_time <- Sys.time() - start_time 
-
-
-res_all <- list(no_weighting, acc_weighting, f1_weighting)
-save(res_all, file = "Norbert_seed1238_subset_LGG_diff_weight_approaches.RData")

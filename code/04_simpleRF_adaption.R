@@ -58,6 +58,7 @@ methods = list(
       - draw obs. w/ | w/o replacment for growing and OOB
       - call splitNode then on the 1. Node!
         [recursivly done then!] 
+      
     "
     # Amount of Observations we draw to grow the tree
     num_samples <- data$nrow

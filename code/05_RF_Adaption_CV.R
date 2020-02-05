@@ -532,6 +532,11 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
     [where each fold has different observed features] and ensemble the 
     predicitons from these 4 different RFs to a single prediciton and rate these
     w/ Accuracy, Precision, Specifity, F1-Socre,....
+    
+    When ensebeling the predicitons from the different fold wise fitted trees we 
+    can assign different weights to these based on the oob performance!
+    --> the better the oob performance, the higher the weight!
+    
     The TestingSituations are different, as we can test the models on fully 
     observed testdata, on testdata w/ 1 missing block etc. etc.
  
@@ -902,7 +907,6 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                                                                                             data$block_name$mutation_block,
                                                                                             data$block_name$mirna_block))])
   }
-  
   # 3-7 Stop the time and take the difference!
   end_time    <- Sys.time()
   time_for_CV <- end_time - start_time
