@@ -415,8 +415,8 @@ for (seed in c(1234, 12345, 123456)) {
 }
 
 # Get Performances w/ joint subsetted blocks as feature spaces               ----
-for (rna_sub in c(0.75, 0.5, 0.25, 0.15)) {
-  for (cnv_sub in c(0.005, 0.0125)) {
+for (rna_sub in c(0.75, 0.5, 0.25, 0.15, 1)) {
+  for (cnv_sub in c(0.005, 0.0125, 1)) {
     eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
                              seed_to_subset = 12345,
                              fraction_cnv = cnv_sub, 

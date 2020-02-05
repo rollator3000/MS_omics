@@ -429,11 +429,15 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
     not_usable <- c(not_usable, all(is.na(tree_preds_all[[i]]$Class)))
   }
   
-  # 2-1 Check that there are still trees existing!
+  # 2-1 Check that there are still trees existing, else not preds possible!
   if (all(not_usable)) {
     print("None of the trees are usable for predictions!")
     return("No Predictions possible as all trees are pruned at the 1. splitvar!")
   }
+  
+  # 2-2 Remove the SubRFs from the Forst, that are not usable
+  Forest         <- Forest[-c(which(not_usable))]
+  tree_preds_all <- tree_preds_all[-c(which(not_usable))]
   
   # [3] If we want to create weighted ensemble of the predicitons, we need to
   #     calc the OOB-Accuracy/ OOB-F1--Score per 'trees' [foldwise RF] and use 
@@ -441,9 +445,8 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
   #     [lower ACC --> lower weight | lower F1-Score --> lower weight]
   if (weighted) {
     tree_weights <- c()
-    sum_all      <- 0
     
-    # MAYBE IN PARALLEL
+    # Really slow, think about parallel!
     for (i in 1:length(Forest)) {
       tree_weights[i] <- get_oob_weight_metric(trees = Forest[[i]], 
                                                weight_metric = weight_metric)
@@ -460,11 +463,12 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
   # 4-1 Get the probabilities of all test obs to be of class '0'
   all_forrest_preds_probs_class_0 <- sapply(1:nrow(testdata), FUN = function(x) {
     
-    # Loop over all Trees in Forest to get Predicitons!
-    preds_all <- c()
-    for (i in 1:length(Forest)) {
-      preds_all[i] <- tree_preds_all[[i]]$Probs[[x]][1]
-    }
+    # Get a probability prediciton from each [still usable] tree!
+    preds_all <- sapply(seq_len(length(tree_preds_all)), function(i) {
+      tree_preds_all[[i]]$Probs[[x]][1]
+    })
+    
+    # Combine the preditions of the different trees!
     prob_class0 <- weighted.mean(preds_all, w = tree_weights, na.rm = TRUE)
     prob_class0
   })
@@ -509,7 +513,7 @@ do_evaluation                 <- function(Forest, testdata, weighted, weight_met
   return(as.vector(res))
 }
 
-data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LGG_Subset.RData"
+data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LUSC_Subset.RData"
 response = "gender"
 seed = 1312
 weighted = TRUE
@@ -676,6 +680,9 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
   # 2-2-5 Single BlockTestSet
   single_A <- list(); single_B <- list(); single_CL <- list() 
   single_C <- list(); single_D <- list()
+  
+  # 2-2-6 Start a timer, so we can take the time needed for whole CV!
+  start_time <- Sys.time()
  
   # [3] Start the CV, split data to Test and Train and evaluate it! ------------
   for (i in 0:4) {
@@ -944,6 +951,9 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
     rm(curr_Forest); gc()
   }
   
+  end_time    <- Sys.time()
+  time_for_CV <- end_time - start_time
+  
   # [4] Return the metric & settings of the fitting! ---------------------------
   # 4-1 Collect all CV Results in a list!
   res_all <- list("full" = full,
@@ -967,7 +977,8 @@ do_CV_setting1                <- function(data_path = "data/external/Dr_Hornung/
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
-                   "unorderd_factors" = unorderd_factors)
+                   "unorderd_factors" = unorderd_factors,
+                   "time_for_CV"      = time_for_CV)
   
   # 4-3 Return both lists!
   return(list("res_all"  = res_all, 

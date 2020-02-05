@@ -159,34 +159,40 @@ files <- list.files(data_path)
 files <- files[grepl("joint", files)]
 
 # 1-2 Add the amount of subsets to each block:
-DF1 <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
-DF1$subset <- "10%_all"
-
-DF2 <- read.csv2(paste0(data_path, "/", files[2]), stringsAsFactors = F)
-DF2$subset <- "10%_Mirna&Mutation_2.5%CNV&RNA"
-
-DF3 <- read.csv2(paste0(data_path, "/", files[3]), stringsAsFactors = F)
-DF3$subset <- "10%_Mirna&Mutation_2.5%RNA_1.25%CNV"
-
-DF4 <- read.csv2(paste0(data_path, "/", files[4]), stringsAsFactors = F)
-DF4$subset <- "10%_Mirna&Mutation_5%RNA&CNV"
-
-# 1-3 Bind them to a single DF
-DF_all <- rbind(DF1, DF2, DF4, DF3)
+DF_all <- data.frame()
+for (curr_file in files) {
+  DF_curr <-  read.csv2(paste0(data_path, "/", curr_file), stringsAsFactors = F)
+  DF_all  <- rbind(DF_all, DF_curr)
+}
 
 # 1-4 reshape DF_all for the plot!
-plot_df <- melt(DF_all, id.vars = c("Data", "subset"), measure.vars = c("Test_Acc", "Test_F1", "subset", "Data"))
+plot_df <- melt(DF_all, id.vars = c("Data", "Fraction"), measure.vars = c("Test_Acc", "Test_F1", "Fold"))
 plot_df <- plot_df[plot_df$variable %in% c("Test_Acc", "Test_F1"),]
 plot_df$value <- as.numeric(plot_df$value)
 
+# 1-5 Add the fraction used of the single blocks as meta data!
+for (i in seq_len(nrow(plot_df))) {
+  plot_df$mirna_subset[i]    <- strsplit(strsplit(plot_df$Fraction[i], split = "mirna_")[[1]][2], split = "__")[[1]][1]
+  plot_df$mutation_subset[i] <- strsplit(plot_df$Fraction[i], split = "mutation_")[[1]][2]
+  plot_df$rna_subset[i]      <- strsplit(strsplit(plot_df$Fraction[i], split = "_rna_")[[1]][2], split = "_")[[1]][1]
+  plot_df$cnv_subset[i]      <- strsplit(strsplit(plot_df$Fraction[i], split = "_cnv_")[[1]][2], split = "_")[[1]][1]
+  plot_df$Fraction_new[i]    <- strsplit(plot_df$Fraction[i], split = "__mirna_")[[1]][2]
+  plot_df$Fraction_new[i]    <- paste0("mirna_", plot_df$Fraction_new[i])
+}
+
+plot_df$rna_subset_plot <- sapply(plot_df$rna_subset, function(x) paste0("rna_", x)) 
+plot_df$cnv_subset_plot <- sapply(plot_df$cnv_subset, function(x) paste0("cnv_", x)) 
+
 # [2] Do the plot, split by subsets 
-ggplot(data = plot_df, aes(x = subset, y = value, fill = variable)) +
+ggplot(data = plot_df, aes(x = Fraction_new , y = value, fill = variable)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("EXPLORATIVE - Joint Block Performance on all 14 DFs") +
-  xlab("Subsetting of single blocks") +
+  facet_grid(rna_subset_plot ~ cnv_subset_plot) +
+  ggtitle("EXPLORATIVE - Joint Block Performance on all 14 DFs - w/ seed 12345", 
+          subtitle = "Single Blocks were subsetted! y-axis RNA splits || x-axis CNV splits") +
+  xlab("subsets for mirna & mutation") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
+        text = element_text(size = 17))
 
 # Analyse the fix subsettet DFs w/ joint blocks!                            ----
 # [0] Define needed Variables
