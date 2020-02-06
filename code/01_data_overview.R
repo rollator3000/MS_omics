@@ -213,6 +213,7 @@ STAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/ST
 UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/UCEC.Rda")
 
 # Check DFs for 'gender' as clinical variable & get the distribution        ----
+# ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
 #   For each of the 21 DFs check whether a variable 'sex' or 'gender' is avaible
 #   within the clinical features of the dataset!
 BLCA_Res$clin  # --> has gender as clin Variable! --> 3 clinical feas remaining
@@ -251,7 +252,7 @@ for (df_curr in DFs_w_gender) {
 }
 
 # Get the distribution of the amount of features in each block over all dfs ----
-# Get the amount of features of each block, in the usable dataframes [w/ gender]
+# ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
 
 # "DFs_w_gender" needed for the looop is defined in chapter above!
 blocks <- c("cnv", "mirna", "mutation", "rna")
