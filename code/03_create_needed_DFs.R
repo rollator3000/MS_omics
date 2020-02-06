@@ -4,9 +4,12 @@
       - this was/ is needed for the adaption of the 'simpleRF' Package!
       
   [2] Create Subsets of the original datasets!
-      - 10% subset for the mirna & mutation blocks!
-      - 5% subset for the rna block!
-      - 0.25% ubset for the cnv block!
+      --> After exploration of the different subsets in '02_...R', we create a 
+          final subset we will use for the comparison study!
+          For this we will subset each omics block:
+            - 0.005 for cnv omics block!
+            - 0.025 for minrna and mutationn omcis blocks!
+            - 0.15  for rna omics block!
     
   [3] & [4] 
      Get Performance on the subsetted DFs, when a regular DF is fit 
@@ -49,15 +52,63 @@ write.csv2(iris, file = "./data/external/example_data/iris_example.csv",
 # 2-2-1 Names of the usable dataframes (gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
+
 # 2-2-2 path to the data
-data_path <- "./data/external/Dr_Hornung/Data/ProcessedData/"
+data_path <- "./data/external/Dr_Hornung/original_processed_data/"
 
-# 2-2-3 seed for reproductibity
-seed <- 1240 # OBACHT: there needs to be a folder 'seed_1234' [or whatever seed set]
-             #          in '.data/external/Dr_Hornung/Data/ProcessedData_subsets'
+# 2-2-3 seed for reproductibity [selected in 02_...R]
+subset_seed <- 12345
 
-# 2-2 Loop over the DFs and create the subsets!
-for (DF in DFs_w_gender) {
+# 2-2-4 set the fraction for the single blocks we want to keep [selected in 02_...R]
+cnv_frac      <- 0.05
+mutation_frac <- 0.1
+rna_frac      <- 0.15
+mirna_frac    <- 0.5
+
+# 2-2 Loop over the DFs (w/ gender in 'clin') and create the subsets!
+for (df in DFs_w_gender) {
+  
+  writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
+  
+  # 2-3 Load 'df' & only keep names of the omics blocks in 'df'!
+  omics_blocks <- load(paste0(data_path, df, ".Rda"))
+  omics_blocks <- omics_blocks[-which(omics_blocks %in% c("targetvar", "clin"))]
+  
+  # 2-4 Loop over all the blocks in 'omics_blocks'
+  for (curr_block in omics_blocks) {
+    
+    writeLines(paste0("Current OmicsBlock: \n", curr_block))
+    
+    # 2-4-1 get the data to 'curr_data'
+    curr_data <- eval(as.symbol(curr_block))
+    
+    # 2-4-2 subset the data based on the block type!
+    if (curr_block %in% c("mirna")) {
+      set.seed(subset_seed)
+      sampled_cols <- sample(seq_len(ncol(curr_data)), 
+                             round(ncol(curr_data) * mirna_frac),
+                             replace = F)
+      
+      assign(curr_block, curr_data[ ,sampled_cols])
+    }
+  
+    # 2-5 Save the subsetted DF
+    save(mirna, mutation, rna, cnv, clin, 
+         file = paste0("./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_", 
+                       subset_seed, "/", df, "_subset.RData"))
+    
+  }
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   # 2-2-1 Load Data and the names of the single blocks 
   #       [except for 'target_var', as we only model classification problems!]
@@ -102,12 +153,12 @@ for (DF in DFs_w_gender) {
   # 2-2-5 Save the subsetted DF!
   #       'RData' --> load() will load all single blocks!
   save(mirna_sub, mutation_sub, rna_sub, cnv_sub, clin_, 
-       file = paste0("./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_", seed, "/", 
+       file = paste0("./data/external/Dr_Hornung/original_processed_data_subsets/seed_", seed, "/", 
                      DF, "_subset.RData"))
   
   # 2-2-6 Print info about sucessfully saving etc.
   print(paste0("Subset for ", DF, " sucessfully saved to ", 
-               paste0("./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_", seed, "/", 
+               paste0("./data/external/Dr_Hornung/original_processed_data_subsets/seed_", seed, "/", 
                       DF, "_subset.RData")))
 }
 

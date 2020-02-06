@@ -18,7 +18,7 @@ library(randomForestSRC)
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
-data_path    <- "./data/external/Dr_Hornung/Data/ProcessedData/"
+data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
 
 eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
   "
@@ -33,7 +33,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
   Args:
     DFs_w_gender (vector) : Vector filled with strings of DFs that have 'gender'
                             within their clinical block! These DF names have to 
-                            be in './data/external/Dr_Hornung/Data/ProcessedData/'
+                            be in './data/external/Dr_Hornung/original_processed_data/'
     seed_to_subset (int)  : Seed used, when subsetting the feature space, so it
                             is reproducible!
     fraction (double)     : How much of the original feature space shall be kept?
@@ -68,7 +68,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
                          stringsAsFactors = F)
   
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
-  data_path    <- "./data/external/Dr_Hornung/Data/ProcessedData/"
+  data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
   
   # [2] Loop over all DFs w/ gender in their clinical variables!
   for (df in DFs_w_gender) {
@@ -180,7 +180,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
   Args:
     DFs_w_gender (vector) : Vector filled with strings of DFs that have 'gender'
                             within their clinical block! These DF names have to 
-                            be in './data/external/Dr_Hornung/Data/ProcessedData/'
+                            be in './data/external/Dr_Hornung/original_processed_data/'
     seed_to_subset (int)  : Seed used, when subsetting the feature space, so it
                             is reproducible!
     fraction_cnv (double) : How much of the original 'cnv' feature space shall 
@@ -225,7 +225,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
                          stringsAsFactors = F)
   
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
-  data_path    <- "./data/external/Dr_Hornung/Data/ProcessedData/"
+  data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
   
   # [2] Loop over all DFs w/ gender in their clinical variables!
   for (df in DFs_w_gender) {

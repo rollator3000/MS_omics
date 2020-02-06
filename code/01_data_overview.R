@@ -150,67 +150,67 @@ load_rda_get_infos <- function(rda_path) {
 
 # Datainspection                                                            ----
 # ----- BLCA DF
-BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/BLCA.Rda")
+BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/BLCA.Rda")
 
 # ----- BRCA DF
-BRCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/BRCA.Rda")
+BRCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/BRCA.Rda")
 
 # ----- CESC DF
-CESC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/CESC.Rda")
+CESC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/CESC.Rda")
 
 # ----- COAD DF
-COAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/COAD.Rda")
+COAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/COAD.Rda")
 
 # ----- ESCA DF
-ESCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/ESCA.Rda")
+ESCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/ESCA.Rda")
 
 # ----- GBM DF
-GBM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/GBM.Rda")
+GBM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/GBM.Rda")
 
 # ----- HNSC DF
-HNSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/HNSC.Rda")
+HNSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/HNSC.Rda")
 
 # ----- KIRC DF
-KIRC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/KIRC.Rda")
+KIRC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/KIRC.Rda")
 
 # ----- KIRP DF
-KIRP_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/KIRP.Rda")
+KIRP_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/KIRP.Rda")
 
 # ----- LGG DF
-LGG_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/LGG.Rda")
+LGG_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LGG.Rda")
 
 # ----- LIHC DF
-LIHC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/LIHC.Rda")
+LIHC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LIHC.Rda")
 
 # ----- LUAD DF
-LUAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/LUAD.Rda")
+LUAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LUAD.Rda")
 
 # ----- LUSC DF
-LUSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/LUSC.Rda")
+LUSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LUSC.Rda")
 
 # ----- OV DF
-OV_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/OV.Rda")
+OV_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/OV.Rda")
 
 # ----- PAAD DF
-PAAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/PAAD.Rda")
+PAAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/PAAD.Rda")
 
 # ----- PRAD DF
-PRAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/PRAD.Rda")
+PRAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/PRAD.Rda")
 
 # ----- READ DF
-READ_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/READ.Rda")
+READ_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/READ.Rda")
 
 # ----- SARC DF
-SARC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/SARC.Rda")
+SARC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/SARC.Rda")
 
 # ----- SKCM DF
-SKCM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/SKCM.Rda")
+SKCM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/SKCM.Rda")
 
 # ----- STAD DF
-STAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/STAD.Rda")
+STAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/STAD.Rda")
 
 # ----- UCEC DF
-UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/Data/ProcessedData/UCEC.Rda")
+UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/UCEC.Rda")
 
 # Check DFs for 'gender' as clinical variable & get the distribution        ----
 # ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
@@ -245,7 +245,7 @@ DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
 
 #   Check the distribution for all 
 for (df_curr in DFs_w_gender) {
-  load(paste0("./data/external/Dr_Hornung/Data/ProcessedData/", df_curr, ".Rda"))
+  load(paste0("./data/external/Dr_Hornung/original_processed_data/", df_curr, ".Rda"))
   print(paste0("Distribution of 'gender' for DF: '", df_curr, "'"))
   print(prop.table(table(factor(clin$gender))))
   print("-------------------------------------------------------")
@@ -279,7 +279,7 @@ DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
 block     <- "mirna"; var_names <- c()
 
 for (df in DFs_w_gender) {
-  all_blocks <- load(paste0("./data/external/Dr_Hornung/Data/ProcessedData/", 
+  all_blocks <- load(paste0("./data/external/Dr_Hornung/original_processed_data/", 
                             df, ".Rda"))
   
   if (block %in% all_blocks) {
@@ -319,7 +319,7 @@ res
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
-data_path    <- "./data/external/Dr_Hornung/Data/ProcessedData/"
+data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
 
 res_all <- list()
 
@@ -351,5 +351,3 @@ for (df in DFs_w_gender) {
 # Get thy types of all DFs and all blocks:
 sapply(names(res_all), FUN = function(x) unlist(res_all[[x]]))
 lapply(names(res_all), FUN = function(x) unlist(res_all[[x]]))
-
-
