@@ -138,90 +138,84 @@ DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                          "LGG", "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
 
+# DF to save results of single block performances!
+eval_res <- data.frame("Data"     = character(), "fold"     = numeric(),
+                       "Dim"      = numeric(),   "OOB_Acc"  = numeric(),   
+                       "Test_Acc" = numeric(),   "Test_F1"  = numeric(), 
+                       "Time"     = numeric(), # min
+                       stringsAsFactors = F)
 
-# LOOP OVER ALL SUBSETTED DFS
-seeds <- c(1239, 1240)
-for (seed in seeds) {
+# Folder that holds all subsetted MUlti-Omics DFs!
+subset_folder <- "./data/external/Dr_Hornung/subsetted_12345/"
+
+# Loop over the subsetted DFs, fit a RF & get the OOB- & Test-Error
+for (df in DFs_w_gender_subset) {  
   
-  # Empty DF to save the Results in!
-  eval_res <- data.frame("Data"     = character(), "fold"     = numeric(),
-                         "Dim"      = numeric(),   "OOB_Acc"  = numeric(),   
-                         "Test_Acc" = numeric(),   "Test_F1"  = numeric(), 
-                         "Time"     = numeric(), # min
-                         stringsAsFactors = F)
+  writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
   
+  # Load current DF - all single blocks it consits of!
+  omics_blocks <- load(paste0(subset_folder, df))
   
-  subset_folder <- paste0("./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_", 
-                          seed, "/")
+  # Extract response 'gender' and remove it from clinical block!
+  resp        <- as.factor(clin$gender)
+  clin$gender <- NULL
   
-  # 3-3 Loop over the DFs, fit a RF & get the OOB- & Test-Error JOINT FEATURES
-  for (df in DFs_w_gender_subset) {  
+  # Bind all Blocks to a single DF, where the 1. column is the response!
+  DF_all <- cbind(resp,
+                  eval(as.symbol(omics_blocks[1])), 
+                  eval(as.symbol(omics_blocks[2])), 
+                  eval(as.symbol(omics_blocks[3])), 
+                  eval(as.symbol(omics_blocks[4])), 
+                  eval(as.symbol(omics_blocks[5])))
+  
+  # Get the IDs for the different folds for the 5 fold CV!
+  set.seed(12345)
+  fold_ids <- createFolds(DF_all[,1], k = 5)
+  
+  # 3-3-2-2 Do 5 fold CV
+  for (i in 1:5) {
     
-    writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
+    print(paste("Fold:", as.character(i), "----------------------------------"))
     
-    # 3-3-1 Load 'df' & paste the single blocks to a single DF!
-    omics_blocks <- load(paste0(subset_folder, df))
-    resp         <- as.factor(clin_$gender)
-    clin_$gender <- NULL
-    DF_all <- cbind(resp,
-                    eval(as.symbol(omics_blocks[1])), 
-                    eval(as.symbol(omics_blocks[2])), 
-                    eval(as.symbol(omics_blocks[3])), 
-                    eval(as.symbol(omics_blocks[4])), 
-                    eval(as.symbol(omics_blocks[5])))
+    # 3-3-2-3 Split to Test & Train
+    test      <- DF_all[fold_ids[[i]],]
+    train_obs <- which(!(seq_len(nrow(DF_all)) %in% fold_ids[[i]]))
+    train     <- DF_all[train_obs,]
     
-    # 3-3-2 Do 5 Fold CV to get the Performance!
-    # 3-3-2-1 Get the IDs for the different folds!
-    set.seed(12345)
-    fold_ids <- createFolds(DF_all[,1], k = 5)
+    # 3-3-2-4 Print dimension of TrainingDF
+    dim_train <- paste(dim(train), collapse = " x ")
     
-    # 3-3-2-2 Do 5 fold CV
-    for (i in 1:5) {
-      
-      print(paste("Fold:",as.character(i), "-----------------------------------"))
-      
-      # 3-3-2-3 Split to Test & Train
-      test      <- DF_all[fold_ids[[i]],]
-      train_obs <- which(!(seq_len(nrow(DF_all)) %in% fold_ids[[i]]))
-      train     <- DF_all[train_obs,]
-      
-      # 3-3-2-4 Print dimension of TrainingDF
-      dim_train <- paste(dim(train), collapse = " x ")
-      
-      # 3-3-3 Fit a model [standard settings] on the train DF & take the time:
-      start        <- Sys.time()
-      curr_forrest <- rfsrc(as.formula(resp ~ .), data = train, seed = 1312,
-                            ntree = 250)
-      end          <- Sys.time()
-      time_diff    <- difftime(end, start, units = 'mins')
-      
-      # 3-3-4 Evaluate the Model:
-      # OOB:      Get OOB Accuracy!
-      curr_OOB_ACC <- 1 - curr_forrest$err.rate[nrow(curr_forrest$err.rate), 1]
-      
-      # TESTSET:  Get the ErrorRates w/ TestSet
-      prob_preds   <- predict(curr_forrest, test)$predicted
-      pred_class   <- ifelse(prob_preds[,1] > 0.5, 0, 1)
-      truth        <- as.factor(test[,1])
-      pred_class   <- factor(pred_class, levels = levels(truth))
-      res          <- cbind(pred_class, truth)
-      test_acc     <- sum(res[,1] == res[,2]) / nrow(res)
-      test_F1      <- caret::confusionMatrix(data      = pred_class, 
-                                             reference = truth)$byClass["F1"]
-      if (is.na(test_F1)) test_F1 <- 0 
-      
-      # 3-3-5 Add results of this block to the Results-DF!
-      eval_res[nrow(eval_res) + 1, ] <- c(df, i, dim_train, curr_OOB_ACC, 
-                                          test_acc, test_F1, time_diff)
-      
-    }
+    # 3-3-3 Fit a model [standard settings] on the train DF & take the time:
+    start        <- Sys.time()
+    curr_forrest <- rfsrc(as.formula(resp ~ .), data = train, seed = 12345678,
+                          ntree = 250)
+    end          <- Sys.time()
+    time_diff    <- difftime(end, start, units = 'mins')
+    
+    # 3-3-4 Evaluate the Model:
+    # OOB:      Get OOB Accuracy!
+    curr_OOB_ACC <- 1 - curr_forrest$err.rate[nrow(curr_forrest$err.rate), 1]
+    
+    # TESTSET:  Get the ErrorRates w/ TestSet
+    prob_preds   <- predict(curr_forrest, test)$predicted
+    pred_class   <- ifelse(prob_preds[,1] > 0.5, 0, 1)
+    truth        <- as.factor(test[,1])
+    pred_class   <- factor(pred_class, levels = levels(truth))
+    res          <- cbind(pred_class, truth)
+    test_acc     <- sum(res[,1] == res[,2]) / nrow(res)
+    test_F1      <- caret::confusionMatrix(data      = pred_class, 
+                                           reference = truth)$byClass["F1"]
+    if (is.na(test_F1)) test_F1 <- 0 
+    
+    # 3-3-5 Add results of this block to the Results-DF!
+    eval_res[nrow(eval_res) + 1, ] <- c(df, i, dim_train, curr_OOB_ACC, 
+                                        test_acc, test_F1, time_diff)
+    
   }
-  
-  write.csv2(eval_res, row.names = FALSE, 
-             paste0("./docs/CV_Res/gender/performance_final_subsets/joint_blocks_DFseed", 
-                    seed, ".csv"))
 }
 
+write.csv2(eval_res, row.names = FALSE, 
+           "./docs/CV_Res/gender/performance_final_subsets/joint_blocks_DFseed_12345.csv")
 
 # [4] Get Test& OOB Performance on the subsetted DFs - SINGLE BLOCKS         ----
 #     Define files!
@@ -229,95 +223,88 @@ DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
 
-# LOOP OVER ALL SUBSETTED DFS
-seeds <- c(1239, 1240)
-for (seed in seeds) {
+# Empty DF to store Results!
+eval_res <- data.frame("Data"     = character(), 
+                       "Block"    = numeric(),   "fold"     = numeric(),
+                       "Dim"      = numeric(),   "OOB_Acc"  = numeric(),   
+                       "Test_Acc" = numeric(),   "Test_F1"  = numeric(), 
+                       "Time"     = numeric(), # min
+                       stringsAsFactors = F)
+
+# Set the folder we load the data from!
+subset_folder <- "./data/external/Dr_Hornung/subsetted_12345/"
+
+# Loop over all subsetted DFs, fit a RF & get the OOB- & Test-Error SINGLE BLOCK FEAS
+for (df in DFs_w_gender_subset) {
   
-  # Empty DF to store Results!
-  eval_res <- data.frame("Data"     = character(), 
-                         "Block"    = numeric(),   "fold"     = numeric(),
-                         "Dim"      = numeric(),   "OOB_Acc"  = numeric(),   
-                         "Test_Acc" = numeric(),   "Test_F1"  = numeric(), 
-                         "Time"     = numeric(), # min
-                         stringsAsFactors = F)
+  writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
   
-  # Set the folder we load the data from!
-  subset_folder <- paste0("./data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_", 
-                          seed, "/")
+  # Load Data - with all its 5 blocks!
+  omics_blocks <- load(paste0(subset_folder, df))
   
-  # 4-3 Loop over the DFs, fit a RF & get the OOB- & Test-Error SINGLE BLOCK FEAS
-  for (df in DFs_w_gender_subset) {
+  # Extract 'gender' response  & remove it from clincial block
+  resp        <- as.factor(clin$gender)
+  clin$gender <- NULL
+  
+  # Loop over all the omcis blocks of current 'df'
+  for (curr_block in omics_blocks) {
     
+    writeLines(paste0("Current OmicsBlock: \n", curr_block))
     
-    writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
+    # Bind response & the current omics block
+    DF <- cbind(resp, eval(as.symbol(curr_block)))
     
-    # 4-3-1 Load 'df' & get names of the single blocks & extract response!
-    #       + remove response from clinical block!
-    omics_blocks <- load(paste0(subset_folder, df))
-    resp         <- as.factor(clin_$gender)
-    clin_$gender <- NULL
+    # Convert it to DF and the respone to factor!
+    DF     <- as.data.frame(DF)
+    DF[,1] <- as.factor(DF[,1])
+    levels(DF[,1]) <- levels(resp)
     
-    # 4-3-2 Loop over all blocks in 'omics_blocks' of current 'df'
-    for (curr_block in omics_blocks) {
+    # Get the IDs for the 5 fold CV!
+    set.seed(12345)
+    fold_ids <- createFolds(DF[,1], k = 5)
+    
+    # Start CV
+    for (i in 1:5) {
       
-      writeLines(paste0("Current OmicsBlock: \n", curr_block))
+      print(paste("Fold:",as.character(i), "---------------------------------"))
       
-      # 4-3-3 Bind gender from the clin block & the current omics block
-      #       and make response to be a factor
-      DF     <- cbind(resp, eval(as.symbol(curr_block)))
-      DF     <- as.data.frame(DF)
-      DF[,1] <- as.factor(DF[,1])
-      levels(DF[,1]) <- levels(resp)
+      # Split to Test and Train
+      test      <- DF[fold_ids[[i]],]
+      train_obs <- which(!(seq_len(nrow(DF)) %in% fold_ids[[i]]))
+      train     <- DF[train_obs,]
       
-      # 4-3-4 Do 5 Fold CV to get the Performance!
-      # 4-3-4-1 Get the IDs for the different folds!
-      set.seed(12345)
-      fold_ids <- createFolds(DF[,1], k = 5)
+      # Dimension of TrainingDF
+      dim_train <- paste(dim(train), collapse = " x ")
       
-      # 4-3-4-2 Start CV
-      for (i in 1:5) {
-        
-        print(paste("Fold:",as.character(i), "---------------------------------"))
-        
-        # 4-3-4-3 Split to Test and Train
-        test      <- DF[fold_ids[[i]],]
-        train_obs <- which(!(seq_len(nrow(DF)) %in% fold_ids[[i]]))
-        train     <- DF[train_obs,]
-        
-        # 4-3-4-4 Print dimension of TrainingDF
-        dim_train <- paste(dim(train), collapse = " x ")
-        
-        # 4-3-4-5 Fit a model [standard settings] on the train DF & take the time:
-        start        <- Sys.time()
-        curr_forrest <- rfsrc(as.formula(resp ~ .), data = train, seed = 1312,
-                              ntree = 250)
-        end          <- Sys.time()
-        time_diff    <- difftime(end, start, units = 'mins')
-        
-        # 4-3-4.8 Evaluate the Model:
-        # OOB:    Get OOB Accuracy of each of the 500 trees and average it!
-        curr_OOB_ACC <- 1 - curr_forrest$err.rate[nrow(curr_forrest$err.rate), 1]
-        
-        # TESTSET:  Get the ErrorRates w/ TestSet
-        prob_preds   <- predict(curr_forrest, test)$predicted[,1]
-        pred_class   <- ifelse(prob_preds > 0.5, 0, 1)
-        truth        <- as.factor(test$resp)
-        pred_class   <- factor(pred_class, levels = levels(truth))
-        res          <- cbind(pred_class, truth)
-        test_acc     <- sum(res[,1] == res[,2]) / nrow(res)
-        test_F1      <- caret::confusionMatrix(data      = pred_class, 
-                                               reference = truth)$byClass["F1"]
-        if (is.na(test_F1)) test_F1 <- 0
-        
-        # 4-3-9 Add results of this block to the Results-DF!
-        eval_res[nrow(eval_res) + 1, ] <- c(df, curr_block, i, dim_train,
-                                            curr_OOB_ACC, test_acc, test_F1, time_diff)
-      }
+      # Fit a model [standard settings] on the train DF & take the time:
+      start        <- Sys.time()
+      curr_forrest <- rfsrc(as.formula(resp ~ .), data = train, seed = 12345678,
+                            ntree = 250)
+      end          <- Sys.time()
+      time_diff    <- difftime(end, start, units = 'mins')
+      
+      # Evaluate the Model:
+      # OOB:    Get OOB Accuracy of each of the 500 trees and average it!
+      curr_OOB_ACC <- 1 - curr_forrest$err.rate[nrow(curr_forrest$err.rate), 1]
+      
+      # TESTSET:  Get the ErrorRates w/ TestSet
+      prob_preds <- predict(curr_forrest, test)$predicted[,1]
+      pred_class <- ifelse(prob_preds > 0.5, 0, 1)
+      truth      <- as.factor(test$resp)
+      pred_class <- factor(pred_class, levels = levels(truth))
+      res        <- cbind(pred_class, truth)
+      test_acc   <- sum(res[,1] == res[,2]) / nrow(res)
+      test_F1    <- caret::confusionMatrix(data      = pred_class, 
+                                           reference = truth)$byClass["F1"]
+      if (is.na(test_F1)) test_F1 <- 0
+      
+      # Add results of this block to the Results-DF!
+      eval_res[nrow(eval_res) + 1, ] <- c(df, curr_block, i, dim_train,
+                                          curr_OOB_ACC, test_acc, test_F1, time_diff)
     }
   }
-  
-  write.csv2(eval_res, row.names = FALSE, 
-             paste0("./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed",
-                    seed, ".csv"))
 }
+
+write.csv2(eval_res, row.names = FALSE, 
+           "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed_12345.csv"))
 
