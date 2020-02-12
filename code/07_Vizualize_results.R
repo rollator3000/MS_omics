@@ -204,66 +204,28 @@ files <- list.files(data_path)
 files <- files[grepl("joint", files)]
 
 # 1-2 Add the amount of subsets to each block:
-DF1 <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
-DF1$seed <- "1234"
+DF <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
 
-DF2 <- read.csv2(paste0(data_path, "/", files[2]), stringsAsFactors = F)
-DF2$seed <- "123456789"
-
-DF3 <- read.csv2(paste0(data_path, "/", files[3]), stringsAsFactors = F)
-DF3$seed <- "1235"
-
-DF4 <- read.csv2(paste0(data_path, "/", files[4]), stringsAsFactors = F)
-DF4$seed <- "1236"
-
-DF5 <- read.csv2(paste0(data_path, "/", files[5]), stringsAsFactors = F)
-DF5$seed <- "1237"
-
-DF6 <- read.csv2(paste0(data_path, "/", files[6]), stringsAsFactors = F)
-DF6$seed <- "1238"
-
-DF7 <- read.csv2(paste0(data_path, "/", files[7]), stringsAsFactors = F)
-DF7$seed <- "1239"
-
-DF8 <- read.csv2(paste0(data_path, "/", files[8]), stringsAsFactors = F)
-DF8$seed <- "1240"
-
-# 1-3 Bind them to a single DF & convert numeric cols to numeric!
-DF_all <- rbind(DF1, DF2, DF3, DF4, DF5, DF6, DF7, DF8)
-
-numeric_cols <- c("OOB_Acc", "Test_Acc", "Test_F1")
-DF_all[,numeric_cols] <- sapply(numeric_cols, 
-                                function(x) as.numeric(DF_all[,x]))
+# 1-3 Convert numeric columns to numeric
+numeric_cols          <- c("OOB_Acc", "Test_Acc", "Test_F1")
+DF[,numeric_cols] <- sapply(numeric_cols, 
+                            function(x) as.numeric(DF[,x]))
 
 # 1-4 reshape DF_all for the plot!
-plot_df <- melt(DF_all, id.vars = c("Data", "seed"), measure.vars = c("Test_Acc", "Test_F1"))
+plot_df <- melt(DF, id.vars = c("Data", "fold"), measure.vars = c("Test_Acc", "Test_F1"))
 
 # [2] Do the plots
 # 2-1 Split by the different Seeds!
-ggplot(data = plot_df, aes(x = seed, y = value, fill = variable)) +
+ggplot(data = plot_df, aes(x = Data, y = value, fill = variable)) +
   geom_boxplot() + 
   theme_bw() +
   ggtitle("Joint Block Performance on the 14 fixed DF w/ 5 fold CV",
-          subtitle = "Final-Subset: 10% mirna & mutation, 5% rna & 2.5% cnv") +
-  xlab("Seed used to subset") +
+          subtitle = "50% mirna, 10% mutation, 15% rna & 1.25% cnv") +
+  xlab("Dataset") +
   ylab("Metric [Acc & F1]") +
+  ylim(0, 1) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 15))
-
-# 2-2 For a certain Dataframe!
-df_tmp_sub = "PAAD_subset.RData"
-
-df_temp <- plot_df[plot_df$Data == df_tmp_sub,]
-ggplot(data = df_temp, aes(x = seed, y = value, fill = variable)) +
-  geom_boxplot() + 
-  theme_bw() +
-  ggtitle(paste("Joint Block Performance on:", df_tmp_sub),
-          subtitle = "finalsubset: 10% mirna & mutation, 5% rna & 2.5% cnv\n --- 5-fold- CV on DF") +
-  xlab("Seed used to subset") +
-  ylab("metric") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
-
 
 # Analyse the fix subsettet DFs w/ single blocks!                           ----
 # [0] Define needed Variables
@@ -275,53 +237,31 @@ files <- list.files(data_path)
 files <- files[grepl("single", files)]
 
 # 1-2 Add the amount of subsets to each block:
-# 1-2 Add the amount of subsets to each block:
-DF1 <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
-DF1$seed <- "1234"
+DF <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
 
-DF2 <- read.csv2(paste0(data_path, "/", files[2]), stringsAsFactors = F)
-DF2$seed <- "123456789"
-
-DF3 <- read.csv2(paste0(data_path, "/", files[3]), stringsAsFactors = F)
-DF3$seed <- "1235"
-
-DF4 <- read.csv2(paste0(data_path, "/", files[4]), stringsAsFactors = F)
-DF4$seed <- "1236"
-
-DF5 <- read.csv2(paste0(data_path, "/", files[5]), stringsAsFactors = F)
-DF5$seed <- "1237"
-
-DF6 <- read.csv2(paste0(data_path, "/", files[6]), stringsAsFactors = F)
-DF6$seed <- "1238"
-
-DF7 <- read.csv2(paste0(data_path, "/", files[7]), stringsAsFactors = F)
-DF7$seed <- "1239"
-
-DF8 <- read.csv2(paste0(data_path, "/", files[8]), stringsAsFactors = F)
-DF8$seed <- "1240"
-
-# 1-3 Bind them to a single DF & convert numeric cols to numeric!
-DF_all <- rbind(DF1, DF2, DF3, DF4, DF5, DF6, DF7, DF8)
-
+# 1-3 Convert the columns to the right format
 num_cols <- c("OOB_Acc", "Test_Acc", "Test_F1")
-DF_all[,num_cols] <- sapply(num_cols, 
-                            function(x) as.numeric(DF_all[,x]))
+DF[,num_cols] <- sapply(num_cols, 
+                        function(x) as.numeric(DF[,x]))
+
+# 1-4 Make the name of the single DFs nicer
+DF$Data <- sapply(DF$Data, function(x) strsplit(x, split = "_subset")[[1]][1])
 
 # 1-4 reshape the layout of data for the plot! 
-plot_df <- melt(DF_all, id.vars = c("Data", "Block", "seed"), 
+plot_df <- melt(DF, id.vars = c("Data", "Block"), 
                 measure.vars = c("Test_Acc", "Test_F1"))
 
 # [2] Do the plot
-ggplot(data = plot_df, aes(x = Block, y = value, fill = variable)) + 
-  geom_boxplot() + 
-  facet_grid(. ~ seed) +
-  theme_bw() +
-  ggtitle("Single Block Performance on the 14 fixed DFs w/ 5 fold CV",
-          subtitle = "Final-Subset: 10% mirna & mutation, 5% rna & 2.5% cnv \n--- split by the seeds used to subset the featurespace") +
-  xlab("Blocks used as Feature Space") +
-  ylab("Metric [Acc & F1]") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
+  ggplot(data = plot_df, aes(x = Data, y = value, fill = variable)) + 
+    geom_boxplot() + 
+    facet_grid(. ~ Block) +
+    theme_bw() +
+    ggtitle("Single Block Performance on the 14 fixed DFs w/ 5 fold CV",
+            subtitle = "Final-Subset: 10% mirna & mutation, 5% rna & 2.5% cnv \n--- split by the seeds used to subset the featurespace") +
+    xlab("Blocks used as Feature Space") +
+    ylab("Metric [Acc & F1]") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),
+          text = element_text(size = 15))
 
 # Analyse Results of Romans Approach on the fixed DFs                       ----
 # [0] Define needed Variables
