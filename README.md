@@ -5,11 +5,12 @@ supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
 ## Project description
-This project compares different approaches to deal with blockwise missing data in trainsets! <br>
+This project compares different approaches to deal with blockwise missing data in training- & testsets! <br>
 A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response *(different observed features for each training-set, where each trainingset has the same response value)*. <br> 
-As a baseline Approach to tackle problems like this we use a model that only uses the train-obs. that are fully observed regarding the testset *(e.g. testset constits of Clinical Block and 2 Omics Block -> only use train observations, that were fully observed in these 3 blocks)*. <br>
-We will also try a imputation approach with 'missForest', so that we impute all missing datablocks from the train data, so that we can fit a regular RF on it! <br>
-We will also have two RF Adaptions, that can deal with blockwise missingness. These Methods are trying to incorporate the different features from the different folds/ training-sets into a single Approach!
+The first baseline Approach to tackle problems like this is to use only fully observed observations regarding the testset *(e.g. testset constits of Clinical Block and 2 Omics Block -> only use train observations, that were fully observed in these 3 blocks)*. <br>
+The second Baseline Approach to tackle block-wise missingness is to use clincal features only, as these features are the easiest to observe and have lowest cost to collect these features. <\br>
+Also the imputation approach 'missForest' is tried. It imputes all missing values from the different blocks in the train data, so that we can fit a regular RF on it! <br>
+Also two RF Adaptions, that can deal with blockwise missingness, are tested. These Methods are trying to incorporate the different features from the different folds/ training-sets into a single Approach!
 
 **Example:**
 Different hospitals do reseach regarding the same response *(e.g. different Cancertypes)*, but the different hospitals do not necessarily collect the same omics features - in this setting the data from the different hospitals can be seen as the data from different folds - where none of the folds have the exact same feature space!
@@ -91,11 +92,12 @@ Short describtion of the scripts in './code'!
     │   │   | 
     │   │   ├── example_data <- data used for investigation & adjusting code!
     │   │   | 
-    │   │   └─ Dr_Hornung <- Clinical Omics-Data in preprocessed form, used
-    │   │      │             in this project!
+    │   │   └─ Dr_Hornung <- Clinical Omics-Data from Dr. Hornung
     │   │      │
-    │   │      └─ Data/ProcessedData  <- processed data used in this project!
-    │   │
+    │   │      ├─ original_processed_data  <- original preprocessed data
+    │   │      │ 
+    │   │      └─ subsetted_12345 <-  subsetted data used for CV etc.
+    │   │    
     │   ├── processed      <- Processed Data that can be directly used!
     │   │
     │   └─ interim         <-  internal data - e.g. temporarily saved data

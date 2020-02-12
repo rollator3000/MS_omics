@@ -462,28 +462,7 @@ do_CV_NK_setting1             <- function(data_path = "data/external/Dr_Hornung/
   # 2-3 Start a timer, so we can calc. how long the CV took in total!
   start_time <- Sys.time()
   
-  # [3] Start the CV [5-fold per default!] -------------------------------------
-  for (i in 0:4) {
-    
-    print(paste0("FOLD: ", as.character(i + 1), "/5 -------------------------"))
-    
-    # 3-1 Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
-    #     IDs in 'fold_ids'
-    test_ids <- fold_ids[((i * obs_per_fold$amount_test) + 1):(((i + 1) * obs_per_fold$amount_test))]
-    test_df  <- data$data[test_ids,]
-    
-    # 3-2 Get the TrainSet from 'data' [= IDs not in TestSet] 
-    train_ids <- fold_ids[-which(fold_ids %in% test_ids)]
-    train_df  <- data$data[train_ids,]
-    
-    # 3-3 Induce blockwise missingness [SCENARIO_1]
-    # 3-3-1 Sample equally sized 'observed' blocks [SCENARIO_1]
-    set.seed(seed + i)
-    observed_blocks <- sample(c(rep("Clin, A", obs_per_fold$amount_train_fold), 
-                                rep("Clin, B", obs_per_fold$amount_train_fold),
-                                rep("Clin, C", obs_per_fold$amount_train_fold), 
-                                rep("Clin, D", obs_per_fold$amount_train_fold)),
-                              obs_per_fold$amount_train, replace = FALSE)
+  it
     
     # 3-2 Subset the observations in the single Blocks that have been observed
     #     Select the Observations that have been observed [s. 'observed_blocks']

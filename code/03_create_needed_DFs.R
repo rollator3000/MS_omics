@@ -306,5 +306,5 @@ for (df in DFs_w_gender_subset) {
 }
 
 write.csv2(eval_res, row.names = FALSE, 
-           "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed_12345.csv"))
+           "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed_12345.csv")
 
