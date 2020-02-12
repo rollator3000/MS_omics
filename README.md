@@ -8,7 +8,7 @@ supervised by: <br>
 This project compares different approaches to deal with blockwise missing data in training- & testsets! <br>
 A dataset with blockwise missingness, consists of different folds, where each fold has different observed features - basically, it's like having different training-sets for the same response *(different observed features for each training-set, where each trainingset has the same response value)*. <br> 
 The first baseline Approach to tackle problems like this is to use only fully observed observations regarding the testset *(e.g. testset constits of Clinical Block and 2 Omics Block -> only use train observations, that were fully observed in these 3 blocks)*. <br>
-The second Baseline Approach to tackle block-wise missingness is to use clincal features only, as these features are the easiest to observe and have lowest cost to collect these features. <\br>
+The second Baseline Approach to tackle block-wise missingness is to use clincal features only, as these features are the easiest to observe and have lowest cost to collect these features. <br>
 Also the imputation approach 'missForest' is tried. It imputes all missing values from the different blocks in the train data, so that we can fit a regular RF on it! <br>
 Also two RF Adaptions, that can deal with blockwise missingness, are tested. These Methods are trying to incorporate the different features from the different folds/ training-sets into a single Approach!
 
