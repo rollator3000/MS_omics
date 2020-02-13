@@ -1,12 +1,10 @@
-"A raw Script, that is used to get a basic overview over the data!
- Data we use is already preprocessed, by the work of Dr. Roman Hornung!
-"
-# Set the WD to the main folder, that holds all things for "Master OmicsDaten"
+"Script to get a basic overview over the raw data used in this thesis!
+ Data is already preprocessed by Dr. Hornung & was already used the 
+ 'block-forest' paper - where Dr. Hornung took part! "
+
+# Set the WD, load Packages and define Functions
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 
-# Load Packages
-
-# Define Functions
 get_cols_w_NAs     <- function(df) {
   "
   Check whether the passed dataframe (df) contains any columns w/ missing values
@@ -151,66 +149,67 @@ load_rda_get_infos <- function(rda_path) {
 # Datainspection                                                            ----
 # ----- BLCA DF
 BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/BLCA.Rda")
-
+BLCA_Res
 # ----- BRCA DF
 BRCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/BRCA.Rda")
-
+BRCA_Res
 # ----- CESC DF
 CESC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/CESC.Rda")
-
+CESC_Res
 # ----- COAD DF
 COAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/COAD.Rda")
-
+COAD_Res
 # ----- ESCA DF
 ESCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/ESCA.Rda")
-
+ESCA_Res
 # ----- GBM DF
 GBM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/GBM.Rda")
-
+GBM_Res
 # ----- HNSC DF
 HNSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/HNSC.Rda")
-
+HNSC_Res
 # ----- KIRC DF
 KIRC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/KIRC.Rda")
-
+KIRC_Res
 # ----- KIRP DF
 KIRP_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/KIRP.Rda")
-
+KIRP_Res
 # ----- LGG DF
 LGG_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LGG.Rda")
-
+LGG_Res
 # ----- LIHC DF
 LIHC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LIHC.Rda")
-
+LIHC_Res
 # ----- LUAD DF
 LUAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LUAD.Rda")
-
+LUAD_Res
 # ----- LUSC DF
 LUSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LUSC.Rda")
-
+LUSC_Res
 # ----- OV DF
 OV_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/OV.Rda")
-
+OV_Res
 # ----- PAAD DF
 PAAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/PAAD.Rda")
-
+PAAD_Res
 # ----- PRAD DF
 PRAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/PRAD.Rda")
-
+PRAD_Res
 # ----- READ DF
 READ_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/READ.Rda")
-
+READ_Res
 # ----- SARC DF
 SARC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/SARC.Rda")
-
+SARC_Res
 # ----- SKCM DF
 SKCM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/SKCM.Rda")
-
+SKCM_Res
 # ----- STAD DF
 STAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/STAD.Rda")
-
+STAD_Res
 # ----- UCEC DF
 UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/UCEC.Rda")
+UCEC_Res
 
 # Check DFs for 'gender' as clinical variable & get the distribution        ----
 # ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
