@@ -644,33 +644,3 @@ for (curr_df in DFs_w_gender) {
   save(curr_data_1, file = paste0(path_to_save, "_3.RData"))
   save(curr_data_1, file = paste0(path_to_save, "_4.RData"))
 }
-
-# TESTS TESTS  TESTS TESTS -----------------------------------------------------
-# Play around! How to find out, which obs. belong together!
-# BLOCKWISE --> possible to extract the blockwise obsered feas!
-for (block_name in data_and_names_w_blockwise$block_names) {
-  
-  curr <- data_and_names_w_blockwise$data[[1]]$train[,block_name]
-
-  apply(curr, MARGIN = 1, function(x) all(!is.na(x)))
-  
-  curr["TCGA-HT-7680", 1:10]
-}
-
-# FOLDWISE --> possible to extract the blockwise obsered feas!
-for (curr_obs in 1:nrow(data_and_names_w_blockwise$data[[1]]$train)) {
-  
-  curr <- data_and_names_w_blockwise$data[[1]]$train[curr_obs,]
-  
-  res <- c()
-  for (block_name in data_and_names_w_blockwise$block_names) {
-    res <- c(res, all(!is.na(curr[,block_name])))
-  }
-  
-  
-  
-  curr["TCGA-HT-7680", 1:10]
-}
-
-
-
