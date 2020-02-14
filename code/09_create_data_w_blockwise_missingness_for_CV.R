@@ -81,7 +81,8 @@ induce_blockmiss_1 <- function(data_and_names, seed) {
     Return:
       data_and_names (list): list with the exact same layout as the input, BUT 
                              the data entrance has been induced w/ blockwise 
-                             missingness according to scenario 1
+                             missingness according to scenario 1 and the omics
+                             block names are replaced by 'A', 'B', ...
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 Check 'data_and_names' 
@@ -170,7 +171,14 @@ induce_blockmiss_1 <- function(data_and_names, seed) {
                                      data_and_names$block_names$mirna_block)] <- NA
   }
   
-  # [2] Return the list, but with block wise missing data now!  ----------------
+  # [2] Modify the 'block_names' of 'data_and_names'  --------------------------
+  # 2-1 Instead of cnv', 'rna', ... subset the ommics block names by 'A', 'B'
+  names(data_and_names$block_names)[2] <- "A"
+  names(data_and_names$block_names)[3] <- "B"
+  names(data_and_names$block_names)[4] <- "C"
+  names(data_and_names$block_names)[5] <- "D"
+  
+  # [3] Return the list, but with block wise missing data now!  ----------------
   return(data_and_names)
 }
 
@@ -187,7 +195,8 @@ induce_blockmiss_2 <- function(data_and_names, seed) {
     Return:
       data_and_names (list): list with the exact same layout as the input, BUT 
                              the data entrance has been induced w/ blockwise 
-                             missingness according to scenario 2
+                             missingness according to scenario 2 and the omics
+                             block names are replaced by 'A', 'B', ...
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 Check 'data_and_names' 
@@ -277,7 +286,15 @@ induce_blockmiss_2 <- function(data_and_names, seed) {
     # 1-4-4 Obs. from Block 'D': Nothing has to be subsetted! 
   }
   
-  # [2] Return the list, but with block wise missing data now!  ----------------
+  # [2] Rename the 'block_names' in 'data_and_names'  --------------------------
+  # 2-1 As we shuffled which letter, is which block, we need to adjust the block
+  #     Names aswell!
+  names(data_and_names$block_names)[2] <- names(letter_feas)[letter_feas == "cnv_block"]
+  names(data_and_names$block_names)[3] <- names(letter_feas)[letter_feas == "rna_block"]
+  names(data_and_names$block_names)[4] <- names(letter_feas)[letter_feas == "mutation_block"]
+  names(data_and_names$block_names)[5] <- names(letter_feas)[letter_feas == "mirna_block"]
+  
+  # [3] Return the list, but with block wise missing data now!  ----------------
   return(data_and_names)
 }
 
@@ -294,7 +311,8 @@ induce_blockmiss_3 <- function(data_and_names, seed) {
     Return:
       data_and_names (list): list with the exact same layout as the input, BUT 
                              the data entrance has been induced w/ blockwise 
-                             missingness according to scenario 3
+                             missingness according to scenario 3 and the omics
+                             block names are replaced by 'A', 'B', ...
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 Check 'data_and_names' 
@@ -403,7 +421,14 @@ induce_blockmiss_3 <- function(data_and_names, seed) {
                                    c(cols_to_rm)] <- NA
   }
   
-  # [2] Return the list, but with block wise missing data now!  ----------------
+  # [2] Modify the 'block_names' of 'data_and_names'  --------------------------
+  # 2-1 Instead of cnv', 'rna', ... subset the ommics block names by 'A', 'B'
+  names(data_and_names$block_names)[2] <- "A"
+  names(data_and_names$block_names)[3] <- "B"
+  names(data_and_names$block_names)[4] <- "C"
+  names(data_and_names$block_names)[5] <- "D"
+  
+  # [3] Return the list, but with block wise missing data now!  ----------------
   return(data_and_names)
 }
 
@@ -421,7 +446,8 @@ induce_blockmiss_4 <- function(data_and_names, seed) {
     Return:
       data_and_names (list): list with the exact same layout as the input, BUT 
                              the data entrance has been induced w/ blockwise 
-                             missingness according to scenario 4
+                             missingness according to scenario 4 and the omics
+                             block names are replaced by 'A', 'B', ...
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 Check 'data_and_names' 
@@ -506,7 +532,20 @@ induce_blockmiss_4 <- function(data_and_names, seed) {
                                    block_A_names] <- NA
   }
   
-  # [2] Return the list, but with block wise missing data now!  ----------------
+  # [2] Modify the 'block_names' of 'data_and_names'  --------------------------
+  # 2-1 Instead of cnv', 'rna', ... subset the ommics block names by 'A', 'B' & 
+  #     Put the blocknames we pasted together together!
+  # 2-1-1 Remove the old entrances
+  data_and_names$block_names$cnv_block      <- NULL
+  data_and_names$block_names$rna_block      <- NULL
+  data_and_names$block_names$mutation_block <- NULL
+  data_and_names$block_names$mirna_block    <- NULL
+  
+  # 2-1-1 Add the new entrances!
+  data_and_names$block_names$A <- block_A_names
+  data_and_names$block_names$B <- block_B_names
+  
+  # [3] Return the list, but with block wise missing data now!  ----------------
   return(data_and_names)
 }
 
@@ -619,7 +658,7 @@ data_path    <- "./data/external/Dr_Hornung/subsetted_12345/" # Path to the data
 response_    <- "gender"                                      # response from 'clin' block
 seed         <- 1234                                          # seed for reprducibility!
 
-for (curr_df in DFs_w_gender) {
+for (curr_df in "BLCA") {
   
   # [1] Create the path to the subsetted DF, we want to induce blockwise missingness!
   curr_path <- paste0(data_path, curr_df, "_subset.RData")
