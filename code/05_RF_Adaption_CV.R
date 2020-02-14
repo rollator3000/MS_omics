@@ -27,7 +27,8 @@ library(pROC)
 library(assertthat)
 
 load_CV_data              <- function(path) {
-  "Load the subsetted, test-train splitted data!
+  "Load the subsetted, test-train splitted data, with blockwise missingness 
+   induced already into the train split!
   
   Args:
     path (str) : Path to the data we want for CV!
@@ -36,23 +37,21 @@ load_CV_data              <- function(path) {
                  These two lists are further checked in this function!
                  - $data (list) must contain n entrances of 'train' & 'test'
                                 where each is a dataframe!
-                 - $block_names (list) must contain all block names!
-                 
-  
+                 - $block_names (list) must contain at least 3 names!
   Return:
     A list, filled with 'data' & 'block_names' that can be used for CV!
   
   "
   # [0] Check Inputs  ----------------------------------------------------------
-  # 0-1 'path' of type string 
-  assert_string(path)
+  # 0-1 'path' of type string with '.RData' inside!
+  assert_string(path, fixed = ".RData")
   
-  # [1] Load the Data and check it  --------------------------------------------
-  # 1-1 Load DF and and put data to 'data_'-variable
+  # [1] Load the Data & check it  ----------------------------------------------
+  # 1-1 Load DF & put data to 'data_'-variable
   data_ <- load(path)
   data_ <- eval(as.symbol(data_))
   
-  # 1-2 Check that data_ has what we need!
+  # 1-2 Check that 'data_' has what we need!
   # 1-2-1 List with 2 entrances
   assert_list(data_, len = 2)
   
@@ -61,8 +60,8 @@ load_CV_data              <- function(path) {
   if (!('block_names' %in% names(data_))) stop("'path' should lead to list w/ 'block_names' entry")
   
   # 1-2-3 'data' & 'block_names' should be lists aswell! 
-  assert_list(data_$data)
-  assert_list(data_$block_names)
+  assert_list(data_$data, min.len = 2)
+  assert_list(data_$block_names, min.len = 3)
   
   # 1-2-4 'data' must contain 'train' & 'test' as list names!
   res <- sapply(seq_len(length(data_$data)), function(x) {
@@ -78,12 +77,8 @@ load_CV_data              <- function(path) {
   
   if (any(!res)) stop("test' & 'train' in 'data' are not only dataframes!")
   
-  # 1-2-6 'block_names' must contain the correct block names!
-  needed_names <- c("clin_block", "cnv_block", "rna_block", "mutation_block", "mirna_block")
-  
-  res <- sapply(needed_names, function(x) x %in% names(data_$block_names))
-  
-  if (any(!res)) stop("'block_names' do not have the correct names!")
+  # 1-2-6 'block_names' must contain at least 3 blocknames!
+  if (length(names(data_$block_names)) < 3) stop("block_names consist less than 3 names!")
   
   
   # [2] Return the data  -------------------------------------------------------
@@ -91,8 +86,8 @@ load_CV_data              <- function(path) {
 }
 all_trees_grown_correctly <- function(trees) {
   "Check, whether 'trees', were grown correctly & if not grow these trees again,
-   as long, as they are grown correctly!
-   --> Growning not correctly: >> No 'childNodeIDs' 
+   as long, as they are grown correctly! 
+      --> Growning not correctly: No 'childNodeIDs' 
   
    Args:
       trees (list) : list filled with object of the class 'Tree'! 
@@ -300,8 +295,8 @@ mcc_metric                <- function(conf_matrix) {
   return(mcc_final)
 }
 do_evaluation             <- function(Forest, testdata, weighted, weight_metric) {
-  " Get the aggregated predicition from all trees! 
-    Evaluate the aggregated predicitons & return metrics!
+  " Get the aggregated predicition from all trees for each of the observations
+    in testdata! Evaluate the aggregated predicitons & return metrics!
   
      Args:
       - Forest (list)         : list filled with the objects of class 'Tree'
@@ -315,7 +310,6 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
                                 of the different trees in 'Forest'
                                 Has to be 'F1' or 'Acc'
                                 [will be ignored, when 'weighted' = FALSE]
-      
      Return:
       - list w/ metrics [accuracy, f1, mcc, roc, ...] 
         if F-1 Score is NA [as precision or recall = 0], we set it to 0 [not NA]
@@ -338,13 +332,9 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   
   # 0-3 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
-    # check that it is character
-    assert_character(weight_metric)
     
-    # check that it is of length 1
-    if (length(weight_metric) != 1) {
-      stop("'weight_metric' has more than 1 element!")
-    }
+    # check that it is character
+    assert_character(weight_metric, len = 1)
     
     # check it has a valid value!
     if (!(weight_metric %in% c("Acc", "F1"))) {
@@ -362,9 +352,8 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   }
   
   # [2] Get Predicitons  ------------------------------------------------------- 
-  #     Get a prediction for every observation in TestData from all the trees
-  #     Obacht: the prediction is based on the amount of usable trees!          
-  #             --> this might reduce the forrest even to a single tree!        
+  #     Get a prediction for every observation in TestData from all foldwise
+  #     fitted RandomForests [4 predicitons per testobs.]      
   tree_preds_all <- list()
   not_usable     <- c()
   for (i in 1:length(Forest)) {
@@ -397,11 +386,11 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   if (weighted) {
     tree_weights <- c()
     
-    # Really slow, think about parallel!
-    for (l in 1:length(Forest)) {
-      tree_weights[l] <- get_oob_weight_metric(trees = Forest[[l]], 
-                                               weight_metric = weight_metric)
-    }
+    # Think about putting this in parallel!
+    tree_weights <- sapply(seq_len(length(Forest)), function(l) {
+      get_oob_weight_metric(trees = Forest[[l]], 
+                            weight_metric = weight_metric)
+    })
     
     # Norm the weights
     tree_weights <- tree_weights /  sum(tree_weights)
@@ -435,84 +424,90 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
                                     reference = testdata[,1])
   
   # 5-2 Are under the ROC Curve
-  #     Select 'direction = "auto"' and it will choose the class to be positive
-  #     automatically!
-  roc <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
-                             levels = levels(Forest[[1]][[1]]$data$data[,1]), 
-                             direction = "auto"))
+  roc1 <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
+                              levels = levels(Forest[[1]][[1]]$data$data[,1]), 
+                              direction = "<"))
+  
+  roc2 <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
+                              levels = levels(Forest[[1]][[1]]$data$data[,1]), 
+                              direction = ">"))
   
   # 5-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
   
   # [6] Create a list to collect the results!
   res <- list("Accuracy"    = confmat$overall["Accuracy"],
+              "Kappa"       = confmat$overall["Kappa"],
               "Sensitifity" = confmat$byClass["Sensitivity"],
               "Specificity" = confmat$byClass["Specificity"],
               "Precision"   = confmat$byClass["Precision"],
               "Recall"      = confmat$byClass["Recall"],
               "F1"          = confmat$byClass["F1"],
               "Balance_Acc" = confmat$byClass["Balanced Accuracy"],
-              "AUC"         = as.numeric(roc),
+              "Pos_Pred_Value" =  confmat$byClass["Pos Pred Value"],
+              "Neg_Pred_Value" =  confmat$byClass["Neg Pred Value"],
+              "Prevalence"  = confmat$byClass["Prevalence"],      
+              "AUC1"        = as.numeric(roc1),
+              "AUC2"        = as.numeric(roc2),
               "MCC"         = mcc)
   
   # 6-1 If the F1-Score/ Precision/ Recall is NA, then we set it to 0 [-1 for MCC]! 
-  if (is.na(res$F1))        res$F1        <- 0
-  if (is.na(res$Precision)) res$Precision <- 0
-  if (is.na(res$Recall))    res$Recall    <- 0
-  if (is.na(res$MCC))       res$MCC       <- -1
+  if (is.na(res$F1))             res$F1             <- 0
+  if (is.na(res$Precision))      res$Precision      <- 0
+  if (is.na(res$Recall))         res$Recall         <- 0
+  if (is.na(res$MCC))            res$MCC            <- -1
+  if (is.na(res$Pos_Pred_Value)) res$Pos_Pred_Value <- 0
+  if (is.na(res$Neg_Pred_Value)) res$Neg_Pred_Value <- 0
   
   return(as.vector(res))
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_4.RData"
-weighted = TRUE
-weight_metric = "Acc"
-num_trees = 10
-mtry = NULL
-min_node_size = NULL
-unorderd_factors = "ignore"
-
-do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_4.RData",
-                          weighted = TRUE, weight_metric = "Acc", 
-                          num_trees = 10, mtry = NULL, min_node_size = NULL,
-                          unorderd_factors = "ignore") {
-  "Do CV for paths, that lead to a list with 2 entrances 'data' & 'block_names'!
-   The list 'data' is filled with k test-train-splits [each for Validaion] 
-      --> k-fold-Validation!
-   The list 'block_names' is filled with the names of the single blocks!
+do_CV_1 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_1.RData",
+                    weighted = TRUE, weight_metric = "Acc", 
+                    num_trees = 10, mtry = NULL, min_node_size = NULL,
+                    unorderd_factors = "ignore") {
+  "CrossValidate the Approach when the Traindata has blockwise missingness
+   according to scenario 1 --> 'path' must end in '1.RData', else error!
    
-   OBACHT! As we only want data, that consits of 4 folds [Trainsetting 1, 2 & 3]
-           Passing a path, that finishes '4.RData' will throw an error, as the 
-           4. setting we created has only 2 folds !-!-!
-           
+   path must lead to a list with 2 entrances: 'data'  &  'block_names'
+   - 'data' is a list filled with 'k' test-train-splits
+      --> k-fold-Validation on this test-train-splits!
+   - 'block_names' is a list filled with the names of the single blocks 
+      & must be ['A', 'B', 'C', 'D', 'clin_block'] for this scenario!
+      [A = cnv; B = rna; C = mirna; D = mutation]
+      
    Based on the 'k' test-train-splits in 'data', we will fit foldwise RFs to the
-   train data (that has blockwise missingness in it). Then we ensemble the 
-   predicitons from these 4 different RFs to a single prediciton and rate these
-   w/ Accuracy, Precision, Specifity, F1-Socre,....
+   train data (that has blockwise missingness in it). 
+   Then we ensemble the predicitons from foldwise fitted RFs to single  
+   predicitons & rate these w/ Accuracy, Precision, Specifity, F1-Socre,...
+   
    The TestingSituations are different, as we can test the models on fully 
-   observed testdata, on testdata w/ 1 missing block etc. etc.
+   observed testdata, on testdata w/ 1 missing block, etc...
    
    Args:
       - path (char)         : Path to the data that is already split to test train
-                              If the path ends with '4.RData' it will throw an error!
+                              Must end in '1.RData'
       - weighted (bool)     : When ensembling the prediciton from the fodlwise
-                              RFs shall we weight the predictions by their 
-                              'weight_metric' [e.g. 'Acc', 'F1']
+                              RFs shall we weight the predictions by the OOB 
+                              performance of the foldwise fitted RFs? The higher
+                              the OOB-Metric for a foldwise fitted RF, the higher
+                              its contribution to the prediction!
       - weight_metric (chr) : Which metric to use to assigning weights to the 
-                              different predictions? - must be 'Acc' or 'F1' 
-                                                     - if weighted = FALSE, it 
-                                                       will be ignored!
-      - num_trees (int)     : amount of trees, we shall grow on each[!] foldwise
-                              fitted RF!
-      - mtry (int)          : amount of split-variables we try, when looking for 
-                              a split variable! - If 'NULL': mtry = sqrt(p)
+                              different predictions? 
+                                - must be 'Acc' or 'F1' 
+                                - if weighted = FALSE, it will be ignored!
+      - num_trees (int)     : Amount of trees, we shall grow on each foldwise
+                              fitted random Forest!
+      - mtry (int)          : Amount of split-variables we try, when looking for 
+                              a split variable! 
+                                - If 'NULL': mtry = sqrt(p)
       - min_node_size (int) : Amount of Observations a node must at least 
                               contain, so the model keeps on trying to split 
-                              them!  - If 'NULL: It is automatically set to 10 
-                                                 in the 'simpleRF()' function!
+                              them!  
+                                - If 'NULL: It is automatically set to 10 in the
+                                            'simpleRF()' function!
       - unorderd_factors (chr) : How to handle non numeric features!
-                                 --> must be in ['ignore', 'order_once', 
-                                                 'order_split', 'partition']
+                                ['ignore', 'order_once', 'order_split', 'partition']
     Return:
       - list filled w/:
         * 'res_all' [the CV Results on different testsets]:
@@ -520,11 +515,10 @@ do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missi
             - full    : CV Results for each fold on the fully observed testdata!
             - miss1_A : CV Results for each fold on the testdata, w/ missing cnv block!
             - miss1_B : CV Results for each fold on the testdata, w/ missing rna block!
-            -   .
+                .
                 . --> done for all possible permutations
                 .
             - miss2_AC: CV Results for each fold on the testdata, w/ missing cnv & mutation block!
-                .
                 .
                 .
             - single_D:  CV-Results for each fold on the testdata w/ minra block only!
@@ -532,35 +526,26 @@ do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missi
         * 'settings' [settings used to do the CV - all arguments!]
             - datapath, seed, response, mtry, time for CV,.... 
   "
-  
   # [0] Check Inputs  ----------------------------------------------------------
-  # 0-1 'path' must not end in '4.RData'
-  num_ <- strsplit(strsplit(path, split = ".RData")[[1]], split = "_")[[1]][5]
-  if (!(as.numeric(num_) %in% c(1, 2, 3))) {
-    stop("path must end in '_3' / '_2' / '_1'! If it ends in '_4' --> only consits of 2 folds!")
-  }
-  # 0-2 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
+  # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
+  # 0-1 path must be numeric and have '1.RData' in it!
+  assert_string(path, fixed = "1.RData")
   
-  # 0-3 weighted must be boolean & seed an integer
+  # 0-2 weighted must be a single boolean
   assert_logical(weighted, len = 1)
-  assert_int(seed)
   
-  # 0-4 unorderd factors must be a legit value
+  # 0-3 unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
     stop("Unknown value for argument 'unordered_factors'")
   }
   
-  # 0-5 Check weight_metric to be meaningful [if weighted is true at all]!
+  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
-    # check that it is character
-    assert_character(weight_metric)
     
-    # check that it is of length 1
-    if (length(weight_metric) != 1) {
-      stop("'weight_metric' has more than 1 element!")
-    }
+    # 0-4-1 Check that it is character
+    assert_character(weight_metric, len = 1)
     
-    # check it has a valid value!
+    # 0-4-2 Check it has a valid value!
     if (!(weight_metric %in% c("Acc", "F1"))) {
       stop("'weight_metric' must be 'Acc' or 'F1'!")
     }
@@ -569,6 +554,15 @@ do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missi
   # [1] Prepare CV  ------------------------------------------------------------
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
   curr_data <- load_CV_data(path = path)
+  
+  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  corr_block_names <- ("A" %in% names(curr_data$block_names) & 
+                       "B" %in% names(curr_data$block_names) &
+                       "C" %in% names(curr_data$block_names) & 
+                       "D" %in% names(curr_data$block_names) &
+                       "clin_block" %in% names(curr_data$block_names))
+  
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
   
   # 1-2 Create empty lists to store results in!
   # 1-2-1 Full TestSet
@@ -587,7 +581,6 @@ do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missi
   k_splits <- length(curr_data$data)
   
   # [2] Start the CV and loop over all test-train splits in data  --------------
-  i = 1
   for (i in seq_len(k_splits)) {
     
     # 2-1 Current Fold Status
@@ -599,23 +592,26 @@ do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missi
     
     # 2-3 Get the Observations that belong to the same fold [same feature space]
     # 2-3-1 Get for each obs. the index of the observed feas
-    obs_feas <- sapply(seq_len(nrow(train)), function(x) {
+    observed_feas <- sapply(seq_len(nrow(train)), function(x) {
       paste0(which(!(is.na(train[x,]))), collapse = "_")
     })
     
     # 2-3-2 Keep the unique observed feas [equals the different folds]
-    observed_folds <- unique(obs_feas)
+    #       That we use to assign obs. to the differnt folds!
+    observed_folds <- unique(observed_feas)
     
-    # 2-4 Train foldwise RFs for each fold seperatly!
-    #     --> Forest is of length lenght(observed_folds), and each entrance & 
-    #         each entrance consits of 'num_trees' trees!
-    Forest <- list(); i_  = 1
+    print(paste0("Found ", length(observed_folds), " unique folds!"))
     
-    start_time = Sys.time()
+    # 2-4 Train foldwise RFs for each fold seperatly! For this loop over all folds
+    #     [observed_folds contains all unique features observed for diff folds]!
+    #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
+    #         entrance consits of 'num_trees' foldwise fitted trees!
+    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    
     for (fold_ in observed_folds) {
       
       # 2-4-1 Get all Obs. with the feture space as in 'fold_'
-      fold_obs_ <- which(obs_feas == fold_)
+      fold_obs_ <- which(observed_feas == fold_)
       
       # 2-4-2 Get all the indeces of the columns that were observed with this fold!
       obs_columns_ <- as.numeric(unlist(strsplit(fold_, split = "_")))
@@ -647,6 +643,8 @@ do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missi
         x
       }, mc.cores = 1)
       
+      # 2-4-3-3 Check that all trees were grown correctly
+      #         --> none w/o 'child_node_ID' after that!
       fold_RF <- all_trees_grown_correctly(fold_RF)
       
       # 2-4-4 Add the fitted tree to the Forest!
@@ -667,125 +665,1204 @@ do_CV_4_folds <- function(path = "data/external/Dr_Hornung/subsetted_12345/missi
     print("Evaluation full TestSet -------------------------------------------")
     curr_Forest <- copy_forrest(Forest)
     full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
-                               weighted = weighted, weight_metric = weight_metric)
+                                 weighted = weighted, weight_metric = weight_metric)
     
     # 2-5-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
     curr_Forest  <- copy_forrest(Forest)
     miss1_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                   weight_metric = weight_metric,
-                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$cnv_block)])
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$A)])
     curr_Forest  <- copy_forrest(Forest)
     miss1_B[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
                                   weight_metric = weight_metric,
-                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$rna_block)])
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$B)])
     curr_Forest  <- copy_forrest(Forest)
     miss1_C[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
                                   weight_metric = weight_metric,
-                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$mutation_block)])
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$C)])
     curr_Forest  <- copy_forrest(Forest)
     miss1_D[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
                                   weight_metric = weight_metric,
-                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$mirna_block)])
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$D)])
     
     # 2-5-3 TestSet with 2 missing blocks!
     print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
     curr_Forest   <- copy_forrest(Forest)
     miss2_CD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                 curr_data$block_names$mutation_block))])
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$D))])
     curr_Forest   <- copy_forrest(Forest)
     miss2_BD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                 curr_data$block_names$rna_block))])
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$D))])
     curr_Forest   <- copy_forrest(Forest)
     miss2_BC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$rna_block,
-                                                                                 curr_data$block_names$mutation_block))])
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$c))])
     curr_Forest   <- copy_forrest(Forest)
     miss2_AD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                 curr_data$block_names$cnv_block))])
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$D))])
     curr_Forest   <- copy_forrest(Forest)
     miss2_AC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mutation_block,
-                                                                                 curr_data$block_names$cnv_block))])
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$A))])
     
     curr_Forest   <- copy_forrest(Forest)
     miss2_AB[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$rna_block,
-                                                                                 curr_data$block_names$cnv_block))])
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B))])
     # 2-5-4 Testset with 3 missing blocks!
     print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
     curr_Forest    <- copy_forrest(Forest)
     miss3_ABC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                     weight_metric = weight_metric,
-                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$rna_block,
-                                                                                  curr_data$block_names$cnv_block,
-                                                                                  curr_data$block_names$mutation_block))])
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$B,
+                                                                                  curr_data$block_names$C))])
     curr_Forest    <- copy_forrest(Forest)
     miss3_ACD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                     weight_metric = weight_metric,
-                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                  curr_data$block_names$cnv_block,
-                                                                                  curr_data$block_names$mutation_block))])
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
     curr_Forest    <- copy_forrest(Forest)
     miss3_ABD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
                                     weight_metric = weight_metric,
-                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                  curr_data$block_names$cnv_block,
-                                                                                  curr_data$block_names$rna_block))])
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$A,
+                                                                                  curr_data$block_names$D))])
     
     curr_Forest    <- copy_forrest(Forest)
     miss3_BCD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                     weight_metric = weight_metric,
-                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                  curr_data$block_names$mutation_block,
-                                                                                  curr_data$block_names$rna_block))])
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
     # 2-5-5 Evaluation on single Block Testdata
     print("Evaluation TestSet w/ only 1 observed Block -----------------------")
     curr_Forest   <- copy_forrest(Forest)
     single_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                 curr_data$block_names$mutation_block,
-                                                                                 curr_data$block_names$rna_block,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
                                                                                  curr_data$block_names$clin_block))])
     curr_Forest   <- copy_forrest(Forest)
     single_B[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                 curr_data$block_names$mutation_block,
-                                                                                 curr_data$block_names$cnv_block,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
                                                                                  curr_data$block_names$clin_block))])
     
     curr_Forest   <- copy_forrest(Forest)
     single_C[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                 curr_data$block_names$cnv_block,
-                                                                                 curr_data$block_names$rna_block,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$D,
                                                                                  curr_data$block_names$clin_block))])
     curr_Forest   <- copy_forrest(Forest)
     single_D[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
-                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$cnv_block,
-                                                                                 curr_data$block_names$mutation_block,
-                                                                                 curr_data$block_names$rna_block,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
                                                                                  curr_data$block_names$clin_block))])
     curr_Forest     <- copy_forrest(Forest)
     single_CL[[i]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                      weight_metric = weight_metric,
-                                     testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$mirna_block,
-                                                                                   curr_data$block_names$mutation_block,
-                                                                                   curr_data$block_names$rna_block,
-                                                                                   curr_data$block_names$cnv_block))])
+                                     testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                   curr_data$block_names$B,
+                                                                                   curr_data$block_names$D,
+                                                                                   curr_data$block_names$C))])
+  }
+  
+  # 2-6 Take the time difference for the k fold CV!
+  time_for_CV <- difftime(Sys.time(), start_time, units = "mins")
+  
+  # [3] Return the metric & settings of the fitting!  --------------------------
+  # 3-1 Collect all CV Results in a list!
+  res_all <- list("full" = full,
+                  "miss1_A"   = miss1_A,   "miss1_B"   = miss1_B,
+                  "miss1_C"   = miss1_C,   "miss1_D"   = miss1_D,
+                  "miss2_CD"  = miss2_CD,  "miss2_BD"  = miss2_BD,
+                  "miss2_BC"  = miss2_BC,  "miss2_AD"  = miss2_AD,
+                  "miss2_AC"  = miss2_AC,  "miss2_AB"  = miss2_AB,
+                  "miss3_ABC" = miss3_ABC, "miss3_ABD" = miss3_ABD,
+                  "miss3_ACD" = miss3_ACD, "miss3_BCD" = miss3_BCD,
+                  "single_A"  = single_A,  "single_B"  = single_B,
+                  "single_C"  = single_C,  "single_D"  = single_D,
+                  "single_CL" = single_CL)
+  
+  # 4-2 Collect the Settings, used to do the CV!
+  settings <- list("data_path"     = path,
+                   "num_folds"     = k_splits,
+                   "response"      = response,
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "num_trees"     = num_trees,
+                   "mtry"          = mtry, 
+                   "min_node_size" = min_node_size,
+                   "unorderd_factors" = unorderd_factors,
+                   "time_for_CV"      = time_for_CV)
+  
+  # 4-3 Return both lists!
+  return(list("res_all"  = res_all, 
+              "settings" = settings))
+}
+
+path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_2.RData"
+weighted = TRUE
+weight_metric = "Acc"
+num_trees = 10
+mtry = NULL
+min_node_size = NULL
+unorderd_factors = "ignore"
+
+do_CV_2 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_2.RData",
+                    weighted = TRUE, weight_metric = "Acc", 
+                    num_trees = 10, mtry = NULL, min_node_size = NULL,
+                    unorderd_factors = "ignore") {
+  "CrossValidate the Approach when the Traindata has blockwise missingness
+   according to scenario 2 --> 'path' must end in '2.RData', else error!
+   
+   path must lead to a list with 2 entrances: 'data'  &  'block_names'
+   - 'data' is a list filled with 'k' test-train-splits
+      --> k-fold-Validation on this test-train-splits!
+   - 'block_names' is a list filled with the names of the single blocks 
+      & must be ['A', 'B', 'C', 'D', 'clin_block'] for this scenario!
+      
+   Based on the 'k' test-train-splits in 'data', we will fit foldwise RFs to the
+   train data (that has blockwise missingness in it). 
+   Then we ensemble the predicitons from foldwise fitted RFs to single  
+   predicitons & rate these w/ Accuracy, Precision, Specifity, F1-Socre,...
+   
+   The TestingSituations are different, as we can test the models on fully 
+   observed testdata, on testdata w/ 1 missing block, etc...
+   
+   Args:
+      - path (char)         : Path to the data that is already split to test train
+                              Must end in '2.RData'
+      - weighted (bool)     : When ensembling the prediciton from the fodlwise
+                              RFs shall we weight the predictions by the OOB 
+                              performance of the foldwise fitted RFs? The higher
+                              the OOB-Metric for a foldwise fitted RF, the higher
+                              its contribution to the prediction!
+      - weight_metric (chr) : Which metric to use to assigning weights to the 
+                              different predictions? 
+                                - must be 'Acc' or 'F1' 
+                                - if weighted = FALSE, it will be ignored!
+      - num_trees (int)     : Amount of trees, we shall grow on each foldwise
+                              fitted random Forest!
+      - mtry (int)          : Amount of split-variables we try, when looking for 
+                              a split variable! 
+                                - If 'NULL': mtry = sqrt(p)
+      - min_node_size (int) : Amount of Observations a node must at least 
+                              contain, so the model keeps on trying to split 
+                              them!  
+                                - If 'NULL: It is automatically set to 10 in the
+                                            'simpleRF()' function!
+      - unorderd_factors (chr) : How to handle non numeric features!
+                                ['ignore', 'order_once', 'order_split', 'partition']
+    Return:
+      - list filled w/:
+        * 'res_all' [the CV Results on different testsets]:
+           >> A = CNV-Block, B = RNA-Block, C = Mutation-Block, D = Mirna-Block
+            - full    : CV Results for each fold on the fully observed testdata!
+            - miss1_A : CV Results for each fold on the testdata, w/ missing A block!
+            - miss1_B : CV Results for each fold on the testdata, w/ missing B block!
+                .
+                . --> done for all possible permutations
+                .
+            - miss2_AC: CV Results for each fold on the testdata, w/ missing A & C block!
+                .
+                .
+            - single_D:  CV-Results for each fold on the testdata w/ D block only!
+                         
+        * 'settings' [settings used to do the CV - all arguments!]
+            - datapath, seed, response, mtry, time for CV,.... 
+  "
+  # [0] Check Inputs  ----------------------------------------------------------
+  # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
+  # 0-1 path must be numeric and have '1.RData' in it!
+  assert_string(path, fixed = "2.RData")
+  
+  # 0-2 weighted must be a single boolean
+  assert_logical(weighted, len = 1)
+  
+  # 0-3 unorderd factors must be a legit value
+  if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
+    stop("Unknown value for argument 'unordered_factors'")
+  }
+  
+  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
+  if (weighted) {
+    
+    # 0-4-1 Check that it is character
+    assert_character(weight_metric, len = 1)
+    
+    # 0-4-2 Check it has a valid value!
+    if (!(weight_metric %in% c("Acc", "F1"))) {
+      stop("'weight_metric' must be 'Acc' or 'F1'!")
+    }
+  }
+  
+  # [1] Prepare CV  ------------------------------------------------------------
+  # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
+  curr_data <- load_CV_data(path = path)
+  
+  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  corr_block_names <- ("A" %in% names(curr_data$block_names) & 
+                       "B" %in% names(curr_data$block_names) &
+                       "C" %in% names(curr_data$block_names) & 
+                       "D" %in% names(curr_data$block_names) &
+                       "clin_block" %in% names(curr_data$block_names))
+  
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
+  
+  # 1-2 Create empty lists to store results in!
+  # 1-2-1 Full TestSet
+  full <- list()
+  # 1-2-2 TestSet with 1 missing omics-block
+  miss1_A <- list(); miss1_B <- list(); miss1_C <- list(); miss1_D <- list()
+  # 1-2-3 TestSet with 2 missing omics-blocks
+  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list()
+  miss2_AC <- list(); miss2_AB <- list()
+  # 1-2-4 TestSet with 3 missing omics-blocks
+  miss3_ABC <- list(); miss3_ABD <- list(); miss3_ACD <- list(); miss3_BCD <- list()
+  # 1-2-5 Single BlockTestSet [4 missing blocks!]
+  single_A <- list(); single_B <- list(); single_CL <- list(); single_C <- list(); single_D <- list()
+  
+  # 1-3 Get the amount of test-train splits in data 
+  k_splits <- length(curr_data$data)
+  
+  # [2] Start the CV and loop over all test-train splits in data  --------------
+  for (i in seq_len(k_splits)) {
+    
+    # 2-1 Current Fold Status
+    print(paste0("FOLD ", i, "/", k_splits, " -------------------------------"))
+    
+    # 2-2 Extract the test and train set from 'curr_data'
+    train <- curr_data$data[[i]]$train
+    test  <- curr_data$data[[i]]$test
+    
+    # 2-3 Get the Observations that belong to the same fold [same feature space]
+    # 2-3-1 Get for each obs. the index of the observed feas
+    observed_feas <- sapply(seq_len(nrow(train)), function(x) {
+      paste0(which(!(is.na(train[x,]))), collapse = "_")
+    })
+    
+    # 2-3-2 Keep the unique observed feas [equals the different folds]
+    #       That we use to assign obs. to the differnt folds!
+    observed_folds <- unique(observed_feas)
+    
+    print(paste0("Found ", length(observed_folds), " unique folds!"))
+    
+    # 2-4 Train foldwise RFs for each fold seperatly! For this loop over all folds
+    #     [observed_folds contains all unique features observed for diff folds]!
+    #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
+    #         entrance consits of 'num_trees' foldwise fitted trees!
+    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    
+    for (fold_ in observed_folds) {
+      
+      # 2-4-1 Get all Obs. with the feture space as in 'fold_'
+      fold_obs_ <- which(observed_feas == fold_)
+      
+      # 2-4-2 Get all the indeces of the columns that were observed with this fold!
+      obs_columns_ <- as.numeric(unlist(strsplit(fold_, split = "_")))
+      
+      # 2-4-2 Get all Trainpoints from the obs. w/ same features + 
+      #       only keep observed features of these!
+      #       --> fully observed subdata!
+      curr_fold_train_data <- train[fold_obs_, obs_columns_]
+      
+      # 2-4-3 Fit a RF on this fully observed (fold-)subdata!
+      # 2-4-3-1 Define formula
+      response    <- colnames(train)[1]
+      formula_all <- as.formula(paste(response, " ~ ."))
+      
+      # 2-4-3-2 Define the foldwise RF and fit it on the foldwise data
+      fold_RF <- simpleRF(formula           = formula_all, 
+                          data              = curr_fold_train_data, 
+                          num_trees         = num_trees, 
+                          mtry              = mtry, 
+                          min_node_size     = min_node_size,
+                          replace           = TRUE,  # always TRUE, as we need OOB!
+                          splitrule         = NULL,  # always NULL!
+                          unordered_factors = unorderd_factors)
+      
+      print(paste0("Fit FoldWise RF on current fold: ", i_))
+      
+      fold_RF <- mclapply(fold_RF, function(x) {
+        x$grow(replace = TRUE)
+        x
+      }, mc.cores = 1)
+      
+      # 2-4-3-3 Check that all trees were grown correctly
+      #         --> none w/o 'child_node_ID' after that!
+      fold_RF <- all_trees_grown_correctly(fold_RF)
+      
+      # 2-4-4 Add the fitted tree to the Forest!
+      # 2-4-4-1 Copy the tree first, so we do no overwriting!
+      fold_RF_copy <- sapply(fold_RF, function(x) x$copy())
+      
+      # 2-4-4-2 Remove the fold_RF and add the copied fold_RF_copy to 'Forest'
+      rm(fold_RF)
+      Forest[[i_]] <- fold_RF_copy
+      
+      # 2-4-5 Count up i_ - used to fill Forest list!
+      i_  = i_ + 1
+    }
+    
+    # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
+    #     missing blocks to TestSets w/ only one observed Block!
+    # 2-5-1 Full TestSet!
+    print("Evaluation full TestSet -------------------------------------------")
+    curr_Forest <- copy_forrest(Forest)
+    full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
+                                 weighted = weighted, weight_metric = weight_metric)
+    
+    # 2-5-2 TestSet with 1 missing block!
+    print("Evaluation TestSet w/ 1 missing omics block------------------------")
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$A)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_B[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$B)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_C[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$C)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_D[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$D)])
+    
+    # 2-5-3 TestSet with 2 missing blocks!
+    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_CD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_BD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_BC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$c))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$A))])
+    
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AB[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B))])
+    # 2-5-4 Testset with 3 missing blocks!
+    print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ABC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$B,
+                                                                                  curr_data$block_names$C))])
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ACD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ABD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$A,
+                                                                                  curr_data$block_names$D))])
+    
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_BCD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
+    # 2-5-5 Evaluation on single Block Testdata
+    print("Evaluation TestSet w/ only 1 observed Block -----------------------")
+    curr_Forest   <- copy_forrest(Forest)
+    single_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest   <- copy_forrest(Forest)
+    single_B[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    
+    curr_Forest   <- copy_forrest(Forest)
+    single_C[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest   <- copy_forrest(Forest)
+    single_D[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest     <- copy_forrest(Forest)
+    single_CL[[i]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                     weight_metric = weight_metric,
+                                     testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                   curr_data$block_names$B,
+                                                                                   curr_data$block_names$D,
+                                                                                   curr_data$block_names$C))])
+  }
+  
+  # 2-6 Take the time difference for the k fold CV!
+  time_for_CV <- difftime(Sys.time(), start_time, units = "mins")
+  
+  # [3] Return the metric & settings of the fitting!  --------------------------
+  # 3-1 Collect all CV Results in a list!
+  res_all <- list("full" = full,
+                  "miss1_A"   = miss1_A,   "miss1_B"   = miss1_B,
+                  "miss1_C"   = miss1_C,   "miss1_D"   = miss1_D,
+                  "miss2_CD"  = miss2_CD,  "miss2_BD"  = miss2_BD,
+                  "miss2_BC"  = miss2_BC,  "miss2_AD"  = miss2_AD,
+                  "miss2_AC"  = miss2_AC,  "miss2_AB"  = miss2_AB,
+                  "miss3_ABC" = miss3_ABC, "miss3_ABD" = miss3_ABD,
+                  "miss3_ACD" = miss3_ACD, "miss3_BCD" = miss3_BCD,
+                  "single_A"  = single_A,  "single_B"  = single_B,
+                  "single_C"  = single_C,  "single_D"  = single_D,
+                  "single_CL" = single_CL)
+  
+  # 4-2 Collect the Settings, used to do the CV!
+  settings <- list("data_path"     = path,
+                   "num_folds"     = k_splits,
+                   "response"      = response,
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "num_trees"     = num_trees,
+                   "mtry"          = mtry, 
+                   "min_node_size" = min_node_size,
+                   "unorderd_factors" = unorderd_factors,
+                   "time_for_CV"      = time_for_CV)
+  
+  # 4-3 Return both lists!
+  return(list("res_all"  = res_all, 
+              "settings" = settings))
+}
+
+do_CV_3 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_3.RData",
+                    weighted = TRUE, weight_metric = "Acc", 
+                    num_trees = 10, mtry = NULL, min_node_size = NULL,
+                    unorderd_factors = "ignore") {
+  "CrossValidate the Approach when the Traindata has blockwise missingness
+   according to scenario 3 --> 'path' must end in '3.RData', else error!
+   
+   path must lead to a list with 2 entrances: 'data'  &  'block_names'
+   - 'data' is a list filled with 'k' test-train-splits
+      --> k-fold-Validation on this test-train-splits!
+   - 'block_names' is a list filled with the names of the single blocks 
+      & must be ['A', 'B', 'C', 'D', 'clin_block'] for this scenario!
+      
+   Based on the 'k' test-train-splits in 'data', we will fit foldwise RFs to the
+   train data (that has blockwise missingness in it). 
+   Then we ensemble the predicitons from foldwise fitted RFs to single  
+   predicitons & rate these w/ Accuracy, Precision, Specifity, F1-Socre,...
+   
+   The TestingSituations are different, as we can test the models on fully 
+   observed testdata, on testdata w/ 1 missing block, etc...
+   
+   Args:
+      - path (char)         : Path to the data that is already split to test train
+                              Must end in '3.RData'
+      - weighted (bool)     : When ensembling the prediciton from the fodlwise
+                              RFs shall we weight the predictions by the OOB 
+                              performance of the foldwise fitted RFs? The higher
+                              the OOB-Metric for a foldwise fitted RF, the higher
+                              its contribution to the prediction!
+      - weight_metric (chr) : Which metric to use to assigning weights to the 
+                              different predictions? 
+                                - must be 'Acc' or 'F1' 
+                                - if weighted = FALSE, it will be ignored!
+      - num_trees (int)     : Amount of trees, we shall grow on each foldwise
+                              fitted random Forest!
+      - mtry (int)          : Amount of split-variables we try, when looking for 
+                              a split variable! 
+                                - If 'NULL': mtry = sqrt(p)
+      - min_node_size (int) : Amount of Observations a node must at least 
+                              contain, so the model keeps on trying to split 
+                              them!  
+                                - If 'NULL: It is automatically set to 10 in the
+                                            'simpleRF()' function!
+      - unorderd_factors (chr) : How to handle non numeric features!
+                                ['ignore', 'order_once', 'order_split', 'partition']
+    Return:
+      - list filled w/:
+        * 'res_all' [the CV Results on different testsets]:
+           >> A = CNV-Block, B = RNA-Block, C = Mutation-Block, D = Mirna-Block
+            - full    : CV Results for each fold on the fully observed testdata!
+            - miss1_A : CV Results for each fold on the testdata, w/ missing A block!
+            - miss1_B : CV Results for each fold on the testdata, w/ missing B block!
+                .
+                . --> done for all possible permutations
+                .
+            - miss2_AC: CV Results for each fold on the testdata, w/ missing A & C block!
+                .
+                .
+            - single_D:  CV-Results for each fold on the testdata w/ D block only!
+                         
+        * 'settings' [settings used to do the CV - all arguments!]
+            - datapath, seed, response, mtry, time for CV,.... 
+  "
+  # [0] Check Inputs  ----------------------------------------------------------
+  # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
+  # 0-1 path must be numeric and have '1.RData' in it!
+  assert_string(path, fixed = "3.RData")
+  
+  # 0-2 weighted must be a single boolean
+  assert_logical(weighted, len = 1)
+  
+  # 0-3 unorderd factors must be a legit value
+  if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
+    stop("Unknown value for argument 'unordered_factors'")
+  }
+  
+  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
+  if (weighted) {
+    
+    # 0-4-1 Check that it is character
+    assert_character(weight_metric, len = 1)
+    
+    # 0-4-2 Check it has a valid value!
+    if (!(weight_metric %in% c("Acc", "F1"))) {
+      stop("'weight_metric' must be 'Acc' or 'F1'!")
+    }
+  }
+  
+  # [1] Prepare CV  ------------------------------------------------------------
+  # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
+  curr_data <- load_CV_data(path = path)
+  
+  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  corr_block_names <- ("A" %in% names(curr_data$block_names) & 
+                       "B" %in% names(curr_data$block_names) &
+                       "C" %in% names(curr_data$block_names) & 
+                       "D" %in% names(curr_data$block_names) &
+                       "clin_block" %in% names(curr_data$block_names))
+  
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
+  
+  # 1-2 Create empty lists to store results in!
+  # 1-2-1 Full TestSet
+  full <- list()
+  # 1-2-2 TestSet with 1 missing omics-block
+  miss1_A <- list(); miss1_B <- list(); miss1_C <- list(); miss1_D <- list()
+  # 1-2-3 TestSet with 2 missing omics-blocks
+  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list()
+  miss2_AC <- list(); miss2_AB <- list()
+  # 1-2-4 TestSet with 3 missing omics-blocks
+  miss3_ABC <- list(); miss3_ABD <- list(); miss3_ACD <- list(); miss3_BCD <- list()
+  # 1-2-5 Single BlockTestSet [4 missing blocks!]
+  single_A <- list(); single_B <- list(); single_CL <- list(); single_C <- list(); single_D <- list()
+  
+  # 1-3 Get the amount of test-train splits in data 
+  k_splits <- length(curr_data$data)
+  
+  # [2] Start the CV and loop over all test-train splits in data  --------------
+  for (i in seq_len(k_splits)) {
+    
+    # 2-1 Current Fold Status
+    print(paste0("FOLD ", i, "/", k_splits, " -------------------------------"))
+    
+    # 2-2 Extract the test and train set from 'curr_data'
+    train <- curr_data$data[[i]]$train
+    test  <- curr_data$data[[i]]$test
+    
+    # 2-3 Get the Observations that belong to the same fold [same feature space]
+    # 2-3-1 Get for each obs. the index of the observed feas
+    observed_feas <- sapply(seq_len(nrow(train)), function(x) {
+      paste0(which(!(is.na(train[x,]))), collapse = "_")
+    })
+    
+    # 2-3-2 Keep the unique observed feas [equals the different folds]
+    #       That we use to assign obs. to the differnt folds!
+    observed_folds <- unique(observed_feas)
+    
+    print(paste0("Found ", length(observed_folds), " unique folds!"))
+    
+    # 2-4 Train foldwise RFs for each fold seperatly! For this loop over all folds
+    #     [observed_folds contains all unique features observed for diff folds]!
+    #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
+    #         entrance consits of 'num_trees' foldwise fitted trees!
+    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    
+    for (fold_ in observed_folds) {
+      
+      # 2-4-1 Get all Obs. with the feture space as in 'fold_'
+      fold_obs_ <- which(observed_feas == fold_)
+      
+      # 2-4-2 Get all the indeces of the columns that were observed with this fold!
+      obs_columns_ <- as.numeric(unlist(strsplit(fold_, split = "_")))
+      
+      # 2-4-2 Get all Trainpoints from the obs. w/ same features + 
+      #       only keep observed features of these!
+      #       --> fully observed subdata!
+      curr_fold_train_data <- train[fold_obs_, obs_columns_]
+      
+      # 2-4-3 Fit a RF on this fully observed (fold-)subdata!
+      # 2-4-3-1 Define formula
+      response    <- colnames(train)[1]
+      formula_all <- as.formula(paste(response, " ~ ."))
+      
+      # 2-4-3-2 Define the foldwise RF and fit it on the foldwise data
+      fold_RF <- simpleRF(formula           = formula_all, 
+                          data              = curr_fold_train_data, 
+                          num_trees         = num_trees, 
+                          mtry              = mtry, 
+                          min_node_size     = min_node_size,
+                          replace           = TRUE,  # always TRUE, as we need OOB!
+                          splitrule         = NULL,  # always NULL!
+                          unordered_factors = unorderd_factors)
+      
+      print(paste0("Fit FoldWise RF on current fold: ", i_))
+      
+      fold_RF <- mclapply(fold_RF, function(x) {
+        x$grow(replace = TRUE)
+        x
+      }, mc.cores = 1)
+      
+      # 2-4-3-3 Check that all trees were grown correctly
+      #         --> none w/o 'child_node_ID' after that!
+      fold_RF <- all_trees_grown_correctly(fold_RF)
+      
+      # 2-4-4 Add the fitted tree to the Forest!
+      # 2-4-4-1 Copy the tree first, so we do no overwriting!
+      fold_RF_copy <- sapply(fold_RF, function(x) x$copy())
+      
+      # 2-4-4-2 Remove the fold_RF and add the copied fold_RF_copy to 'Forest'
+      rm(fold_RF)
+      Forest[[i_]] <- fold_RF_copy
+      
+      # 2-4-5 Count up i_ - used to fill Forest list!
+      i_  = i_ + 1
+    }
+    
+    # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
+    #     missing blocks to TestSets w/ only one observed Block!
+    # 2-5-1 Full TestSet!
+    print("Evaluation full TestSet -------------------------------------------")
+    curr_Forest <- copy_forrest(Forest)
+    full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
+                                 weighted = weighted, weight_metric = weight_metric)
+    
+    # 2-5-2 TestSet with 1 missing block!
+    print("Evaluation TestSet w/ 1 missing omics block------------------------")
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$A)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_B[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$B)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_C[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$C)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_D[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$D)])
+    
+    # 2-5-3 TestSet with 2 missing blocks!
+    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_CD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_BD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_BC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$c))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$A))])
+    
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AB[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B))])
+    # 2-5-4 Testset with 3 missing blocks!
+    print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ABC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$B,
+                                                                                  curr_data$block_names$C))])
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ACD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ABD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$A,
+                                                                                  curr_data$block_names$D))])
+    
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_BCD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
+    # 2-5-5 Evaluation on single Block Testdata
+    print("Evaluation TestSet w/ only 1 observed Block -----------------------")
+    curr_Forest   <- copy_forrest(Forest)
+    single_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest   <- copy_forrest(Forest)
+    single_B[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    
+    curr_Forest   <- copy_forrest(Forest)
+    single_C[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest   <- copy_forrest(Forest)
+    single_D[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest     <- copy_forrest(Forest)
+    single_CL[[i]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                     weight_metric = weight_metric,
+                                     testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                   curr_data$block_names$B,
+                                                                                   curr_data$block_names$D,
+                                                                                   curr_data$block_names$C))])
+  }
+  
+  # 2-6 Take the time difference for the k fold CV!
+  time_for_CV <- difftime(Sys.time(), start_time, units = "mins")
+  
+  # [3] Return the metric & settings of the fitting!  --------------------------
+  # 3-1 Collect all CV Results in a list!
+  res_all <- list("full" = full,
+                  "miss1_A"   = miss1_A,   "miss1_B"   = miss1_B,
+                  "miss1_C"   = miss1_C,   "miss1_D"   = miss1_D,
+                  "miss2_CD"  = miss2_CD,  "miss2_BD"  = miss2_BD,
+                  "miss2_BC"  = miss2_BC,  "miss2_AD"  = miss2_AD,
+                  "miss2_AC"  = miss2_AC,  "miss2_AB"  = miss2_AB,
+                  "miss3_ABC" = miss3_ABC, "miss3_ABD" = miss3_ABD,
+                  "miss3_ACD" = miss3_ACD, "miss3_BCD" = miss3_BCD,
+                  "single_A"  = single_A,  "single_B"  = single_B,
+                  "single_C"  = single_C,  "single_D"  = single_D,
+                  "single_CL" = single_CL)
+  
+  # 4-2 Collect the Settings, used to do the CV!
+  settings <- list("data_path"     = path,
+                   "num_folds"     = k_splits,
+                   "response"      = response,
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "num_trees"     = num_trees,
+                   "mtry"          = mtry, 
+                   "min_node_size" = min_node_size,
+                   "unorderd_factors" = unorderd_factors,
+                   "time_for_CV"      = time_for_CV)
+  
+  # 4-3 Return both lists!
+  return(list("res_all"  = res_all, 
+              "settings" = settings))
+}
+
+do_CV_4 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_3.RData",
+                    weighted = TRUE, weight_metric = "Acc", 
+                    num_trees = 10, mtry = NULL, min_node_size = NULL,
+                    unorderd_factors = "ignore") {
+  "CrossValidate the Approach when the Traindata has blockwise missingness
+   according to scenario 4 --> 'path' must end in '4.RData', else error!
+   
+   path must lead to a list with 2 entrances: 'data'  &  'block_names'
+   - 'data' is a list filled with 'k' test-train-splits
+      --> k-fold-Validation on this test-train-splits!
+   - 'block_names' is a list filled with the names of the single blocks 
+      & must be ['A', 'B', 'clin_block'] for this scenario!
+      
+   Based on the 'k' test-train-splits in 'data', we will fit foldwise RFs to the
+   train data (that has blockwise missingness in it). 
+   Then we ensemble the predicitons from foldwise fitted RFs to single  
+   predicitons & rate these w/ Accuracy, Precision, Specifity, F1-Socre,...
+   
+   The TestingSituations are different, as we can test the models on fully 
+   observed testdata, on testdata w/ 1 missing block, etc...
+   
+   Args:
+      - path (char)         : Path to the data that is already split to test train
+                              Must end in '3.RData'
+      - weighted (bool)     : When ensembling the prediciton from the fodlwise
+                              RFs shall we weight the predictions by the OOB 
+                              performance of the foldwise fitted RFs? The higher
+                              the OOB-Metric for a foldwise fitted RF, the higher
+                              its contribution to the prediction!
+      - weight_metric (chr) : Which metric to use to assigning weights to the 
+                              different predictions? 
+                                - must be 'Acc' or 'F1' 
+                                - if weighted = FALSE, it will be ignored!
+      - num_trees (int)     : Amount of trees, we shall grow on each foldwise
+                              fitted random Forest!
+      - mtry (int)          : Amount of split-variables we try, when looking for 
+                              a split variable! 
+                                - If 'NULL': mtry = sqrt(p)
+      - min_node_size (int) : Amount of Observations a node must at least 
+                              contain, so the model keeps on trying to split 
+                              them!  
+                                - If 'NULL: It is automatically set to 10 in the
+                                            'simpleRF()' function!
+      - unorderd_factors (chr) : How to handle non numeric features!
+                                ['ignore', 'order_once', 'order_split', 'partition']
+    Return:
+      - list filled w/:
+        * 'res_all' [the CV Results on different testsets]:
+           >> A = CNV-Block, B = RNA-Block, C = Mutation-Block, D = Mirna-Block
+            - full    : CV Results for each fold on the fully observed testdata!
+            - miss1_A : CV Results for each fold on the testdata, w/ missing A block!
+            - miss1_B : CV Results for each fold on the testdata, w/ missing B block!
+                .
+                . --> done for all possible permutations
+                .
+            - miss2_AC: CV Results for each fold on the testdata, w/ missing A & C block!
+                .
+                .
+            - single_D:  CV-Results for each fold on the testdata w/ D block only!
+                         
+        * 'settings' [settings used to do the CV - all arguments!]
+            - datapath, seed, response, mtry, time for CV,.... 
+  "
+  # [0] Check Inputs  ----------------------------------------------------------
+  # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
+  # 0-1 path must be numeric and have '1.RData' in it!
+  assert_string(path, fixed = "4.RData")
+  
+  # 0-2 weighted must be a single boolean
+  assert_logical(weighted, len = 1)
+  
+  # 0-3 unorderd factors must be a legit value
+  if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
+    stop("Unknown value for argument 'unordered_factors'")
+  }
+  
+  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
+  if (weighted) {
+    
+    # 0-4-1 Check that it is character
+    assert_character(weight_metric, len = 1)
+    
+    # 0-4-2 Check it has a valid value!
+    if (!(weight_metric %in% c("Acc", "F1"))) {
+      stop("'weight_metric' must be 'Acc' or 'F1'!")
+    }
+  }
+  
+  # [1] Prepare CV  ------------------------------------------------------------
+  # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
+  curr_data <- load_CV_data(path = path)
+  
+  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  corr_block_names <- ("A" %in% names(curr_data$block_names) & 
+                         "B" %in% names(curr_data$block_names) &
+                         "C" %in% names(curr_data$block_names) & 
+                         "D" %in% names(curr_data$block_names) &
+                         "clin_block" %in% names(curr_data$block_names))
+  
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
+  
+  # 1-2 Create empty lists to store results in!
+  # 1-2-1 Full TestSet
+  full <- list()
+  # 1-2-2 TestSet with 1 missing omics-block
+  miss1_A <- list(); miss1_B <- list(); miss1_C <- list(); miss1_D <- list()
+  # 1-2-3 TestSet with 2 missing omics-blocks
+  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list()
+  miss2_AC <- list(); miss2_AB <- list()
+  # 1-2-4 TestSet with 3 missing omics-blocks
+  miss3_ABC <- list(); miss3_ABD <- list(); miss3_ACD <- list(); miss3_BCD <- list()
+  # 1-2-5 Single BlockTestSet [4 missing blocks!]
+  single_A <- list(); single_B <- list(); single_CL <- list(); single_C <- list(); single_D <- list()
+  
+  # 1-3 Get the amount of test-train splits in data 
+  k_splits <- length(curr_data$data)
+  
+  # [2] Start the CV and loop over all test-train splits in data  --------------
+  for (i in seq_len(k_splits)) {
+    
+    # 2-1 Current Fold Status
+    print(paste0("FOLD ", i, "/", k_splits, " -------------------------------"))
+    
+    # 2-2 Extract the test and train set from 'curr_data'
+    train <- curr_data$data[[i]]$train
+    test  <- curr_data$data[[i]]$test
+    
+    # 2-3 Get the Observations that belong to the same fold [same feature space]
+    # 2-3-1 Get for each obs. the index of the observed feas
+    observed_feas <- sapply(seq_len(nrow(train)), function(x) {
+      paste0(which(!(is.na(train[x,]))), collapse = "_")
+    })
+    
+    # 2-3-2 Keep the unique observed feas [equals the different folds]
+    #       That we use to assign obs. to the differnt folds!
+    observed_folds <- unique(observed_feas)
+    
+    print(paste0("Found ", length(observed_folds), " unique folds!"))
+    
+    # 2-4 Train foldwise RFs for each fold seperatly! For this loop over all folds
+    #     [observed_folds contains all unique features observed for diff folds]!
+    #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
+    #         entrance consits of 'num_trees' foldwise fitted trees!
+    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    
+    for (fold_ in observed_folds) {
+      
+      # 2-4-1 Get all Obs. with the feture space as in 'fold_'
+      fold_obs_ <- which(observed_feas == fold_)
+      
+      # 2-4-2 Get all the indeces of the columns that were observed with this fold!
+      obs_columns_ <- as.numeric(unlist(strsplit(fold_, split = "_")))
+      
+      # 2-4-2 Get all Trainpoints from the obs. w/ same features + 
+      #       only keep observed features of these!
+      #       --> fully observed subdata!
+      curr_fold_train_data <- train[fold_obs_, obs_columns_]
+      
+      # 2-4-3 Fit a RF on this fully observed (fold-)subdata!
+      # 2-4-3-1 Define formula
+      response    <- colnames(train)[1]
+      formula_all <- as.formula(paste(response, " ~ ."))
+      
+      # 2-4-3-2 Define the foldwise RF and fit it on the foldwise data
+      fold_RF <- simpleRF(formula           = formula_all, 
+                          data              = curr_fold_train_data, 
+                          num_trees         = num_trees, 
+                          mtry              = mtry, 
+                          min_node_size     = min_node_size,
+                          replace           = TRUE,  # always TRUE, as we need OOB!
+                          splitrule         = NULL,  # always NULL!
+                          unordered_factors = unorderd_factors)
+      
+      print(paste0("Fit FoldWise RF on current fold: ", i_))
+      
+      fold_RF <- mclapply(fold_RF, function(x) {
+        x$grow(replace = TRUE)
+        x
+      }, mc.cores = 1)
+      
+      # 2-4-3-3 Check that all trees were grown correctly
+      #         --> none w/o 'child_node_ID' after that!
+      fold_RF <- all_trees_grown_correctly(fold_RF)
+      
+      # 2-4-4 Add the fitted tree to the Forest!
+      # 2-4-4-1 Copy the tree first, so we do no overwriting!
+      fold_RF_copy <- sapply(fold_RF, function(x) x$copy())
+      
+      # 2-4-4-2 Remove the fold_RF and add the copied fold_RF_copy to 'Forest'
+      rm(fold_RF)
+      Forest[[i_]] <- fold_RF_copy
+      
+      # 2-4-5 Count up i_ - used to fill Forest list!
+      i_  = i_ + 1
+    }
+    
+    # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
+    #     missing blocks to TestSets w/ only one observed Block!
+    # 2-5-1 Full TestSet!
+    print("Evaluation full TestSet -------------------------------------------")
+    curr_Forest <- copy_forrest(Forest)
+    full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
+                                 weighted = weighted, weight_metric = weight_metric)
+    
+    # 2-5-2 TestSet with 1 missing block!
+    print("Evaluation TestSet w/ 1 missing omics block------------------------")
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$A)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_B[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$B)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_C[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$C)])
+    curr_Forest  <- copy_forrest(Forest)
+    miss1_D[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
+                                  weight_metric = weight_metric,
+                                  testdata = test[,-which(colnames(test) %in% curr_data$block_names$D)])
+    
+    # 2-5-3 TestSet with 2 missing blocks!
+    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_CD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_BD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_BC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$c))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$D))])
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                 curr_data$block_names$A))])
+    
+    curr_Forest   <- copy_forrest(Forest)
+    miss2_AB[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B))])
+    # 2-5-4 Testset with 3 missing blocks!
+    print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ABC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$B,
+                                                                                  curr_data$block_names$C))])
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ACD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_ABD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$A,
+                                                                                  curr_data$block_names$D))])
+    
+    curr_Forest    <- copy_forrest(Forest)
+    miss3_BCD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                    weight_metric = weight_metric,
+                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                  curr_data$block_names$C,
+                                                                                  curr_data$block_names$D))])
+    # 2-5-5 Evaluation on single Block Testdata
+    print("Evaluation TestSet w/ only 1 observed Block -----------------------")
+    curr_Forest   <- copy_forrest(Forest)
+    single_A[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest   <- copy_forrest(Forest)
+    single_B[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    
+    curr_Forest   <- copy_forrest(Forest)
+    single_C[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$D,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest   <- copy_forrest(Forest)
+    single_D[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                   weight_metric = weight_metric,
+                                   testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                 curr_data$block_names$B,
+                                                                                 curr_data$block_names$C,
+                                                                                 curr_data$block_names$clin_block))])
+    curr_Forest     <- copy_forrest(Forest)
+    single_CL[[i]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted,
+                                     weight_metric = weight_metric,
+                                     testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                   curr_data$block_names$B,
+                                                                                   curr_data$block_names$D,
+                                                                                   curr_data$block_names$C))])
   }
   
   # 2-6 Take the time difference for the k fold CV!

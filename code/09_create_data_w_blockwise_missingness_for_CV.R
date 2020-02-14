@@ -259,9 +259,9 @@ induce_blockmiss_2 <- function(data_and_names, seed) {
     # 1-4 Sample the observed blocks for each fold!
     set.seed(seed)
     observed_blocks <- sample(c(rep("A", n_per_fold[1]), 
-                                rep("B", n_per_fold[2]),
-                                rep("C", n_per_fold[3]),
-                                rep("D", n_per_fold[4])),
+                                rep("A, B", n_per_fold[2]),
+                                rep("A, B, C", n_per_fold[3]),
+                                rep("A, B, C, D", n_per_fold[4])),
                               n_train, replace = FALSE)
     
     # 1-5 Replace the observed values from the blocks that weren't sampled for
