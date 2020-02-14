@@ -528,7 +528,7 @@ induce_blockmiss_4 <- function(data_and_names, seed) {
                                    block_B_names] <- NA
     
     # 1-5-2 Obs. of 'fold1': Subset all Values w/ NA that were in block B!
-    data_and_names$data[[j]]$train[which(observed_blocks == "fold1"), 
+    data_and_names$data[[j]]$train[which(observed_blocks == "fold2"), 
                                    block_A_names] <- NA
   }
   
