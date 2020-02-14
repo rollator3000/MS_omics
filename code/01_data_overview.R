@@ -146,7 +146,7 @@ load_rda_get_infos <- function(rda_path) {
   return(all_res)
 }
 
-# Datainspection                                                            ----
+# Datainspection -- needed fpr further analysis --> always run this         ----
 # ----- BLCA DF
 BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/BLCA.Rda")
 BLCA_Res
@@ -242,7 +242,7 @@ UCEC_Res$clin  # --> has gender as clin Variable, but with 1 level only!
 DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                   "LGG", "LUAD", "LUSC", "PAAD", "READ", "SARC", "SKCM", "STAD")
 
-#   Check the distribution for all 
+#   Check the distribution for all DFs w/ gender!
 for (df_curr in DFs_w_gender) {
   load(paste0("./data/external/Dr_Hornung/original_processed_data/", df_curr, ".Rda"))
   print(paste0("Distribution of 'gender' for DF: '", df_curr, "'"))
@@ -251,7 +251,6 @@ for (df_curr in DFs_w_gender) {
 }
 
 # Get the distribution of the amount of features in each block over all dfs ----
-# ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
 
 # "DFs_w_gender" needed for the looop is defined in chapter above!
 blocks <- c("cnv", "mirna", "mutation", "rna")
@@ -264,55 +263,23 @@ for (i in blocks) {
   print(summary(feas))
 }
 
-# Compare the how much feas the blocks from different DFs have in common    ----
-# From the different DFs - w/ gender as clinical variable - we want to find out
-# how similiar the same blocks from the different DFs are!
-# (e.g. compare all colnames of 'mirna' block of the different DFs!)
-
-# The dataframes we have to loop over:
-DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
-                  "LGG", "LUAD", "LUSC", "PAAD", "READ", "SARC", "SKCM", "STAD")
-
-# Choose a block & get all colnames of the block and save DFs that had the block
-# in "var_names"
-block     <- "mirna"; var_names <- c()
-
-for (df in DFs_w_gender) {
-  all_blocks <- load(paste0("./data/external/Dr_Hornung/original_processed_data/", 
-                            df, ".Rda"))
-  
-  if (block %in% all_blocks) {
-    curr_block <- eval(as.symbol(block))
-    var_names  <- c(var_names, paste0(block, "_", df))
-    assign(paste0(block, "_", df), colnames(curr_block))
-  }
-}
-
-# Create a matrix, with each 'var_names' as col- & row-names!
-res           <- matrix(ncol = length(var_names), nrow = length(var_names))
-rownames(res) <- var_names; colnames(res) <- var_names
-
-# Get the fraction, of how much the colnames overlap!
-for (curr_row in 1:nrow(res)) {
-  
-  # Get all colnames of the DF in the curr row!
-  curr_res     <- rownames(res)[curr_row]
-  curr_res_val <- eval(as.symbol(curr_res))
-  
-  # Evaluate how much the colnames overlap by comparing it to all colnames
-  # of the df_blocks in column!
-  res[curr_row, ] <- sapply(1:ncol(res), function(x) {
-    curr_col        <- colnames(res)[x]
-    curr_col_values <- eval(as.symbol(curr_col))
+# Do the same, but subsett the blocks before [same dim in CV later then!]
+blocks <- c("cnv", "mirna", "mutation", "rna")
+for (i in blocks) {
+  feas <- c()
+  for (df_curr in DFs_w_gender) { 
     
-    sum(curr_res_val %in% curr_col_values) / length(curr_res_val)
-  })
+    # Select the proportion we subset [depending on the selected block!]
+    if (i == "cnv")      prop = 0.025
+    if (i == "rna")      prop = 0.15
+    if (i == "mirna")    prop = 0.5
+    if (i == "mutation") prop = 0.1
+    
+    feas <- c(feas, get(paste0(df_curr, "_Res"))[[i]]$dimensions[2] * prop)
+  }
+  print(paste0("For the Block: ", i, " -------------------------"))
+  print(summary(feas))
 }
-
-# This matrix holds the fraction of features the same blocks in different DFs
-# hold! --> Each row & col represent a DF!
-# The entrance [1,2] tells us how much of the colnames of DF1 are also in DF2
-res
 
 # Get the type of the features used in all blocks!                          ----
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
