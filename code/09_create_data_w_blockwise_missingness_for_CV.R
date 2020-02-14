@@ -536,10 +536,7 @@ induce_blockmiss_4 <- function(data_and_names, seed) {
   # 2-1 Instead of cnv', 'rna', ... subset the ommics block names by 'A', 'B' & 
   #     Put the blocknames we pasted together together!
   # 2-1-1 Remove the old entrances
-  data_and_names$block_names$cnv_block      <- NULL
-  data_and_names$block_names$rna_block      <- NULL
-  data_and_names$block_names$mutation_block <- NULL
-  data_and_names$block_names$mirna_block    <- NULL
+  data_and_names$block_names <- data_and_names$block_names[-c(2, 3, 4, 5)] 
   
   # 2-1-1 Add the new entrances!
   data_and_names$block_names$A <- block_A_names
@@ -679,7 +676,7 @@ for (curr_df in DFs_w_gender[1:2]) {
   path_to_save <- paste0(data_path, "missingness_", seed, "/", curr_df)
   
   save(curr_data_1, file = paste0(path_to_save, "_1.RData"))
-  save(curr_data_1, file = paste0(path_to_save, "_2.RData"))
-  save(curr_data_1, file = paste0(path_to_save, "_3.RData"))
-  save(curr_data_1, file = paste0(path_to_save, "_4.RData"))
+  save(curr_data_2, file = paste0(path_to_save, "_2.RData"))
+  save(curr_data_3, file = paste0(path_to_save, "_3.RData"))
+  save(curr_data_4, file = paste0(path_to_save, "_4.RData"))
 }
