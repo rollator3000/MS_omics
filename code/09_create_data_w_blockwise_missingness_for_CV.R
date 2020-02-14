@@ -658,7 +658,7 @@ data_path    <- "./data/external/Dr_Hornung/subsetted_12345/" # Path to the data
 response_    <- "gender"                                      # response from 'clin' block
 seed         <- 1234                                          # seed for reprducibility!
 
-for (curr_df in "BLCA") {
+for (curr_df in DFs_w_gender[1:2]) {
   
   # [1] Create the path to the subsetted DF, we want to induce blockwise missingness!
   curr_path <- paste0(data_path, curr_df, "_subset.RData")
