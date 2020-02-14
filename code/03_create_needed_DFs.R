@@ -8,7 +8,7 @@
           final subset we will use for the comparison study!
           For this we will subset each omics block:
             - 0.025 for cnv omics block!
-            - 0.01  for mutationn omcis block!
+            - 0.1   for mutationn omcis block!
             - 0.15  for rna omics block!
             - 0.5   for mirna omics block!
     
