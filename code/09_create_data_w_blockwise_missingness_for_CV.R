@@ -8,26 +8,25 @@ library(caret)
 
 load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/subsetted_12345/LGG_subset.RData",
                                           response = 'gender') {
-  "Function to load the - already subsetted - data!
-   Return one single DF (where all blocks are joint together) & 
-   the colnames of each block!
+  "Load the data - where omcis blocks have already been subsetted!
+   Return single DF (where all blocks are joint together) & 
+   the colnames of each block in the DF!
    
    Args:
     - path (char)     : path to a DF w/ block wise structure! 
                         Shall contain 'rna', 'cnv', 'mirna', 'clin' & 'mutation'
-                        blocks!
-    - response (char) : feature used as reponse - must be in 'clin' block & 
-                        must be binary - have exact 2 factor levels
+                        as features blocks!
+    - response (char) : feature used as reponse!
+                        Must be in 'clin' block & be binary!
    
    Return:
-    list with 2 entrances:  
-      1 - data: dataframe, where all blocks are pasted together, and the first 
-                column equals the response and is of class factor!!
-      2 - block_names: list with all colnames of each block in data!
-  "
+    - List w/ 2 elements:  
+          1. 'data':        Dataframe, with all blocks are pasted together. 
+                            The 1. column is the response & is a binary factor!
+          2. 'block_names': List with all colnames of each block in 'data'!
+                            [has colnames of the 'rna'-block, the 'cnv'-block,..]"
   # [0] Check Inputs -----------------------------------------------------------
-  # 0-1 Load data from path & check whether it has all blocks
-  #     if the path is not valid, load() will throw an error!
+  # 0-1 Load data from path & check whether it has all blocks!
   load(path)
   if (any(!exists('clin') & !exists('cnv') & !exists('mirna') & 
           !exists('rna')  & !exists('mutation'))) {
@@ -67,6 +66,113 @@ load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/subse
   return(list("data"        = df,
               "block_names" = block_variables))
 }
+split_data_to_k_sets <- function(data_and_names, scenario, k = 5, seed = 1234) {
+  " Split data in 'data_and_names' into k Train- and Testsplits!
+    Induce blockwise missingness into the 'Train-split' according to 'scenario'!
+    
+    Args:
+      data_and_names (list) : list filled with 'data' and 'block_names'. 
+                              - 'data' is a 'data.frame
+                              - 'block_names' is a list w/ the names:
+                                ['clin_block', 'cnv_block', 'rna_block'
+                                 'mutation_block', 'mirna_block']
+      scenario (int)        : Scenario that we use to induce blockwise 
+                              missingness - must be in: [1, 2, 3, 4]
+      k (int)               : Number of Splits we want to have! Must be int > 1!
+      seed (int)            : Int to keep results repoducible. 
+                              Needed when splitting data into k test-train splits!
+  
+    Return:
+      - data_and_names (list) filled with 'data' & 'block_names'. 
+          1. 'data':        Set of 'k' lists, where each list holds a specific 
+                            test-train split. Testdata is fully observed &  
+                            Traindata was induced with a type of the four 
+                            blockwise missingness patterns!
+          2. 'block_names': Has the colanmes of all blocks!"
+  # [0] Check Inputs  ----------------------------------------------------------
+  # 0-1 Check 'data_and_names'
+  # 0-1-1 Check for being a list w/ 2 entrances
+  assert_list(data_and_names, len = 2)
+  
+  # 0-1-2 Check names of the 2 entraces in 'data_and_names'
+  if (!"data" %in% names(data_and_names)) {
+    stop("'data_and_names' needs a 'data' entrance")
+  }
+  
+  if (!"block_names" %in% names(data_and_names)) {
+    stop("'data_and_names' needs a 'block_names' entrance")
+  }
+  
+  # 0-1-3 Check the types of 'data' & 'block_names' in 'data_and_names'
+  assert_data_frame(data_and_names$data, min.rows = k)
+  assert_list(data_and_names$block_names, len = 5)
+  
+  # 0-1-4 Check for correct names in 'block_names' in 'data_and_names'
+  block_names_     <- c('clin_block', 'cnv_block', 'rna_block', 'mutation_block', 'mirna_block')
+  all_block_names_ <- sapply(block_names_, function(x) x %in% names(data_and_names$block_names)) 
+  if (!all(all_block_names_)) {
+    print(all_block_names_)
+    stop("'block_names' block is not completly!")
+  }
+  
+  # 0-1-5 First Column in data must be of type factor with exactly 2 levels!
+  assert_factor(data_and_names$data[,1], n.levels = 2, empty.levels.ok = F)
+  
+  # 0-2 Check 'k', 'scenario' & 'seed' for bein integers
+  assert_int(k, lower = 2, upper = nrow(data_and_names$data))
+  assert_int(scenario, lower = 1, upper = 4)
+  assert_int(seed)
+  
+  # [1] Split the data into k equally sized folds  -----------------------------
+  # 1-1 Get the fold IDs for each of the k partioions
+  set.seed(seed)
+  fold_ids <- createFolds(data_and_names$data[,1], k = k)
+  
+  # 1-2 Split data into k distinct test- & train-sets! 
+  #     Put the test-train pairs together into a list w/ 'train' and 'test' !
+  #     --> k list entrances w/ k test-train-splits of data!
+  splitted_dfs <- lapply(seq_len(k), function(x) {
+    tmp_train_ids <- unlist(fold_ids[-x])
+    tmp_test_ids  <- unlist(fold_ids[x])
+    
+    list("train" = data_and_names$data[tmp_train_ids,],
+         "test"  = data_and_names$data[tmp_test_ids,])
+  })
+  
+  # 1-3 Overwrite the original (not splitted) data in 'data_and_names$data' with
+  #     the 'splitted_dfs' list (each entrance has its own test-train-split)! 
+  data_and_names$data <- splitted_dfs
+  
+  # [2] Induce Blockwise Missingness  ------------------------------------------
+  # To each pair of test and trainset, we induce blockwise- missingness to 
+  # the trainset according to the 'scenario' argument.
+  #     --> Blockwise missingness only induced to the traindata!
+  #     --> Dimensions stay the same, but amount of NAs per row/ col increase!
+  
+  # 2-1 Scenario 1
+  if (scenario == 1) {
+    data_and_names_w_blockwise <- induce_blockmiss_1(data_and_names, seed = seed)
+    return(data_and_names_w_blockwise)
+  }
+  
+  # 2-2 Scenario 2
+  if (scenario == 2) {
+    data_and_names_w_blockwise <- induce_blockmiss_2(data_and_names, seed = seed)
+    return(data_and_names_w_blockwise)
+  }
+  
+  # 2-3 Scenario 3
+  if (scenario == 3) {
+    data_and_names_w_blockwise <- induce_blockmiss_3(data_and_names, seed = seed)
+    return(data_and_names_w_blockwise)
+  }
+  
+  # 2-4 Scenario 4
+  if (scenario == 4) {
+    data_and_names_w_blockwise <- induce_blockmiss_4(data_and_names, seed = seed)
+    return(data_and_names_w_blockwise)
+  }
+}
 
 induce_blockmiss_1 <- function(data_and_names, seed) {
   " Induce blockwise missingness according to scenario 1 to the train data!
@@ -102,13 +208,13 @@ induce_blockmiss_1 <- function(data_and_names, seed) {
   assert_int(seed)
   
   # [1] Induce the blockwise missingness  --------------------------------------
-  # 1-1 Loop over each of the k test-train-splits in 'data_and_names$data' and 
-  #     assign the observations to different folds [each has own observed blocks!]
+  # 1-1 Loop over each of the 'k' test-train-splits in 'data_and_names$data' &
+  #     assign the observations to different folds [each fold has own observed blocks!]
   for (j in 1:length(data_and_names$data)) {
     
     # 1-1-1 The 4 different folds need to have about the same amount of 
     #       observations. If the amount of train obs. in train-split is not
-    #       dividable by 44, random folds get enlarged by 1 observation, so that
+    #       dividable by 4, random folds get enlarged by 1 observation, so that
     #       all obs belong in a fold & all folds are about equally sized [+-1]!
     n_train    <- nrow(data_and_names$data[[j]]$train) # total train obs.
     n_per_fold <- rep(floor(n_train / 4), 4)           # rounded obs. per fold
@@ -144,7 +250,8 @@ induce_blockmiss_1 <- function(data_and_names, seed) {
     
     # 1-4 Replace the observed values from the blocks that weren't sampled for
     #     certain folds with NA!
-    #     (e.g. all obs. w/ "Clin, cnv", will only have these, the rest is NA!)
+    #     (e.g. all obs. w/ "Clin, cnv", will only have these as observed feas, 
+    #      all the remaining features are NA!)
     
     # 1-4-1 Subset all Values with NA except from 'clin' & 'cnv' block!
     data_and_names$data[[j]]$train[which(observed_blocks == "Clin, cnv"), 
@@ -196,8 +303,7 @@ induce_blockmiss_2 <- function(data_and_names, seed) {
       data_and_names (list): list with the exact same layout as the input, BUT 
                              the data entrance has been induced w/ blockwise 
                              missingness according to scenario 2 and the omics
-                             block names are replaced by 'A', 'B', ...
-  "
+                             block names are replaced by 'A', 'B', ..."
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 Check 'data_and_names' 
   # 0-1-1 Must be a list filled with 2 more lists!
@@ -258,41 +364,51 @@ induce_blockmiss_2 <- function(data_and_names, seed) {
     
     # 1-4 Sample the observed blocks for each fold!
     set.seed(seed)
-    observed_blocks <- sample(c(rep("A", n_per_fold[1]), 
-                                rep("A, B", n_per_fold[2]),
-                                rep("A, B, C", n_per_fold[3]),
-                                rep("A, B, C, D", n_per_fold[4])),
+    observed_blocks <- sample(c(rep("A, B, C, D", n_per_fold[1]), 
+                                rep("B, C, D", n_per_fold[2]),
+                                rep("C, D", n_per_fold[3]),
+                                rep("D", n_per_fold[4])),
                               n_train, replace = FALSE)
     
     # 1-5 Replace the observed values from the blocks that weren't sampled for
     #     certain folds with NA!
     #     (e.g. all obs. w/ "A", will only have the block A, the rest is NA!)
     
-    # 1-4-1 Obs. of Block 'A': Subset all Values w/ NA except from 'clin' & Block A!
-    data_and_names$data[[j]]$train[which(observed_blocks == "A"), 
-                                   c(data_and_names$block_names[[letter_feas["B"]]],
-                                     data_and_names$block_names[[letter_feas["C"]]],
-                                     data_and_names$block_names[[letter_feas["D"]]])] <- NA
+    # 1-4-1 Obs. of Block 'A, B, C, D': Everything observed!
     
-    # 1-4-2 Obs. of Block 'B': Subset all Values w/ NA except from 'clin' & Block A & B!
-    data_and_names$data[[j]]$train[which(observed_blocks == "B"), 
-                                   c(data_and_names$block_names[[letter_feas["C"]]],
-                                     data_and_names$block_names[[letter_feas["D"]]])] <- NA
+    # 1-4-2 Obs. of Block 'B, C, D': Block 'A' not observed! 
+    data_and_names$data[[j]]$train[which(observed_blocks == "B, C, D"), 
+                                   c(data_and_names$block_names[[letter_feas["A"]]])] <- NA
     
-    ## 1-4-3 Obs. of Block 'B': Subset all Values w/ NA except from 'clin' & Block A & B & C!
-    data_and_names$data[[j]]$train[which(observed_blocks == "C"), 
-                                   c(data_and_names$block_names[[letter_feas["D"]]])] <- NA
+    # 1-4-3 Obs. of Block 'C, D': Block 'A' & 'B' not observed!
+    data_and_names$data[[j]]$train[which(observed_blocks == "C, D"), 
+                                   c(data_and_names$block_names[[letter_feas["A"]]],
+                                     data_and_names$block_names[[letter_feas["B"]]])] <- NA
     
-    # 1-4-4 Obs. from Block 'D': Nothing has to be subsetted! 
+    # 1-4-4 Obs. of Block 'D': Block 'A','B' & 'C' not observed!
+    data_and_names$data[[j]]$train[which(observed_blocks == "D"), 
+                                     c(data_and_names$block_names[[letter_feas["A"]]],
+                                       data_and_names$block_names[[letter_feas["B"]]],
+                                       data_and_names$block_names[[letter_feas["C"]]])] <- NA
   }
   
   # [2] Rename the 'block_names' in 'data_and_names'  --------------------------
   # 2-1 As we shuffled which letter, is which block, we need to adjust the block
-  #     Names aswell!
-  names(data_and_names$block_names)[2] <- names(letter_feas)[letter_feas == "cnv_block"]
-  names(data_and_names$block_names)[3] <- names(letter_feas)[letter_feas == "rna_block"]
-  names(data_and_names$block_names)[4] <- names(letter_feas)[letter_feas == "mutation_block"]
-  names(data_and_names$block_names)[5] <- names(letter_feas)[letter_feas == "mirna_block"]
+  #     names aswell, so that block_name 'A' Consitis of all colnames in block 'A'
+  for (block_ in letter_feas) {
+    
+    # Get the Index it reprenteed in 'block_names'
+    index_ <- which(names(data_and_names$block_names) == block_)
+    
+    # If not avaible break [avoid bugs!]
+    if (length(index_) == 0) next
+
+    # Get the letter of 'block_'
+    letter_ <- names(letter_feas[letter_feas == block_])
+    
+    # Overwrithe the block_name with the letter it represented!
+    names(data_and_names$block_names)[index_] <- letter_
+    }
   
   # [3] Return the list, but with block wise missing data now!  ----------------
   return(data_and_names)
@@ -546,124 +662,23 @@ induce_blockmiss_4 <- function(data_and_names, seed) {
   return(data_and_names)
 }
 
-split_data_to_k_sets <- function(data_and_names, scenario, k = 5, seed = 12345) {
-  " Function to split the data in 'data_and_names' into k Train- and Testsplits!
-    And induce the blockwise missingness into Train according to 'scenario'!
-    
-    Args:
-      data_and_names (list) : list filled with 'data' and 'block_names', where 
-                              data is a 'data.frame' & 'block_names' is a list 
-                              w/ the names 'clin_block', 'cnv_block', 'rna_block'
-                                           'mutation_block' & 'mirna_block'
-      scenario (int)        : Scenario that we use to induce blockwise 
-                              missingness - must be in (1, 2, 3, 4)!
-      k    (int)            : Number of Splits we want to have! Must be int > 1!
-      seed (int)            : Integer to keep results repoducible - needed when
-                              splitting data into k test-train splits!
-      
-    Return:
-      data_and_names (list) filled with 'data' & 'block_names'. 
-      -'data' is a set of k-lists, where each list holds a specific test-train
-        split, where the testdata is fully observed and the train data was induced 
-        with a type of blockwise missingness!
-      - 'block_names' has the colanmes of all blocks!
-  "
-  # [0] Check Inputs  ----------------------------------------------------------
-  # 0-1 Check 'data_and_names'
-  # 0-1-1 Check for being a list w/ 2 entrances
-  assert_list(data_and_names, len = 2)
-  
-  # 0-1-2 Check names of the 2 entraces in 'data_and_names'
-  if (!"data" %in% names(data_and_names)) stop("'data_and_names' needs a 'data' entrance")
-  if (!"block_names" %in% names(data_and_names)) stop("'data_and_names' needs a 'block_names' entrance")
-  
-  # 0-1-3 Check the types of 'data' & 'block_names' in 'data_and_names'
-  assert_data_frame(data_and_names$data, min.rows = k)
-  assert_list(data_and_names$block_names, len = 5)
-  
-  # 0-1-4 Check for correct names in 'block_names' in 'data_and_names'
-  block_names_     <- c('clin_block', 'cnv_block', 'rna_block', 'mutation_block', 'mirna_block')
-  all_block_names_ <- sapply(block_names_, function(x) x %in% names(data_and_names$block_names)) 
-  if (!all(all_block_names_)) {
-    print(all_block_names_)
-    stop("'block_names' block is not completly!")
-  }
-  
-  # 0-1-5 First Column in data must be of type factor with exactly 2 levels!
-  assert_factor(data_and_names$data[,1], n.levels = 2, empty.levels.ok = F)
-  
-  # 0-2 Check 'k', 'scenario' & 'seed' for bein integers
-  assert_int(k, lower = 2, upper = nrow(data_and_names$data))
-  assert_int(scenario, lower = 1, upper = 4)
-  assert_int(seed)
-  
-  # [1] Split the data into k equally sized folds  -----------------------------
-  # 1-1 Get the fold IDs for each of the k partioions
-  set.seed(seed)
-  fold_ids <- createFolds(data_and_names$data[,1], k = k)
-  
-  # 1-2 Split data into k distinct test- & train-sets! 
-  #     Put the test-train pairs together into a list w/ 'train' and 'test' !
-  #     --> k list entrances w/ k test-train-splits of data!
-  splitted_dfs <- lapply(seq_len(k), function(x) {
-    tmp_train_ids <- unlist(fold_ids[-x])
-    tmp_test_ids  <- unlist(fold_ids[x])
-    
-    list("train" = data_and_names$data[tmp_train_ids,],
-         "test"  = data_and_names$data[tmp_test_ids,])
-  })
-  
-  # 1-3 Overwrite the original (not splitted) data in 'data_and_names$data' with
-  #     the 'splitted_dfs' list (each entrance has its own test-train-split)! 
-  data_and_names$data <- splitted_dfs
-  
-  # [2] Induce Blockwise Missingness  ------------------------------------------
-  # To each pair of test and trainset, we induce blockwise- missingness to 
-  # the trainset according to the 'scenario' argument.
-  #     --> Blockwise missingness only induced to the traindata!
-  #     --> Dimensions stay the same, but amount of NAs per row/ col increase!
-  
-  # 2-1 Scenario 1
-  if (scenario == 1) {
-    data_and_names_w_blockwise <- induce_blockmiss_1(data_and_names, seed = seed)
-    return(data_and_names_w_blockwise)
-  }
-  
-  # 2-2 Scenario 2
-  if (scenario == 2) {
-    data_and_names_w_blockwise <- induce_blockmiss_2(data_and_names, seed = seed)
-    return(data_and_names_w_blockwise)
-  }
-  
-  # 2-3 Scenario 3
-  if (scenario == 3) {
-    data_and_names_w_blockwise <- induce_blockmiss_3(data_and_names, seed = seed)
-    return(data_and_names_w_blockwise)
-  }
-  
-  # 2-4 Scenario 4
-  if (scenario == 4) {
-    data_and_names_w_blockwise <- induce_blockmiss_4(data_and_names, seed = seed)
-    return(data_and_names_w_blockwise)
-  }
-}
-
 # Run TestTrainSplitting - and induce blockwise missingness to TrainSets  ------
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 data_path    <- "./data/external/Dr_Hornung/subsetted_12345/" # Path to the data
 response_    <- "gender"                                      # response from 'clin' block
-seed         <- 1234                                          # seed for reprducibility!
+seed         <- 1312                                        # seed for reprducibility!
 
-for (curr_df in DFs_w_gender[1:2]) {
+for (curr_df in DFs_w_gender[2]) {
+  
+  curr_df = DFs_w_gender[2]
   
   # [1] Create the path to the subsetted DF, we want to induce blockwise missingness!
   curr_path <- paste0(data_path, curr_df, "_subset.RData")
   
   # [2] Load the Data
   curr_data <- load_data_extract_block_names(path = curr_path, response = response_)
-  print("Dimensions of loaded Data")
-  print(dim(curr_data$data))
+  print("Dimensions of loaded Data"); print(dim(curr_data$data))
   
   # [3] Induce Blockwise missingness for each Scenario [1, 2, 3, 4]
   curr_data_1 <- split_data_to_k_sets(curr_data, scenario = 1, k = 5, seed = seed)
