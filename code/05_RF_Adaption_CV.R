@@ -200,16 +200,19 @@ get_oob_weight_metric     <- function(trees, weight_metric) {
   usable_trees <- sapply(1:length(trees), function(x) {
     
     # Check whether the first split_var was pruned!
-    if (trees[[x]]$child_nodeIDs[1] == "pruned") {
-      return(NULL)
-    } else {
+    if (trees[[x]]$child_nodeIDs[[1]][1] != "pruned") {
       return(x)
-    }
+    } 
   })
   
   # 1-1-1 If all the trees were pruned in the first node, we can not do
   #       any OOB predictions --> OOB-Accuracy = 0
-  if (length(usable_trees) < 1) return(0)
+  if (length(usable_trees) < 1) {
+    return(0)
+  } else {
+    usable_trees <- unlist(usable_trees)
+  }
+  
   
   # 1-2 For all usable trees [not pruned in first split variable] get the IDs
   #     of the OOB observations. Then collect all and only keep unique IDs!
@@ -820,14 +823,6 @@ do_CV_1 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness
               "settings" = settings))
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_2.RData"
-weighted = TRUE
-weight_metric = "Acc"
-num_trees = 10
-mtry = NULL
-min_node_size = NULL
-unorderd_factors = "ignore"
-
 do_CV_2 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_2.RData",
                     weighted = TRUE, weight_metric = "Acc", 
                     num_trees = 10, mtry = NULL, min_node_size = NULL,
@@ -985,6 +980,8 @@ do_CV_2 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness
       #       only keep observed features of these!
       #       --> fully observed subdata!
       curr_fold_train_data <- train[fold_obs_, obs_columns_]
+      
+      cat(paste("Ncol fold", i_, ":", ncol(curr_fold_train_data), "\n"))
       
       # 2-4-3 Fit a RF on this fully observed (fold-)subdata!
       # 2-4-3-1 Define formula
@@ -1184,6 +1181,14 @@ do_CV_2 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
+
+path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData"
+weighted = TRUE
+weight_metric = "Acc"
+num_trees = 10
+mtry = NULL
+min_node_size = NULL
+unorderd_factors = "ignore"
 
 do_CV_3 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_3.RData",
                     weighted = TRUE, weight_metric = "Acc", 
