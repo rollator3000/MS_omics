@@ -25,6 +25,7 @@ setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 source("./code/04_simpleRF_adaption.R")
 library(pROC)
 library(assertthat)
+library(checkmate)
 
 load_CV_data              <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -535,7 +536,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
                         only! [or in scenario2, what was sampled to be block 'D']
                          
         * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry, time for CV,.... 
+            - datapath, response, mtry, time for CV,.... 
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
@@ -545,9 +546,8 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
     stop("'path' must end in '1.RData' | '2.RData' | '3.RData'")
   }
   
-  # 0-2 weighted must be a single boolean & seed an integer
+  # 0-2 weighted must be a single boolean
   assert_logical(weighted, len = 1)
-  assert_int(seed)
   
   # 0-3 unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
@@ -898,16 +898,15 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
             - single_clin: CV Results for each fold on the testdata, w/ only block
                            clinical as feature
         * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry, time for CV, ...
+            - datapath, response, mtry, time for CV, ...
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
   # 0-1 path must be numeric and have '1.RData' in it!
   assert_string(path, fixed = "4.RData")
   
-  # 0-2 weighted must be a single boolean & seed an integer
+  # 0-2 weighted must be a single boolean 
   assert_logical(weighted, len = 1)
-  assert_int(seed)
   
   # 0-3 unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
