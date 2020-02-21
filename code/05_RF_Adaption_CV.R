@@ -540,7 +540,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
   # 0-1 path must be numeric and have '1.RData' | '2.RData' | '3.RData' in it!
-  test_string(path)
+  assert_string(path)
   if (!grepl("1.RData", path) & !grepl("2.RData", path) & !grepl("3.RData", path)) {
     stop("'path' must end in '1.RData' | '2.RData' | '3.RData'")
   }
@@ -818,7 +818,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
                   "single_C"  = single_C,  "single_D"  = single_D,
                   "single_CL" = single_CL)
   
-  # 4-2 Collect the Settings, used to do the CV!
+  # 3-2 Collect the Settings, used to do the CV!
   settings <- list("data_path"     = path,
                    "num_folds"     = k_splits,
                    "response"      = response,
@@ -830,7 +830,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
                    "unorderd_factors" = unorderd_factors,
                    "time_for_CV"      = time_for_CV)
   
-  # 4-3 Return both lists!
+  # 3-3 Return both lists!
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
@@ -856,7 +856,7 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
    The TestingSituations are different, as we can test the models on fully 
    observed testdata, on testdata w/ 1 missing block, etc...
     --> Results is list with all results from the k test-train splits for all 
-        possible testsituations - 5 in total!
+        possible testsituations - 6 in total!
    
   Args:
       - path (char)         : Path to the data that is already split to test train
@@ -1076,19 +1076,10 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
   
   # [3] Return the metric & settings of the fitting!  --------------------------
   # 3-1 Collect all CV Results in a list!
-  res_all <- list("full" = full,
-                  "miss1_A"   = miss1_A,   "miss1_B"   = miss1_B,
-                  "miss1_C"   = miss1_C,   "miss1_D"   = miss1_D,
-                  "miss2_CD"  = miss2_CD,  "miss2_BD"  = miss2_BD,
-                  "miss2_BC"  = miss2_BC,  "miss2_AD"  = miss2_AD,
-                  "miss2_AC"  = miss2_AC,  "miss2_AB"  = miss2_AB,
-                  "miss3_ABC" = miss3_ABC, "miss3_ABD" = miss3_ABD,
-                  "miss3_ACD" = miss3_ACD, "miss3_BCD" = miss3_BCD,
-                  "single_A"  = single_A,  "single_B"  = single_B,
-                  "single_C"  = single_C,  "single_D"  = single_D,
-                  "single_CL" = single_CL)
+  res_all <- list("full" = full, "miss1_A" = miss1_A, "miss1_B" = miss1_B,
+                  "single_A" = single_A, "single_B" = single_B, "single_CL" = single_CL)
   
-  # 4-2 Collect the Settings, used to do the CV!
+  # 3-2 Collect the Settings, used to do the CV!
   settings <- list("data_path"     = path,
                    "num_folds"     = k_splits,
                    "response"      = response,
@@ -1100,7 +1091,7 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
                    "unorderd_factors" = unorderd_factors,
                    "time_for_CV"      = time_for_CV)
   
-  # 4-3 Return both lists!
+  # 3-3 Return both lists!
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }

@@ -280,15 +280,6 @@ get_oob_weight_metric <- function(blockwise_RF) {
   return(oob_results)
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData"
-response = "gender"
-seed = 1312
-weighted = TRUE
-weight_metric = "Acc"
-num_trees = as.integer(10)
-mtry = NULL 
-min_node_size = 10
-
 do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
                                   seed = 1312, weighted = TRUE, weight_metric = NULL,
                                   num_trees = as.integer(10), mtry = NULL, 
@@ -603,4 +594,316 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
 }
 
 # Code the Function for the scenatio 4 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-do_CV_NK_3_bocks#     <- 
+
+
+path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData"
+response = "gender"
+seed = 1312
+weighted = TRUE
+weight_metric = "Acc"
+num_trees = as.integer(10)
+mtry = NULL 
+min_node_size = 10
+
+do_CV_NK_3_bocks     <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
+                                 seed = 1312, weighted = TRUE, weight_metric = NULL,
+                                 num_trees = as.integer(10), mtry = NULL, 
+                                 min_node_size = 10) {
+  "CrossValidate the Approach when the Traindata has blockwise missingness
+   according to scenario 4 --> 'path' must end in '4.RData' else error!
+   
+   'path' must lead to a list with 2 entrances: 'data' & 'block_names'
+   - 'data' is a list filled with 'k' test-train-splits
+      --> k-fold-Validation on this test-train-splits!
+   - 'block_names' is a list filled with the names of the single blocks 
+      & must be ['A', 'B', 'clin_block']!
+      
+   Based on the 'k' test-train-splits in 'data', we will fit blokwise RFs to the
+   train data (that has blockwise missingness in it). Then we ensemble the 
+   predicitons from blockwise fitted RFs to single predicitons & rate these with 
+   Accuracy, Precision, Specifity, F1-Socre,...
+   
+   The TestingSituations are different, as we can test the models on fully 
+   observed testdata, on testdata w/ 1 missing block, etc...
+    --> Results is list with all results from the k test-train splits for all 
+        possible testsituations - 6 in total!
+   
+  Args:
+      - path (char)         : Path to the data that is already split to test train
+                              Must end in '4.RData'
+      - weighted (bool)     : When ensembling the prediciton from the blockwise
+                              RFs shall we weight the predictions by the OOB 
+                              performance of the foldwise fitted RFs? 
+                              The higher the OOB-Metric for a blockwise fitted RF, 
+                              the higher its contribution to the prediction!
+      - weight_metric (chr) : Which metric to use to assigning weights to the 
+                              different predictions? 
+                                - must be 'Acc' or 'F1' 
+                                - if weighted = FALSE, it will be ignored!
+      - num_trees (int)     : Amount of trees, we shall grow on each (!)
+                              block!
+      - mtry (int)          : Amount of split-variables we try, when looking for 
+                              a split variable! 
+                                - If 'NULL': mtry = sqrt(p)
+      - min_node_size (int) : Amount of Observations a node must at least 
+                              contain, so the model keeps on trying to split 
+                              them!  
+                                - If NULL: min_node_size = 1 for classification...
+                                  [see ?randomForestSRC()]
+  Return:
+      - list filled w/:
+        * 'res_all' [the CV Results on different testsets]:
+           >> A = CNV-Block, B = RNA-Block, C = Mutation-Block, D = Mirna-Block
+            - full    : CV Results for each fold on the fully observed testdata!
+            - miss1_A : CV Results for each fold on the testdata, w/ missing A
+                        block [actually 2 blocks randomly thrown together]
+            - miss1_B : CV Results for each fold on the testdata, w/ missing B 
+                        block  [actually 2 blocks randomly thrown together]
+                .
+                .
+            - single_CL: CV-Results for each fold on the testdata w/ clinical 
+                         data only!
+                         
+        * 'settings' [settings used to do the CV - all arguments!]
+            - datapath, seed, response, mtry, time for 
+  "
+  # [0] Check Inputs -----------------------------------------------------------
+  # 0-0 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
+  # 0-1 path must be numeric and have '4.RData' in it!
+  assert_string(path, fixed = "4.RData")
+  
+  # 0-2 weighted must be a single boolean & seed a single integer
+  assert_logical(weighted, len = 1)
+  assert_int(seed)
+  
+  # 0-3 Check weight_metric to be meaningful [if weighted is true at all]!
+  if (weighted) {
+    
+    # check that it is character
+    assert_character(weight_metric)
+    
+    # check that it is of length 1
+    if (length(weight_metric) != 1) {
+      stop("'weight_metric' has more than 1 element!")
+    }
+    
+    # check it has a valid value!
+    if (!(weight_metric %in% c("Acc", "F1"))) {
+      stop("'weight_metric' must be 'Acc' or 'F1'!")
+    }
+  }
+  
+  # [1] Get the data & dimensions of train & test folds! -----------------------
+  # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
+  curr_data <- load_CV_data(path = path)
+  
+  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  corr_block_names <- ("A" %in% names(curr_data$block_names) & 
+                         "B" %in% names(curr_data$block_names) &
+                         "C" %in% names(curr_data$block_names) & 
+                         "D" %in% names(curr_data$block_names) &
+                         "clin_block" %in% names(curr_data$block_names))
+  
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
+  
+  # 1-2 Create empty lists to store results in!
+  # 1-2-1 Full TestSet
+  full <- list()
+  # 1-2-2 TestSet with 1 missing omics-block
+  miss1_A <- list(); miss1_B <- list(); miss1_C <- list(); miss1_D <- list()
+  # 1-2-3 TestSet with 2 missing omics-blocks
+  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list()
+  miss2_AC <- list(); miss2_AB <- list()
+  # 1-2-4 TestSet with 3 missing omics-blocks
+  miss3_ABC <- list(); miss3_ABD <- list(); miss3_ACD <- list(); miss3_BCD <- list()
+  # 1-2-5 Single BlockTestSet [4 missing blocks!]
+  single_A <- list(); single_B <- list(); single_CL <- list(); single_C <- list(); single_D <- list()
+  
+  # 1-3 Get the amount of test-train splits in data 
+  k_splits <- length(curr_data$data)
+  
+  # [2] Start the CV and loop over all test-train splits in data  --------------
+  for (i in seq_len(k_splits)) {
+    
+    # 2-1 Current Fold Status
+    print(paste0("FOLD ", i, "/", k_splits, " -------------------------------"))
+    
+    # 2-2 Extract the test and train set from 'curr_data'
+    train <- curr_data$data[[i]]$train
+    test  <- curr_data$data[[i]]$test
+    
+    # 2-3 Train blockwise RFs for each block seperatly! For this loop over all 
+    #     blocks ['curr_data$block_names']
+    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    
+    for (block_ in names(curr_data$block_names)) {
+      
+      # 2-3-1 Get the Observations that have the features of 'block_'
+      observed <- sapply(seq_len(nrow(train)), function(j_) {
+        sum(is.na(train[j_, curr_data$block_names[[block_]]])) == 0
+      })
+      
+      # 2-3-2 Convert Boolean to indicies!
+      observed <- which(observed)
+      
+      # 2-3-3 Fit a RF on this fully observed (fold-)subdata!
+      # 2-3-3-1 Define formula
+      response    <- colnames(train)[1]
+      formula_all <- as.formula(paste(response, " ~ ."))
+      
+      # 2-3-3-2 Get all Obs. from the current block, its block features and the 
+      #         corresponding response in a seperate DF!
+      curr_fold_train_data <- train[observed, 
+                                    c(response, curr_data$block_names[[block_]])]
+      
+      # 2-3-3-3 Fit a Tree on the block data
+      blockwise_rf <- rfsrc(formula = formula_all, data = curr_fold_train_data, 
+                            ntree = num_trees, mtry = mtry, nodesize = min_node_size, 
+                            samptype = "swr", seed = 12345678)
+      
+      print(paste0("Fit FoldWise RF on current block: '", block_, "'"))
+      
+      Forest[[i_]] <- blockwise_rf
+      rm(blockwise_rf)
+      
+      # 2-3-5 Count up i_ - used to fill Forest list!
+      i_  = i_ + 1
+    }
+    
+    # 2-4 Get the OOB metrics of the blockwise fitted RFs
+    # 2-4-1 If weighted, loop over the blockwise RFs and get the oob F1/ Acc
+    #       of each blockwise fitted RF!
+    if (weighted) {
+      weights <- c()
+      
+      for (block_RF in Forest) {
+        weights <- c(weights, 
+                     get_oob_weight_metric(block_RF)[weight_metric])
+      }
+    } else {
+      weights <- rep(1, times = length(Forest))
+    }
+    
+    # 2-4-2 Norm the weights
+    weights <- weights / sum(weights)
+    
+    # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
+    #     missing blocks to TestSets w/ only one observed Block!
+    # 2-5-1 Full TestSet!
+    print("Evaluation full TestSet -------------------------------------------")
+    full[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                     testdata = test) 
+    
+    # 2-5-2 TestSet with 1 missing block!
+    print("Evaluation TestSet w/ 1 missing omics block------------------------")
+    miss1_A[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$A)])
+    
+    miss1_B[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$B)])
+    
+    miss1_C[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$C)])
+    
+    miss1_D[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$D)])
+    
+    # 2-5-3 TestSet with 2 missing blocks!
+    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
+    miss2_CD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                       curr_data$block_names$D))])
+    miss2_BD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$D,
+                                                                                       curr_data$block_names$D))])
+    miss2_BC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                       curr_data$block_names$B))])
+    miss2_BC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                       curr_data$block_names$D))])
+    miss2_AC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                       curr_data$block_names$A))])
+    miss2_BC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                       curr_data$block_names$B))])
+    # 2-5-4 Testset with 3 missing blocks!
+    print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
+    miss3_ABC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                        curr_data$block_names$A,
+                                                                                        curr_data$block_names$B))])
+    miss3_ACD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                        curr_data$block_names$A,
+                                                                                        curr_data$block_names$D))])
+    miss3_ABD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$D,
+                                                                                        curr_data$block_names$A,
+                                                                                        curr_data$block_names$B))])
+    miss3_BCD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                        curr_data$block_names$D,
+                                                                                        curr_data$block_names$B))])
+    # 2-5-5 Evaluation on single Block Testdata
+    print("Evaluation TestSet w/ only 1 observed Block -----------------------")
+    single_A[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                       curr_data$block_names$D,
+                                                                                       curr_data$block_names$B,
+                                                                                       curr_data$block_names$clin_block))])
+    single_B[[i]] <-  do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                        curr_data$block_names$D,
+                                                                                        curr_data$block_names$A,
+                                                                                        curr_data$block_names$clin_block))])
+    single_C[[i]] <-  do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                        curr_data$block_names$D,
+                                                                                        curr_data$block_names$B,
+                                                                                        curr_data$block_names$clin_block))])
+    single_D[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                       curr_data$block_names$A,
+                                                                                       curr_data$block_names$B,
+                                                                                       curr_data$block_names$clin_block))])
+    single_CL[[i]] <-  do_evaluation_rfsrc(Forest = Forest, weights = weights,
+                                           testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                         curr_data$block_names$D,
+                                                                                         curr_data$block_names$B,
+                                                                                         curr_data$block_names$A))])
+  }
+  
+  # 2-6 Stop the time and take the difference!
+  time_for_CV <- Sys.time() - start_time
+  
+  # [3] Return the results & settings of parameters used to do CV! -------------
+  # 3-1 Collect all CV Results in a list!
+  res_all <- list("full" = full,
+                  "miss1_A" = miss1_A, "miss1_B" = miss1_B,
+                  "miss1_C" = miss1_C, "miss1_D" = miss1_D,
+                  "miss2_CD" = miss2_CD, "miss2_BD" = miss2_BD,
+                  "miss2_BC" = miss2_BC, "miss2_AD" = miss2_AD,
+                  "miss2_AC" = miss2_AC, "miss2_AB" = miss2_AB,
+                  "miss3_ABC" = miss3_ABC, "miss3_ABD" = miss3_ABD,
+                  "miss3_ACD" = miss3_ACD, "miss3_BCD" = miss3_BCD,
+                  "single_A" = single_A, "single_B" = single_B,
+                  "single_C" = single_C, "single_D" = single_D,
+                  "single_CL" = single_CL)
+  
+  # 4-2 Collect the Settings, used to do the CV!
+  settings <- list("data_path"     = path,
+                   "num_folds"     = k_splits,
+                   "response"      = response,
+                   "weighted"      = weighted,
+                   "weight_metric" = weight_metric,
+                   "num_trees"     = num_trees,
+                   "mtry"          = mtry, 
+                   "min_node_size" = min_node_size,
+                   "time_for_CV"   = time_for_CV)
+  
+  # 4-3 Return both lists!
+  return(list("res_all"  = res_all, 
+              "settings" = settings))
+}
