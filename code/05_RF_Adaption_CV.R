@@ -479,7 +479,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
       --> k-fold-Validation on this test-train-splits!
    - 'block_names' is a list filled with the names of the single blocks 
       & must be ['A', 'B', 'C', 'D', 'clin_block']!
-      (Attention: With Scenario2 the order is different, but this is alright!)
+      (Attention: With Scenario2 the order is different, but this is wanted!)
       
    Based on the 'k' test-train-splits in 'data', we will fit foldwise RFs to the
    train data (that has blockwise missingness in it). Then we ensemble the 
@@ -545,8 +545,9 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
     stop("'path' must end in '1.RData' | '2.RData' | '3.RData'")
   }
   
-  # 0-2 weighted must be a single boolean
+  # 0-2 weighted must be a single boolean & seed an integer
   assert_logical(weighted, len = 1)
+  assert_int(seed)
   
   # 0-3 unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
@@ -904,8 +905,9 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
   # 0-1 path must be numeric and have '1.RData' in it!
   assert_string(path, fixed = "4.RData")
   
-  # 0-2 weighted must be a single boolean
+  # 0-2 weighted must be a single boolean & seed an integer
   assert_logical(weighted, len = 1)
+  assert_int(seed)
   
   # 0-3 unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
