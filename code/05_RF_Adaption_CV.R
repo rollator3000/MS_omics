@@ -834,14 +834,6 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
               "settings" = settings))
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData"
-weighted = TRUE
-weight_metric = "Acc"
-num_trees = 10
-mtry = NULL
-min_node_size = NULL
-unorderd_factors = "ignore"
-
 do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_4.RData",
                            weighted = TRUE, weight_metric = "Acc", 
                            num_trees = 10, mtry = NULL, min_node_size = NULL,
@@ -1111,269 +1103,27 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
               "settings" = settings))
 }
 
-# These Functions are not completly done yet                                 ----
-# If all is correct in Situation1 we can complete these functions!!
-do_CV_setting4                <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                                          response = "gender", seed = 1312, 
-                                          weighted = TRUE, weight_metric = NULL,
-                                          num_trees = as.integer(10), mtry = NULL, 
-                                          min_node_size = NULL, 
-                                          unorderd_factors = "ignore") {
-  " Function to evaluate RF Adaption on blockwise missing data!
-  
-    Data is split into test and train set [curently fixed to 5-fold], with the 
-    little adjustment, the amount of traindata can be split into 2 folds w/o rest
-      --> All train folds have same amount of observations!
-      --> TestFold can be a bit smaller!
-    
-    Then each [equally sized] trainingsfold is censored to scenario 4: That is:
-      1. Bind 2 random omics blocks to a single feature block 
-         [e.g. 'cnv' & 'mirna' is one block + 'rna' & 'mutation' is one block]
-      2. Then divide the testset in two equally sized folds, from which we censor 
-         one of the omics feature blocks in each of the folds!
+# Run Main                                                                  ----
+sit1 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
+                       weighted = TRUE, weight_metric = "Acc", 
+                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       unorderd_factors = "ignore")
+save(sit1, "./docs/CV_Res/gender/Roman_final_subsets/setting1/COAD.RData")
 
-    Then we train a serperate RandomForest on the 2 different training folds 
-    [where each fold has different observed omics features] and ensemble the 
-    predicitons from these 2 different RFs to a single prediciton and rate these
-    w/ Accuracy, Precision, Specifity, F1-Socre,....
-    
-    The TestingSituations are different, as we can test the models on fully 
-    observed testdata, on testdata w/ 1 missing block etc. etc.
- 
-    Args:
-      - data_path (char)    : Path to the data, we want to CV! This should lead 
-                              to a file w/ multiple sub DFs 
-                              [details see 'create_data()']
-      - response (chr)      : The repsonse we want to model - 
-                              MUST be in the 'clin'-block & MUST be binary!
-      - seed (int)          : Needed to assign obs to fold & to assign which
-                              blocks are melted togehter in a reproducible way
-      - weighted (bool)     : When ensembling the prediciton from the single
-                              RFs shall we weight the predictions by their 
-                              'weight_metric' [e.g. Acc, F1]
-                              [the higher, the higher the weight]
-      - weight_metric (chr) : When assigning weights to the different predictions
-                              which metric to use to calc the weight?!
-                              [- must be 'Acc' or 'F1' 
-                               - if weighted = FALSE, it will be ignored!]
-      - num_trees (int)     : amount of trees, we shall grow on each[!] fold
-      - mtry (int)          : amount of split-variables we try, when looking for 
-                              a split variable! 
-                              If 'NULL': mtry = sqrt(p)
-      - min_node_size (int) : Amount of Observations a node must at least 
-                              contain, so the model keeps on trying to split 
-                              them!
-                              If 'NULL: It is automatically set to 10 in 
-                                        'simpleRF()'
-      - unorderd_factors (chr) : How to handle non numeric features!
-                                 --> must be in ['ignore', 'order_once', 
-                                                 'order_split', 'partition']
+sit2 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData",
+                       weighted = TRUE, weight_metric = "Acc", 
+                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       unorderd_factors = "ignore")
+save(sit2, "./docs/CV_Res/gender/Roman_final_subsets/setting2/COAD.RData")
 
-    Return:
-      - list filled w/:
-        * 'res_all' [the CV Results on different testsets]:
-            - full    : CV Results for each fold on the fully observed testdata!
-            - miss1_A : CV Results for each fold on the testdata, w/ 1 missing 
-                        omics-block [Block A]!
-            - miss1_B : CV Results for each fold on the testdata, w/ 1 missing 
-                        omics-block [Block B]!
-            - single_CL: CV-Results for each fold on the testdata w/ only 
-                         clinical features
-            - single_A:  CV-Results for each fold on the testdata w/ only 
-                         block A features
-            - single_B:  CV-Results for each fold on the testdata w/ only 
-                         block B features
-                         
-        * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry, .... 
-  "
-  # [0] Check Inputs -----------------------------------------------------------
-  # 0-0 data_path, response are all checked within 'load_data_extract_block_names()'
-  
-  # 0-1 mtry, min_node_size & num_trees are all checked within simpleRF()
-  
-  # 0-2 weighted must be boolean & seed integer
-  assert_logical(weighted, len = 1)
-  assert_int(seed)
-  
-  # 0-3 unorderd factors must be a legit value
-  if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
-    stop("Unknown value for argument 'unordered_factors'")
-  }
-  
-  # [1] Get the data & dimensions of train & test folds! -----------------------
-  # 1-1 Load the blockwise Omics-Data & create a single DF 
-  data <- load_data_extract_block_names(path = data_path, response = response)
+sit3 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData",
+                       weighted = TRUE, weight_metric = "Acc", 
+                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       unorderd_factors = "ignore")
+save(sit3, "./docs/CV_Res/gender/Roman_final_subsets/setting3/COAD.RData")
 
-  # 1-2 Get amount of Obs. we need for equally sized train folds 
-  #     double it, as it was originally for 4 not 2 folds!
-  obs_per_fold <- get_obs_per_fold(data = data$data)
-  obs_per_fold$amount_train_fold <- obs_per_fold$amount_train_fold * 2 
-  
-  # [2] Shuffle the IDs and create empty lists to store results ----------------
-  # 2-1 Shuffle IDs from 'data' randomly, for splitting it to test & train!
-  set.seed(seed)
-  fold_ids <- sample(nrow(data$data), nrow(data$data), replace = FALSE)
-  
-  # 2-2 Create empty lists to store results in!
-  # 2-2-1 Full TestSet
-  full <- list()
-  
-  # 2-2-2 TestSet with 1 missing omics-block
-  miss1_A <- list(); miss1_B <- list()
-  
-  # 2-2-5 Single BlockTestSet
-  single_A <- list(); single_B <- list(); single_CL <- list()
-  
-  # [3] Assign which of the omics blocks should belong together! ---------------
-  #     Randomly sample the letters "cnv", "rna", "mutation" & "mirna" & 
-  #     bind the first 2 together and the last 2!
-  set.seed(seed)
-  blocks_together <- sample(c("cnv_block", "rna_block", "mutation_block", "mirna_block"),
-                            size = 4, replace = F)
-  
-  # 3-1 Bind the colnams of the first 2 sampled blocks!
-  block_A_names <- c(data$block_names[[which(names(data$block_names) == blocks_together[1])]],
-                     data$block_names[[which(names(data$block_names) == blocks_together[2])]])
-  
-  # 3-2 Bind the colnames if the last 2 sampled blocks!
-  block_B_names <- c(data$block_names[[which(names(data$block_names) == blocks_together[3])]],
-                     data$block_names[[which(names(data$block_names) == blocks_together[4])]])
-
-  # [4] Start the CV, split data to Test and Train and evaluate it! ------------
-  for (i in 0:4) {
-    
-    print(paste0("FOLD: ", as.character(i + 1), "/5 -------------------------"))
-    
-    # [1] Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
-    #     IDs in 'fold_ids'
-    test_ids <- fold_ids[((i * obs_per_fold$amount_test) + 1):(((i + 1) * obs_per_fold$amount_test))]
-    test_df  <- data$data[test_ids,]
-    
-    # [2] Get the TrainSet from 'data' [= IDs not in TestSet] & 
-    #     induce blockwise missingness!
-    train_ids <- fold_ids[-which(fold_ids %in% test_ids)]
-    train_df  <- data$data[train_ids,]
-    
-    # [3] Induce blockwise missingness [SCENARIO_4] 
-    # 3-1 Sample equally sized 'observed' blocks [according to SCENARIO_2]
-    set.seed(seed + i)
-    observed_blocks <- sample(c(rep("fold1", obs_per_fold$amount_train_fold), 
-                                rep("fold2", obs_per_fold$amount_train_fold)),
-                              obs_per_fold$amount_train, replace = FALSE)
-    
-    # 3-2 Split Traindata into observed blocks! The resulting blocks will only
-    #     contain the features, in the blocks!
-    # 3-2-1 Fold1
-    block1 <- train_df[which(observed_blocks == "fold1"), 
-                       c(response, data$block_names$clin_block, block_A_names)]
-    
-    # 3-2-2 Fold2
-    block2 <- train_df[which(observed_blocks == "fold2"), 
-                       c(response, data$block_names$clin_block, block_B_names)]
-    
-    # [4] Fit 'num_trees' decision trees on each block!
-    # 4-1 Get the Formula we use to fit all DecisionTrees/ partial forrests!
-    formula_all <- as.formula(paste(response, " ~ ."))
-    
-    # 4-2 BLOCK1 - grow the trees [as long, as all of them are grown correctly]
-    trees1 <- simpleRF(formula = formula_all, data = block1, 
-                       num_trees = num_trees, mtry = mtry, 
-                       min_node_size = min_node_size, replace = TRUE,  
-                       splitrule = NULL, unordered_factors = unorderd_factors)
-    trees1 <- mclapply(trees1, function(x) {
-      x$grow(replace = TRUE)
-      x
-    }, mc.cores = 1)
-    
-    # 4-3 BLOCK2 - grow the trees [as long, as all of them are grown correctly]
-    trees2 <- simpleRF(formula = formula_all, data = block2, 
-                       num_trees = num_trees, mtry = mtry, 
-                       min_node_size = min_node_size, replace = TRUE,  
-                       splitrule = NULL, unordered_factors = unorderd_factors)
-    trees2 <- mclapply(trees2, function(x) {
-      x$grow(replace = TRUE)
-      x
-    }, mc.cores = 1)
-    
-    # [5] Check, that all of the trees were grown correctly & create a forest from it!
-    trees1 <- all_trees_grown_correctly(trees1)
-    trees2 <- all_trees_grown_correctly(trees2)
-    
-    Forest <- list(trees1, trees2)
-    
-    # [6] Start Testing!
-    # 6-1 FULL TESTSET - all blocks observed!
-    #       --> copy the forrest, so we don't override original tree!
-    print("Evaluation full TestSet -------------------------------------------")
-    curr_Forest   <- copy_forrest(Forest)
-    full[[i + 1]] <- do_evaluation(Forest = curr_Forest, testdata = test_df, 
-                                   weighted = weighted, weight_metric = weight_metric)
-    rm(curr_Forest); gc()
-    
-    # 6-2 TESTSET ONE OMICS BLOCK MISSING - one block is missing in TestData, 
-    #     everytime before evaluation we need to copy the Forest, as the 
-    #     evaluation can leed to pruned trees [also outside of the function] 
-    print("Evaluation TestSet w/ 1 missing omics block------------------------")
-    curr_Forest      <- copy_forrest(Forest)
-    miss1_A[[i + 1]] <- do_evaluation(Forest   = curr_Forest, weighted = weighted,
-                                      weight_metric = weight_metric,
-                                      testdata = test_df[,-which(colnames(test_df) %in% block_A_names)])
-    rm(curr_Forest); gc()
-    
-    curr_Forest      <- copy_forrest(Forest)
-    miss1_B[[i + 1]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
-                                      weight_metric = weight_metric,
-                                      testdata = test_df[,-which(colnames(test_df) %in% block_B_names)])
-    rm(curr_Forest); gc()
-    
-    # 6-3 TESTSET with one single block only!
-    #     TestData, everytime before evaluation we need to copy the Forest, 
-    #     as the  evaluation can leed to pruned trees [also outside of the function] 
-    print("Evaluation TestSet w/ only 1 observed Block -----------------------")
-
-    curr_Forest        <- copy_forrest(Forest)
-    single_A[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted,
-                                        weight_metric = weight_metric,
-                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_names$clin_block,
-                                                                                            block_B_names))])
-    rm(curr_Forest); gc()
-    
-    curr_Forest        <- copy_forrest(Forest)
-    single_B[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted,
-                                        weight_metric = weight_metric,
-                                        testdata = test_df[,-which(colnames(test_df) %in% c(data$block_names$clin_block,
-                                                                                            block_A_names))])
-    rm(curr_Forest); gc()
-    
-    curr_Forest         <- copy_forrest(Forest)
-    single_CL[[i + 1]]  <- do_evaluation(Forest = curr_Forest, weighted = weighted,
-                                         weight_metric = weight_metric,
-                                         testdata = test_df[,-which(colnames(test_df) %in% c(block_A_names,
-                                                                                             block_B_names))])
-    rm(curr_Forest); gc()
-  }
-  
-  # [5] Return the metric & settings of the fitting! ---------------------------
-  # 4-1 Collect all CV Results in a list!
-  res_all <- list("full" = full,
-                  "miss1_A" = miss1_A, "miss1_B" = miss1_B,
-                  "single_A" = single_A, "single_B" = single_B,
-                  "single_CL" = single_CL)
-  
-  # 4-2 Collect the Settings, used to do the CV!
-  settings <- list("data_path"     = data_path,
-                   "response"      = response, 
-                   "seed"          = seed,
-                   "weighted"      = weighted,
-                   "weight_metric" = weight_metric,
-                   "num_trees"     = num_trees,
-                   "mtry"          = mtry, 
-                   "min_node_size" = min_node_size,
-                   "unorderd_factors" = unorderd_factors,
-                   "blocks_together"  = blocks_together) # which blocks belonged together?!
-  
-  # 4-3 Return both lists!
-  return(list("res_all"  = res_all, 
-              "settings" = settings))
-}
+sit4 <- do_CV_2_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData",
+                       weighted = TRUE, weight_metric = "Acc", 
+                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       unorderd_factors = "ignore")
+save(sit1, "./docs/CV_Res/gender/Roman_final_subsets/setting4/COAD.RData")
