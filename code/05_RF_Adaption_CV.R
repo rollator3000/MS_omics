@@ -466,42 +466,53 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   return(as.vector(res))
 }
 
+path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData"
+weighted = TRUE
+weight_metric = "Acc"
+num_trees = 10
+mtry = NULL
+min_node_size = NULL
+unorderd_factors = "ignore"
+
 do_CV_1 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_1.RData",
                     weighted = TRUE, weight_metric = "Acc", 
                     num_trees = 10, mtry = NULL, min_node_size = NULL,
                     unorderd_factors = "ignore") {
   "CrossValidate the Approach when the Traindata has blockwise missingness
-   according to scenario 1 --> 'path' must end in '1.RData', else error!
+   according to scenario 1, 2 & 3 --> 'path' must end in '1.RData', '2.RData', 
+                                                         '3.RData' else error!
    
-   path must lead to a list with 2 entrances: 'data'  &  'block_names'
+   'path' must lead to a list with 2 entrances: 'data' & 'block_names'
    - 'data' is a list filled with 'k' test-train-splits
       --> k-fold-Validation on this test-train-splits!
    - 'block_names' is a list filled with the names of the single blocks 
-      & must be ['A', 'B', 'C', 'D', 'clin_block'] for this scenario!
-      [A = cnv; B = rna; C = mirna; D = mutation]
+      & must be ['A', 'B', 'C', 'D', 'clin_block']!
+      (Attention: With Scenario2 the order is different, but this is alright!)
       
    Based on the 'k' test-train-splits in 'data', we will fit foldwise RFs to the
-   train data (that has blockwise missingness in it). 
-   Then we ensemble the predicitons from foldwise fitted RFs to single  
-   predicitons & rate these w/ Accuracy, Precision, Specifity, F1-Socre,...
+   train data (that has blockwise missingness in it). Then we ensemble the 
+   predicitons from foldwise fitted RFs to single predicitons & rate these with 
+   Accuracy, Precision, Specifity, F1-Socre,...
    
    The TestingSituations are different, as we can test the models on fully 
    observed testdata, on testdata w/ 1 missing block, etc...
+    --> Results is list with all results from the k test-train splits for all 
+        possible testsituations - 20 in total!
    
-   Args:
+  Args:
       - path (char)         : Path to the data that is already split to test train
-                              Must end in '1.RData'
+                              Must end in '1.RData', '2.RData' or '3.RData'
       - weighted (bool)     : When ensembling the prediciton from the fodlwise
                               RFs shall we weight the predictions by the OOB 
-                              performance of the foldwise fitted RFs? The higher
-                              the OOB-Metric for a foldwise fitted RF, the higher
-                              its contribution to the prediction!
+                              performance of the foldwise fitted RFs? 
+                              The higher the OOB-Metric for a foldwise fitted RF, 
+                              the higher its contribution to the prediction!
       - weight_metric (chr) : Which metric to use to assigning weights to the 
                               different predictions? 
                                 - must be 'Acc' or 'F1' 
                                 - if weighted = FALSE, it will be ignored!
-      - num_trees (int)     : Amount of trees, we shall grow on each foldwise
-                              fitted random Forest!
+      - num_trees (int)     : Amount of trees, we shall grow on each (!)
+                              foldwise fitted random Forest!
       - mtry (int)          : Amount of split-variables we try, when looking for 
                               a split variable! 
                                 - If 'NULL': mtry = sqrt(p)
@@ -512,28 +523,35 @@ do_CV_1 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness
                                             'simpleRF()' function!
       - unorderd_factors (chr) : How to handle non numeric features!
                                 ['ignore', 'order_once', 'order_split', 'partition']
-    Return:
+  Return:
       - list filled w/:
         * 'res_all' [the CV Results on different testsets]:
            >> A = CNV-Block, B = RNA-Block, C = Mutation-Block, D = Mirna-Block
             - full    : CV Results for each fold on the fully observed testdata!
-            - miss1_A : CV Results for each fold on the testdata, w/ missing cnv block!
-            - miss1_B : CV Results for each fold on the testdata, w/ missing rna block!
-                .
-                . --> done for all possible permutations
-                .
-            - miss2_AC: CV Results for each fold on the testdata, w/ missing cnv & mutation block!
+            - miss1_A : CV Results for each fold on the testdata, w/ missing cnv
+                        block [or in scenario2, what was sampled to be block 'A']
+            - miss1_B : CV Results for each fold on the testdata, w/ missing rna 
+                        block [or in scenario2, what was sampled to be block 'B'] 
                 .
                 .
-            - single_D:  CV-Results for each fold on the testdata w/ minra block only!
+            - miss2_AC: CV Results for each fold on the testdata, w/ missing cnv 
+                        & mutation block! [or in scenario2, what was sampled to 
+                                           be block 'A' & 'C'] 
+                .
+                .
+            - single_D: CV-Results for each fold on the testdata w/ minra block 
+                        only! [or in scenario2, what was sampled to be block 'D']
                          
         * 'settings' [settings used to do the CV - all arguments!]
             - datapath, seed, response, mtry, time for CV,.... 
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
-  # 0-1 path must be numeric and have '1.RData' in it!
-  assert_string(path, fixed = "1.RData")
+  # 0-1 path must be numeric and have '1.RData' | '2.RData' | '3.RData' in it!
+  test_string(path)
+  if (grepl("1.RData", path) | grepl("2.RData", path) | grepl("3.RData", path)) {
+    stop("'path' must end in '1.RData' | '2.RData' | '3.RData'")
+  }
   
   # 0-2 weighted must be a single boolean
   assert_logical(weighted, len = 1)
@@ -1183,14 +1201,6 @@ do_CV_2 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness
               "settings" = settings))
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData"
-weighted = TRUE
-weight_metric = "Acc"
-num_trees = 10
-mtry = NULL
-min_node_size = NULL
-unorderd_factors = "ignore"
-
 do_CV_3 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_3.RData",
                     weighted = TRUE, weight_metric = "Acc", 
                     num_trees = 10, mtry = NULL, min_node_size = NULL,
@@ -1441,7 +1451,6 @@ do_CV_3 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness
                                    weight_metric = weight_metric,
                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                  curr_data$block_names$A))])
-    
     curr_Forest   <- copy_forrest(Forest)
     miss2_AB[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
