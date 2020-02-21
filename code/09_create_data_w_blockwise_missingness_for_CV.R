@@ -509,30 +509,38 @@ induce_blockmiss_3 <- function(data_and_names, seed) {
     #     have the blocks that were sampled for "fold1" rest replaces by NA!)
     
     # 1-5-1 Obs. of 'fold1': Subset all Values w/ NA that were not sampled to be observed!
+    # 1-5-1-1 Get the block names that were not observed
     cols_to_rm <- unlist(sapply(names(fold1_obs)[which(!fold1_obs)], function(x) {
       data_and_names$block_names[[x]]
     }))
+    # 1-5-1-2 All Values in 'cols_to_rm' are replaced by NA
     data_and_names$data[[j]]$train[which(observed_blocks == "fold1"), 
                                    c(cols_to_rm)] <- NA
     
     # 1-5-2 Obs. of 'fold2': Subset all Values w/ NA that were not sampled to be observed!
+    # 1-5-2-1 Get the block names that were not observed
     cols_to_rm <- unlist(sapply(names(fold2_obs)[which(!fold2_obs)], function(x) {
       data_and_names$block_names[[x]]
     }))
+    # 1-5-2-2 All Values in 'cols_to_rm' are replaced by NA
     data_and_names$data[[j]]$train[which(observed_blocks == "fold2"), 
                                    c(cols_to_rm)] <- NA
     
     # 1-5-3 Obs. of 'fold3': Subset all Values w/ NA that were not sampled to be observed!
+    # 1-5-3-1 Get the block names that were not observed
     cols_to_rm <- unlist(sapply(names(fold3_obs)[which(!fold3_obs)], function(x) {
       data_and_names$block_names[[x]]
     }))
+    # 1-5-3-2 All Values in 'cols_to_rm' are replaced by NA
     data_and_names$data[[j]]$train[which(observed_blocks == "fold3"), 
                                    c(cols_to_rm)] <- NA
     
     # 1-5-4 Obs. of 'fold4': Subset all Values w/ NA that were not sampled to be observed!
+    # 1-5-4-1 Get the block names that were not observed
     cols_to_rm <- unlist(sapply(names(fold4_obs)[which(!fold4_obs)], function(x) {
       data_and_names$block_names[[x]]
     }))
+    # 1-5-4-2 All Values in 'cols_to_rm' are replaced by NA
     data_and_names$data[[j]]$train[which(observed_blocks == "fold4"), 
                                    c(cols_to_rm)] <- NA
   }
