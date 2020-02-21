@@ -570,7 +570,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
   curr_data <- load_CV_data(path = path)
   
-  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  # 1-1-1 Must contain 'A', 'B', 'C', 'D' & 'clin_block' as block_names
   corr_block_names <- ("A" %in% names(curr_data$block_names) & 
                        "B" %in% names(curr_data$block_names) &
                        "C" %in% names(curr_data$block_names) & 
@@ -930,7 +930,7 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
   curr_data <- load_CV_data(path = path)
   
-  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  # 1-1-1 Must contain 'A', 'B', $ 'clin_block' as block_names
   corr_block_names <- ("A" %in% names(curr_data$block_names) & 
                        "B" %in% names(curr_data$block_names) &
                        "clin_block" %in% names(curr_data$block_names))

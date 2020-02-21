@@ -382,7 +382,7 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
   curr_data <- load_CV_data(path = path)
   
-  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  # 1-1-1 Must contain 'A', 'B', 'C' 'D' & 'clin_block' as block_names
   corr_block_names <- ("A" %in% names(curr_data$block_names) & 
                        "B" %in% names(curr_data$block_names) &
                        "C" %in% names(curr_data$block_names) & 
@@ -697,14 +697,15 @@ do_CV_NK_3_bocks     <- function(path = "data/external/Dr_Hornung/subsetted_1234
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
   curr_data <- load_CV_data(path = path)
   
-  # 1-1-1 Must contain 'A', 'B', 'C' & 'D' as block_names
+  # 1-1-1 Must contain 'A', 'B' & 'clin_block' as block_names
   corr_block_names <- ("A" %in% names(curr_data$block_names) & 
-                         "B" %in% names(curr_data$block_names) &
-                         "C" %in% names(curr_data$block_names) & 
-                         "D" %in% names(curr_data$block_names) &
-                         "clin_block" %in% names(curr_data$block_names))
+                       "B" %in% names(curr_data$block_names) &
+                       "clin_block" %in% names(curr_data$block_names))
   
-  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', & 'clin_block' as blocknames!")
+  
+  
+  # STOPPED RIGHT HERE HERE HERE ----------------------------------------------------------------------------------------------
   
   # 1-2 Create empty lists to store results in!
   # 1-2-1 Full TestSet
