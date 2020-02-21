@@ -386,7 +386,8 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   #     calc the OOB-Accuracy/ OOB-F1--Score per 'trees' [foldwise RF] and use 
   #     these as weights when assembeling the predicitons!
   #     [lower ACC --> lower weight | lower F1-Score --> lower weight]
-  if (weighted) {
+  #     ATTENTION: No need to calc weights when there is only one foldwise RF left!
+  if (weighted & length(Forest) > 1) {
     tree_weights <- c()
     
     # Think about putting this in parallel!
@@ -1182,7 +1183,7 @@ do_CV_2 <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness
               "settings" = settings))
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData"
+path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData"
 weighted = TRUE
 weight_metric = "Acc"
 num_trees = 10
