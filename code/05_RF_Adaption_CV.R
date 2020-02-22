@@ -1100,22 +1100,22 @@ sit1 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingn
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit1, "./docs/CV_Res/gender/Roman_final_subsets/setting1/COAD.RData")
+save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/COAD.RData")
 
 sit2 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit2, "./docs/CV_Res/gender/Roman_final_subsets/setting2/COAD.RData")
+save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/COAD.RData")
 
 sit3 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit3, "./docs/CV_Res/gender/Roman_final_subsets/setting3/COAD.RData")
+save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/COAD.RData")
 
 sit4 <- do_CV_2_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit1, "./docs/CV_Res/gender/Roman_final_subsets/setting4/COAD.RData")
+save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/COAD.RData")
