@@ -10,172 +10,150 @@ library(checkmate)
 library(randomForestSRC)
 library(tidyverse)
 library(caret)
+library(doParallel)
+registerDoParallel(cores = 2)
 
-load_data_extract_block_names <- function(path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/KIRC_Subset.RData",
-                                          response = 'gender') {
-  "Function to load (the already subsetted) data & returning 1 big DataFrame, 
-   of all single blocks incl. the colnames to each block!
+load_CV_data          <- function(path) {
+  "Load the subsetted, test-train splitted data, with blockwise missingness 
+   induced already into the train split!
+  
+  Args:
+    path (str) : Path to the data we want for CV!
+                 Path must point to a list, that consits of two more lists 
+                 'data' & 'block_names'! 
+                 These two lists are further checked in this function!
+                 - $data (list) must contain n entrances of 'train' & 'test'
+                                where each is a dataframe!
+                 - $block_names (list) must contain at least 3 names!
+  Return:
+    A list, filled with 'data' & 'block_names' that can be used for CV!
+  
+  "
+  # [0] Check Inputs  ----------------------------------------------------------
+  # 0-1 'path' of type string with '.RData' inside!
+  assert_string(path, fixed = ".RData")
+  
+  # [1] Load the Data & check it  ----------------------------------------------
+  # 1-1 Load DF & put data to 'data_'-variable
+  data_ <- load(path)
+  data_ <- eval(as.symbol(data_))
+  
+  # 1-2 Check that 'data_' has what we need!
+  # 1-2-1 List with 2 entrances
+  assert_list(data_, len = 2)
+  
+  # 1-2-2 'data' and 'block_names'
+  if (!('data' %in% names(data_))) stop("'path' should lead to list w/ 'data' entry")
+  if (!('block_names' %in% names(data_))) stop("'path' should lead to list w/ 'block_names' entry")
+  
+  # 1-2-3 'data' & 'block_names' should be lists aswell! 
+  assert_list(data_$data, min.len = 2)
+  assert_list(data_$block_names, min.len = 3)
+  
+  # 1-2-4 'data' must contain 'train' & 'test' as list names!
+  res <- sapply(seq_len(length(data_$data)), function(x) {
+    ("train" %in% names(data_$data[[x]])) & ('test' %in% names(data_$data[[x]]))
+  })
+  
+  if (any(!res)) stop("'data' section doesn't contain 'test' & 'train' in each split")
+  
+  # 1-2-5 Contained 'train' & 'test' in 'data' need to be dataframes!
+  res <- sapply(seq_len(length(data_$data)), function(x) {
+    test_data_frame(data_$data[[x]]$train) & test_data_frame(data_$data[[x]]$test)
+  })
+  
+  if (any(!res)) stop("test' & 'train' in 'data' are not only dataframes!")
+  
+  # 1-2-6 'block_names' must contain at least 3 blocknames!
+  if (length(names(data_$block_names)) < 3) stop("block_names consist less than 3 names!")
+  
+  
+  # [2] Return the data  -------------------------------------------------------
+  return(data_)
+}
+impute_missing_values <- function(data, ntree = 100, maxiter = 10) {
+  "Impute missin values in a dataframe with the missForest [RF for imputation]!
+   For this we look into 'data' and get the values we need to impute! 
+   Then we apply the missForest approach to impute these!
+    (For this we need to recode numeric columns to factors,
+     if the numeric column has less than 5 unique numeric values. 
+     But these are converted back to numeric before returning!)
+   
+  Args:
+    - data (dataframe) : Dataframe with missing values in any column!
+    - ntree (int)      : Amount of trees we use for the imputation
+    - maxiter (int)    : Maximum number of iterations to be performed, as long 
+                         as the stopping criterion is not fullfilled yet!
+                         
+  Return:
+    - data (dataframe) : Dataframe with no more missing values! All values
+                         that were missing in 'data' were imputed!
+                         Colnames, Coltypes, Dimension etc. stays as it was!
+  "
+  # [0] Check Inputs  ----------------------------------------------------------
+  assert_data_frame(data, min.rows = 1, min.cols = 2)
+  assert_int(ntree, lower = 10)
+  assert_int(maxiter, lower = 1)
+  
+  # [1] Prepare the data for the missForest imputation  ------------------------
+  # 1-1 Recode to factor if a missing numeric col has less than 5 unique values!
+  # 1-1-1 Count how many unique values each column has:
+  unique_values_cols <- sapply(1:ncol(data), function(x) length(unique(data[,x])))
+  
+  # 1-1-2 Get the cols with less than 5 unique values!
+  cols_to_recode <- which(unique_values_cols < 5)
+  
+  # 1-1-3 Remove '1' if inside, as the response is always observed for all obs.!
+  if (1 %in% cols_to_recode) {
+    cols_to_recode <- cols_to_recode[-which(cols_to_recode == 1)]
+  }
+  
+  # 1-1-4 Convert numeric to factor - if there even is a col to recode!
+  if (length(cols_to_recode) > 1) {
+    data[cols_to_recode] <- lapply(data[cols_to_recode], as.factor)
+  }
+  
+  # [2] Impute the data with the missForet Approach  ---------------------------
+  # 2-1 Impute the data
+  data_imputed <- missForest(data, verbose = TRUE, parallelize = 'forests',
+                             maxiter = maxiter, ntree = ntree)
+  data_imputed <- data_imputed$ximp
+  
+  # 2-2 Recode the variables back to numeric!
+  if (length(cols_to_recode) > 1) {
+    data_imputed[cols_to_recode] <- lapply(data_imputed[cols_to_recode], as.numeric)
+  }
+  
+  # [3] Return the imputed Dataframe  ------------------------------------------
+  return(data_imputed)
+}
+
+path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData"
+do_CV_missforrest     <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
+                                  num_trees, min_node_size, mtry,
+                                  n_tree_impute = 100, maxiter_impute = 10) {
+  "Evalute the Approach where we impute the block-wise missing values with the 
+   missForest Approach!
+   
+   'path' must lead to a list with 2 entrances: 'data' & 'block_names'
+   - 'data' is a list filled with 'k' test-train-splits
+      --> k-fold-Validation on this test-train-splits!
+   - 'block_names' is a list filled with the names of the single blocks 
+      & must be ['A', 'B', 'C', 'D', 'clin_block']!
+      (Attention: With Scenario2 the order is different, but this is wanted!)
+      
+   Based on the 'k' test-train-splits in 'data', we will evaluate the imputation
+   approach. For this take the train data (that has blockwise missingness in it)
+   and impute missing values with missForest.
+   Then for each testsituation (fully observed testset,.., single block testset) 
+   we prune the imputed data, so that only features that are also in test remain.
+   On this data a RF is fitted and the performance is measured in the testset &
+   rated with Accuracy, Precision, Specifity, F1-Socre,...
    
    Args:
-    - path (char)     : path to a DF w/ block wise structure! 
-                        Shall contain 'rna_subset', 'cnv_subset', 'mirna_subset',
-                        'clin' & 'mutation_subset' block!
-    - response (char) : feature used as reponse class - must be in 'clin' block!
-                        + MUST be binary - else it will throw an error!
    
    Return:
-    list with 2 entrances:  
-      1 - data: all blocks pasted together as single DF, the first col of it 
-                equals the response!
-      2 - block_names: names of the features in the different  blocks
   "
-  # [0] Check Inputs -----------------------------------------------------------
-  # 0-1 Load data from path & check whether it has all blocks
-  #     if the path is not valid, load() will throw an error!
-  load(path)
-  if (any(!exists('clin_') & !exists('cnv_sub') & !exists('mirna_sub') & 
-          !exists('mutation_sub') & !exists('rna_sub'))) {
-    stop("'path' led to a DF with at least one missing block!")
-  }
-  
-  # 0-2 Check that the response is in the clincial block!
-  if (!(response %in% colnames(clin_))) stop("Clin Block has no 'response' feature")
-  
-  # 0-3 Check that response is binary!
-  if (length(levels(as.factor(clin_[response][,1]))) != 2) {
-    stop("The selected Response doesn't have 2 levels! 
-         Please choose a binary response from the 'clin'-block!")
-  }
-  
-  # [1] Create single DF -------------------------------------------------------
-  # 1-1 Extract the response from the clinical block & rm tehe col from the df
-  response_       <- clin_[response]
-  clin_[response] <- NULL
-  
-  # 1-2 Bind the single blocks to a big DF!
-  df <- cbind(response_, clin_, cnv_sub, rna_sub, mirna_sub, mutation_sub)
-  
-  # 1-3 Recode the response as factor!
-  df[,colnames(df) == response] <- factor(df[,colnames(df) == response])
-  
-  # 1-4 Extract the colnames of the single blocks & save them in list:
-  block_variables <- list("clin_block"     = colnames(clin_),
-                          "cnv_block"      = colnames(cnv_sub),
-                          "rna_block"      = colnames(rna_sub),
-                          "mutation_block" = colnames(mutation_sub),
-                          "mirna_block"    = colnames(mirna_sub))
-  
-  # [2] Return list with the df & the colnames of the single blocks ------------
-  return(list("data" = df,
-              "block_names" = block_variables))
-}
-get_obs_per_fold              <- function(data) {
-  "Find the amount of observations needed in each test fold, so the 4 different 
-   training folds are equally sized!
-   --> This might lead to smaller testfolds than trainingfolds!
-       
-  Args:
-    - data (data.frame) : dataframe on which we want to do CV on blockwise
-                          missingness patterns!
-  Return:
-    - list filled with:
-      - 'amount_train':      amount of Observations used for Training in total!
-      - 'amount_train_fold': amount of Observations in each Trainfold!
-      - 'amount_test':       amount of Observations in each Testfold
-  "
-  # [0] Check Inputs -----------------------------------------------------------
-  assert_data_frame(data, min.rows = 1)
-  
-  # [1] Calculat the amount of Obs. in Test & Train Fold -----------------------
-  #     Get the amount of Obs. in each Trainings- & Testfold, so the 
-  #     Trainigfolds have the same size!
-  #     Amount of trainig observations must be dividable by 4, so all folds
-  #     are equally sized! If this is not true increase the amount of obs. in 
-  #     trainingfolds by 1, as long as it is dividable by 4
-  #     The remaining obs. are used as TestSet
-  # 1-1 Split to Train & Test
-  amount_train <- floor(4/5 * nrow(data)) 
-  
-  # 1-2 Count up 'amount_train' until it is dividable by 4!
-  while ((amount_train %% 4) != 0) {
-    amount_train <- amount_train + 1
-  }
-  
-  # 1-3 Amount of Obs. in Test + in sach train fold!
-  amount_train_fold <- amount_train / 4
-  amount_test       <- nrow(data) - amount_train
-  
-  # 1-4 Print info
-  writeLines(paste0("From ", nrow(data), " Observations, each TestFold will hold "
-                    , amount_test,  " Test-Observations!\n", amount_train, 
-                    " Observations will be used for training --> ", 
-                    amount_train_fold, " Observations per Trainingsfold"))
-  
-  # [2] Return Train- / Test-fold sizes ----------------------------------------
-  return(list("amount_train"      = amount_train,
-              "amount_train_fold" = amount_train_fold,
-              "amount_test"       = amount_test))
-}
-data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LGG_Subset.RData"
-response = "gender"
-seed = 1312
-do_CV_missforrest             <- function(data_path = "data/external/Dr_Hornung/Data/ProcessedData_subsets/seed_1234/LGG_Subset.RData",
-                                          response = "gender", seed = 1312,
-                                          num_trees, min_node_size, mtry) {
-  "
-  Function to evaluate the missForest Approach in the settings of blockwise
-  missingness in SCENARIO1!
-  
-  Data is split into test and train set [curently fixed to 5-fold], with the 
-  little adjustment, the amount of traindata can be split into 4 folds w/o rest
-    --> All train folds have same amount of observations!
-    --> TestFold can be a bit smaller - not necessarily!
-    
-  Then each [equally sized] trainingsfold is censored to scenario 1, so that 
-  each fold has an observed clinical block & exactly one observed omics block!
-  Then we impute the missing values with the missForest Approach!
-  As a result we'll have a data w/o any missing values - on this we can apply
-  a regular RF! This RF will be evaluated w/ Accuracy, Precision, Specifity, 
-  F1-Socre,....
-  
-  Args:
-    - data_path (char)    : Path to the data, we want to CV! This should lead 
-                            to a file w/ multiple sub DFs 
-                            [details in 'create_data()']
-    - response (chr)      : The repsonse we want to model - 
-                            MUST be in the 'clin'-block & MUST be binary!
-    - seed (int)          : Needed for reproducibility! Shuffle rows of DF & 
-                            assign which blocks were observed for the obs.!
-    - num_trees (int)     : Amount of trees we use to fit a RF on the imputed data!
-  
-  Return:
-    - - list filled w/:
-        * 'res_all' [the CV Results on different testsets]:
-            - Results of the CV with the different 
-                         
-        * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry,time, .... 
-  "
-  # [0] Check Inputs -----------------------------------------------------------
-  # 0-0 data_path, response are all checked within 'load_data_extract_block_names()'
-  
-  # 0-1 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
-  
-  # 0-2 seed must be an integer
-  assert_int(seed)
-  
-  # [1] Get the data & dimensions of train & test folds! -----------------------
-  # 1-1 Load Data & the names of the single blocks in the data!
-  data <- load_data_extract_block_names(path = data_path, response = response)
-  
-  # 1-2 Get Obs. per fold [Train & Test]
-  obs_per_fold <- get_obs_per_fold(data = data$data)
-  
-  # [2] Shuffle the data & create lists to save the results in -----------------
-  # 2-1 Shuffle IDs of data, we use to split data later on!
-  set.seed(seed)
-  fold_ids <- sample(nrow(data$data), nrow(data$data), replace = FALSE)
-  
   # 2-2 Create empty lists to store results in!
   # 2-2-1 Full TestSet
   full <- list()
@@ -193,49 +171,6 @@ do_CV_missforrest             <- function(data_path = "data/external/Dr_Hornung/
   
   # [3] Start the CV [5-fold per default!] -------------------------------------
   for (i in 0:4) {
-    
-    print(paste0("FOLD: ", as.character(i + 1), "/5 -------------------------"))
-    
-    # 3-1 Get TestSet from 'data', by taking the first 'obs_per_fold$amount_test' 
-    #     IDs in 'fold_ids'
-    test_ids <- fold_ids[((i * obs_per_fold$amount_test) + 1):(((i + 1) * obs_per_fold$amount_test))]
-    test_df  <- data$data[test_ids,]
-    
-    # 3-2 Get the TrainSet from 'data' [= IDs not in TestSet] 
-    train_ids <- fold_ids[-which(fold_ids %in% test_ids)]
-    train_df  <- data$data[train_ids,]
-    
-    # 3-3 Induce blockwise missingness [SCENARIO_1]
-    # 3-3-1 Sample equally sized 'observed' blocks [SCENARIO_1]
-    set.seed(seed + i)
-    observed_blocks <- sample(c(rep("Clin, A", obs_per_fold$amount_train_fold), 
-                                rep("Clin, B", obs_per_fold$amount_train_fold),
-                                rep("Clin, C", obs_per_fold$amount_train_fold), 
-                                rep("Clin, D", obs_per_fold$amount_train_fold)),
-                              obs_per_fold$amount_train, replace = FALSE)
-    
-    # 3-4 Induce the blockwise missingness into the train DF
-    train_df[which(observed_blocks == "Clin, A"),  # CNV + CLIN ONLY 
-             c(data$block_names$mirna_block, data$block_names$mutation_block, 
-               data$block_names$rna_block)] <- NA
-    train_df[which(observed_blocks == "Clin, B"),  # RNA + CLIN 
-             c(data$block_names$mirna_block, data$block_names$mutation_block, 
-               data$block_names$cnv_block)] <- NA
-    train_df[which(observed_blocks == "Clin, C"),  # MUTATION + CLIN
-             c(data$block_names$mirna_block, data$block_names$rna_block, 
-               data$block_names$cnv_block)] <- NA
-    train_df[which(observed_blocks == "Clin, D"),  # MINRA # CLIN
-             c(data$block_names$rna_block, data$block_names$mutation_block, 
-               data$block_names$cnv_block)] <- NA
-    
-    after <- apply(train_df, MARGIN = 1, function(x) sum(is.na(x)))
-    print("Inducing 'NAs' done! Summary to NAs per row!")
-    print(summary(after))
-    
-    diff_values_per_var <- sapply(1:ncol(train_df), function(x) length(unique(train_df[,x])))
-    table(diff_values_per_var) # --> Values with a less than 5 unique values should 
-                               #     coded as factor before imputation!
-    
     # Impute the missing values
     train_df_imputed <- missForest(train_df, verbose = TRUE)
     
