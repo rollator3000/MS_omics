@@ -355,7 +355,7 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
   "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-0 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
-  # 0-1 path must be numeric and have '1.RData' | '2.RData' | '3.RData' in it!
+  # 0-1 path must be string and have '1.RData' | '2.RData' | '3.RData' in it!
   assert_string(path)
   if (!grepl("1.RData", path) & !grepl("2.RData", path) & !grepl("3.RData", path)) {
     stop("'path' must end in '1.RData' | '2.RData' | '3.RData'")
@@ -829,22 +829,22 @@ sit1 <- do_CV_NK_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missi
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit1, file = "./docs/CV_Res/gender/Norbet_final_subsets/setting1/COAD.RData")
+save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/COAD.RData")
 
 sit2 <- do_CV_NK_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData",
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit2, file = "./docs/CV_Res/gender/Norbet_final_subsets/setting2/COAD.RData")
+save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/COAD.RData")
 
 sit3 <- do_CV_NK_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData",
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit3, file = "./docs/CV_Res/gender/Norbet_final_subsets/setting3/COAD.RData")
+save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/COAD.RData")
 
 sit4 <- do_CV_NK_3_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData",
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit4, file = "./docs/CV_Res/gender/Norbet_final_subsets/setting4/COAD.RData")
+save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/COAD.RData")
