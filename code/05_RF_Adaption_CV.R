@@ -717,7 +717,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
     miss2_BC[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted, 
                                    weight_metric = weight_metric,
                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
-                                                                                 curr_data$block_names$c))])
+                                                                                 curr_data$block_names$C))])
     curr_Forest   <- copy_forrest(Forest)
     miss2_AD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
                                    weight_metric = weight_metric,
