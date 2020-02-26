@@ -192,7 +192,7 @@ do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
   all_forrest_preds_class <- factor(all_forrest_preds_class, 
                                     levels = levels(Forest[[1]]$yvar))
   
-  # [5] Get Metrics for the current setting!
+  # [5] Get Metrics for the current setting!  ----------------------------------
   # 5-1 Confusion Matrix
   confmat <- caret::confusionMatrix(data      = all_forrest_preds_class, 
                                     reference = testdata[,1])
@@ -502,18 +502,18 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                        curr_data$block_names$D))])
     miss2_BD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$D,
+                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                        curr_data$block_names$D))])
     miss2_BC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                        curr_data$block_names$B))])
-    miss2_BC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+    miss2_AD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                        curr_data$block_names$D))])
     miss2_AC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                        curr_data$block_names$A))])
-    miss2_BC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
+    miss2_AB[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                        curr_data$block_names$B))])
     # 2-5-4 Testset with 3 missing blocks!
