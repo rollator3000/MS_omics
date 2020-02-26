@@ -3,3 +3,4 @@ sources/Online Sources
 docs/CV_res/
 .Rhistory
 .RData
+*.db
