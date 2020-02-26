@@ -440,6 +440,12 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   # 5-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
   
+  # 5-4 Extract the used Variables from Forest!
+  for (FORR in 1:length(Forest)) {
+    
+  }
+  used_split_vars <- unlist(sapply(1:length(Forest), function(x) get_split_vars(Forest_ = Forest[[x]])))
+  
   # [6] Create a list to collect the results!
   res <- list("Accuracy"    = confmat$overall["Accuracy"],
               "Kappa"       = confmat$overall["Kappa"],
@@ -454,7 +460,8 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
               "Prevalence"  = confmat$byClass["Prevalence"],      
               "AUC1"        = as.numeric(roc1),
               "AUC2"        = as.numeric(roc2),
-              "MCC"         = mcc)
+              "MCC"         = mcc,
+              "Selected_Vars" = used_split_vars)
   
   # 6-1 If the F1-Score/ Precision/ Recall is NA, then we set it to 0 [-1 for MCC]! 
   if (is.na(res$F1))             res$F1             <- 0
@@ -465,6 +472,49 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   if (is.na(res$Neg_Pred_Value)) res$Neg_Pred_Value <- 0
   
   return(as.vector(res))
+}
+get_split_vars            <- function(Forest_) {
+  "Get the used split variables from a foldwise fitted Forest!
+  Forest_ is a list of 'Trees'"
+  # [0] Check Inputs  ----------------------------------------------------------
+  # 0-1 Forest is a list filled with elements of class 'Tree'
+  assert_list(Forest_)
+  tree_classes <- sapply(1:length(Forest_), function(x) {
+    grepl("Tree", class(Forest_[[x]]))
+  })
+  
+  if (!all(tree_classes)) {
+    stop("Forest contains a Object not of class 'Tree'")
+  }
+  
+  # 0-2 All trees must have at least 1 element in 'split_varIDs'
+  wrong_trees <- unlist(lapply(Forest_, FUN = function(x) {
+                                  length(x$child_nodeIDs) == 0
+                                })) 
+  
+  if (any(wrong_trees)) stop("Not all Trees were grown correctly!")
+  
+  # [1] Extract the used splitVariables  ---------------------------------------
+  # 1-1 Get the split variable IDs of each Tree!
+  used_split_vars_all <- split_var_ids_all <- sapply(1:length(Forest_), function(x) {
+    split_var_ids <- Forest_[[x]]$split_varIDs
+    split_var_ids <- split_var_ids[-which(is.na(split_var_ids))]
+  })
+  
+  # 1-2 Unlist the result!
+  used_split_vars_all <- unlist(used_split_vars_all)
+  
+  # 1-3 Convert the Variable IDs to featurenames!
+  # 1-3-1 Extract all possible feature names the trees were fit on!
+  poss_fea_names <- colnames(Forest_[[1]]$data$data)
+  
+  # 1-3-2 Convert VariableIDs to names!
+  used_split_var_names <- sapply(used_split_vars_all, function(x) {
+    poss_fea_names[x]
+  })
+  
+  # 1-4 Return the names of the used split variables!
+  return(used_split_var_names)
 }
 
 do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_1.RData",
@@ -595,6 +645,9 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
   # 1-3 Get the amount of test-train splits in data 
   k_splits <- length(curr_data$data)
   
+  # 1-4 Start the Timer, so we know how long CV took
+  start_time <- Sys.time()
+  
   # [2] Start the CV and loop over all test-train splits in data  --------------
   for (i in seq_len(k_splits)) {
     
@@ -621,7 +674,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
     #     [observed_folds contains all unique features observed for diff folds]!
     #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
     #         entrance consits of 'num_trees' foldwise fitted trees!
-    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    Forest <- list(); i_  <- 1
     
     for (fold_ in observed_folds) {
       
@@ -835,6 +888,14 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
               "settings" = settings))
 }
 
+path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_4.RData"
+weighted = FALSE
+weight_metric = "Acc"
+num_trees = 10
+mtry = NULL
+min_node_size = NULL
+unorderd_factors = "ignore"
+
 do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_4.RData",
                            weighted = TRUE, weight_metric = "Acc", 
                            num_trees = 10, mtry = NULL, min_node_size = NULL,
@@ -952,6 +1013,9 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
   # 1-3 Get the amount of test-train splits in data 
   k_splits <- length(curr_data$data)
   
+  # 1-4 Start the Time so we know how long CV took
+  start_time <- Sys.time()
+  
   # [2] Start the CV and loop over all test-train splits in data  --------------
   for (i in seq_len(k_splits)) {
     
@@ -978,7 +1042,7 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
     #     [observed_folds contains all unique features observed for diff folds]!
     #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
     #         entrance consits of 'num_trees' foldwise fitted trees!
-    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    Forest <- list(); i_  <- 1
     
     for (fold_ in observed_folds) {
       

@@ -580,7 +580,7 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
                   "single_C" = single_C, "single_D" = single_D,
                   "single_CL" = single_CL)
   
-  # 4-2 Collect the Settings, used to do the CV!
+  # 3-2 Collect the Settings, used to do the CV!
   settings <- list("data_path"     = path,
                    "num_folds"     = k_splits,
                    "response"      = response,
@@ -591,7 +591,7 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
                    "min_node_size" = min_node_size,
                    "time_for_CV"   = time_for_CV)
   
-  # 4-3 Return both lists!
+  # 3-3 Return both lists!
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
