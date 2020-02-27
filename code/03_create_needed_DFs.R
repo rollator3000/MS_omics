@@ -32,7 +32,7 @@ DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 
 # 1-2-2 path to the data
-data_path <- "./data/external/Dr_Hornung/original_processed_data/"
+data_path <- "./data/external/Dr_Hornung/"
 
 # 1-2-3 seed for reproductibity [selected in 02_...R]
 subset_seed <- 12345
@@ -104,17 +104,16 @@ for (df in DFs_w_gender) {
   
   # 1-6 Save the subsetted DF
   save(mirna, mutation, rna, cnv, clin, 
-       file = paste0("./data/external/Dr_Hornung/subsetted_", subset_seed, "/", 
+       file = paste0("./data/processed/RH_subsetted_", subset_seed, "/", 
                      df, "_subset.RData"))
-    
 }
 
-# [2] Get Test& OOB Performance on the subsetted DFs - JOINT BLOCKS          ----
+# [2] Get Test& OOB Performance on the subsetted DFs - JOINT BLOCKS         ----
 # 2-1 Define file and foldernames!
 DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                          "LGG", "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
-subset_folder       <- "./data/external/Dr_Hornung/subsetted_12345/"
+subset_folder       <- "./data/processed/RH_subsetted_12345/"
 
 # 2-2 DF to save results of single block performances!
 eval_res <- data.frame("Data"     = character(), "fold"     = numeric(),
@@ -198,7 +197,7 @@ write.csv2(eval_res, row.names = FALSE,
 DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                           "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
-subset_folder       <- "./data/external/Dr_Hornung/subsetted_12345/"
+subset_folder       <- "./data/processed/RH_subsetted_12345/"
 
 # 3-2 Empty DF to store Results!
 eval_res <- data.frame("Data"     = character(), 
@@ -282,4 +281,3 @@ for (df in DFs_w_gender_subset) {
 # 3-5 Save the resuls
 write.csv2(eval_res, row.names = FALSE, 
            "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed_12345.csv")
-

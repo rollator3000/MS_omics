@@ -441,9 +441,6 @@ do_evaluation             <- function(Forest, testdata, weighted, weight_metric)
   mcc <- mcc_metric(conf_matrix = confmat)
   
   # 5-4 Extract the used Variables from Forest!
-  for (FORR in 1:length(Forest)) {
-    
-  }
   used_split_vars <- unlist(sapply(1:length(Forest), function(x) get_split_vars(Forest_ = Forest[[x]])))
   
   # [6] Create a list to collect the results!
@@ -517,7 +514,7 @@ get_split_vars            <- function(Forest_) {
   return(used_split_var_names)
 }
 
-do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_1.RData",
+do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                            weighted = TRUE, weight_metric = "Acc", 
                            num_trees = 10, mtry = NULL, min_node_size = NULL,
                            unorderd_factors = "ignore") {
@@ -888,15 +885,7 @@ do_CV_5_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
               "settings" = settings))
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_4.RData"
-weighted = FALSE
-weight_metric = "Acc"
-num_trees = 10
-mtry = NULL
-min_node_size = NULL
-unorderd_factors = "ignore"
-
-do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1234/BLCA_4.RData",
+do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                            weighted = TRUE, weight_metric = "Acc", 
                            num_trees = 10, mtry = NULL, min_node_size = NULL,
                            unorderd_factors = "ignore") {
@@ -1160,25 +1149,25 @@ do_CV_2_blocks <- function(path = "data/external/Dr_Hornung/subsetted_12345/miss
 }
 
 # Run Main                                                                  ----
-sit1 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
+sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_1.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
 save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/COAD.RData")
 
-sit2 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData",
+sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_2.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
 save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/COAD.RData")
 
-sit3 <- do_CV_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData",
+sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_3.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
 save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/COAD.RData")
 
-sit4 <- do_CV_2_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData",
+sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_4.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
