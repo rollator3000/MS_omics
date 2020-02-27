@@ -1149,26 +1149,26 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
 }
 
 # Run Main                                                                  ----
-sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_1.RData",
+sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/COAD.RData")
+save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA.RData")
 
-sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_2.RData",
+sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/COAD.RData")
+save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA.RData")
 
-sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_3.RData",
+sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/COAD.RData")
+save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA.RData")
 
-sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/COAD_4.RData",
+sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 50, mtry = NULL, min_node_size = NULL,
                        unorderd_factors = "ignore")
-save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/COAD.RData")
+save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA.RData")

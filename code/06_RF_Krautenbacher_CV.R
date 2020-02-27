@@ -211,6 +211,9 @@ do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
   # 5-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
   
+  # 5-4 Get the Variables used as split variables!
+  used_split_vars <- sapply(Forest, function(x) x$var.used)
+  
   # [6] Create a list to collect the results!  ---------------------------------
   res <- list("Accuracy"    = confmat$overall["Accuracy"],
               "Kappa"       = confmat$overall["Kappa"],
@@ -225,7 +228,8 @@ do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
               "Prevalence"  = confmat$byClass["Prevalence"],      
               "AUC1"        = as.numeric(roc1),
               "AUC2"        = as.numeric(roc2),
-              "MCC"         = mcc)
+              "MCC"         = mcc,
+              "Selected_Vars" = used_split_vars)
   
   # 6-1 If the F1-Score/ Precision/ Recall is NA, then we set it to 0 [-1 for MCC]! 
   if (is.na(res$F1))             res$F1             <- 0
@@ -284,7 +288,7 @@ get_oob_weight_metric <- function(blockwise_RF) {
   return(oob_results)
 }
 
-do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
+do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                                   seed = 1312, weighted = TRUE, weight_metric = NULL,
                                   num_trees = as.integer(10), mtry = NULL, 
                                   min_node_size = 10) {
@@ -410,6 +414,9 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
   # 1-3 Get the amount of test-train splits in data 
   k_splits <- length(curr_data$data)
   
+  # 1-4 Start the Timer, so we know how long CV took!
+  start_time <- Sys.time()
+  
   # [2] Start the CV and loop over all test-train splits in data  --------------
   for (i in seq_len(k_splits)) {
     
@@ -422,7 +429,7 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
    
     # 2-3 Train blockwise RFs for each block seperatly! For this loop over all 
     #     blocks ['curr_data$block_names']
-    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    Forest <- list(); i_  <- 1
     
     for (block_ in names(curr_data$block_names)) {
       
@@ -447,7 +454,7 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
       # 2-3-3-3 Fit a Tree on the block data
       blockwise_rf <- rfsrc(formula = formula_all, data = curr_fold_train_data, 
                             ntree = num_trees, mtry = mtry, nodesize = min_node_size, 
-                            samptype = "swr", seed = 12345678)
+                            samptype = "swr", seed = 12345678, var.used = 'all.trees')
       
       print(paste0("Fit FoldWise RF on current block: '", block_, "'"))
       
@@ -596,7 +603,7 @@ do_CV_NK_5_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
               "settings" = settings))
 }
 
-do_CV_NK_3_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData",
+do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                                   seed = 1312, weighted = TRUE, weight_metric = NULL,
                                   num_trees = as.integer(10), mtry = NULL, 
                                   min_node_size = 10) {
@@ -705,6 +712,9 @@ do_CV_NK_3_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
   # 1-3 Get the amount of test-train splits in data 
   k_splits <- length(curr_data$data)
   
+  # 1-4 Start the Timer, so we know how long CV took!
+  start_time <- Sys.time()
+  
   # [2] Start the CV and loop over all test-train splits in data  --------------
   for (i in seq_len(k_splits)) {
     
@@ -717,7 +727,7 @@ do_CV_NK_3_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
     
     # 2-3 Train blockwise RFs for each block seperatly! For this loop over all 
     #     blocks ['curr_data$block_names']
-    Forest <- list(); i_  <- 1; start_time <- Sys.time()
+    Forest <- list(); i_  <- 1
     
     for (block_ in names(curr_data$block_names)) {
       
@@ -742,7 +752,7 @@ do_CV_NK_3_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
       # 2-3-3-3 Fit a Tree on the block data
       blockwise_rf <- rfsrc(formula = formula_all, data = curr_fold_train_data, 
                             ntree = num_trees, mtry = mtry, nodesize = min_node_size, 
-                            samptype = "swr", seed = 12345678)
+                            samptype = "swr", seed = 12345678, var.used = 'all.trees')
       
       print(paste0("Fit FoldWise RF on current block: '", block_, "'"))
       
@@ -825,26 +835,26 @@ do_CV_NK_3_blocks     <- function(path = "data/external/Dr_Hornung/subsetted_123
 }
 
 # Run Main                                                                  ----
-sit1 <- do_CV_NK_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
+sit1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/COAD.RData")
+save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA.RData")
 
-sit2 <- do_CV_NK_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_2.RData",
+sit2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/COAD.RData")
+save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA.RData")
 
-sit3 <- do_CV_NK_5_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_3.RData",
+sit3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/COAD.RData")
+save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA.RData")
 
-sit4 <- do_CV_NK_3_blocks(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData",
+sit4 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                           seed = 1312, weighted = TRUE, weight_metric = "Acc",
                           num_trees = as.integer(10), mtry = NULL, 
                           min_node_size = 10)
-save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/COAD.RData")
+save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA.RData")
