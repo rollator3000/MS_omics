@@ -83,6 +83,11 @@ Short describtion of the scripts in './code'!
     missingness into the trainsets of the splitted DFs!
 ```
 
+## Data
+The original data is not part of this Repo, only the subsetted data!
+If interested in the original data, please contact me on github or send 
+an E-Mail to 'f.ludwigs@yahoo.de'.
+
 ## Project Organization
 ------------
     ├── LICENSE
