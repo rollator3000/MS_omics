@@ -70,7 +70,7 @@ get_single_df_info <- function(df) {
   # Get coltypes (incl. names) of the passed DF! If it has more than 10 columns
   # cut it, and only return coltypes (incl. names) of the first 10 columns!
   if (dim_df[2] > 10) {
-    print(paste("Only first 10 cols of", dim_df[2], "in total, are printed"))
+    print(paste("Only first 10 cols of", dim_df[2], "in total, are printed in the summary"))
     cols_type <- apply(df[,1:10], MARGIN = 2, function(x) typeof(x))
   } else {
     cols_type <- apply(df, MARGIN = 2, function(x) typeof(x))
@@ -148,73 +148,73 @@ load_rda_get_infos <- function(rda_path) {
 
 # Datainspection -- needed fpr further analysis --> always run this         ----
 # ----- BLCA DF
-BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/BLCA.Rda")
+BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/BLCA.Rda")
 BLCA_Res
 # ----- BRCA DF
-BRCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/BRCA.Rda")
+BRCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/BRCA.Rda")
 BRCA_Res
 # ----- CESC DF
-CESC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/CESC.Rda")
+CESC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/CESC.Rda")
 CESC_Res
 # ----- COAD DF
-COAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/COAD.Rda")
+COAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/COAD.Rda")
 COAD_Res
 # ----- ESCA DF
-ESCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/ESCA.Rda")
+ESCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/ESCA.Rda")
 ESCA_Res
 # ----- GBM DF
-GBM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/GBM.Rda")
+GBM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/GBM.Rda")
 GBM_Res
 # ----- HNSC DF
-HNSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/HNSC.Rda")
+HNSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/HNSC.Rda")
 HNSC_Res
 # ----- KIRC DF
-KIRC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/KIRC.Rda")
+KIRC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/KIRC.Rda")
 KIRC_Res
 # ----- KIRP DF
-KIRP_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/KIRP.Rda")
+KIRP_Res <- load_rda_get_infos("./data/external/Dr_Hornung/KIRP.Rda")
 KIRP_Res
 # ----- LGG DF
-LGG_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LGG.Rda")
+LGG_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LGG.Rda")
 LGG_Res
 # ----- LIHC DF
-LIHC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LIHC.Rda")
+LIHC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LIHC.Rda")
 LIHC_Res
 # ----- LUAD DF
-LUAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LUAD.Rda")
+LUAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LUAD.Rda")
 LUAD_Res
 # ----- LUSC DF
-LUSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/LUSC.Rda")
+LUSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LUSC.Rda")
 LUSC_Res
 # ----- OV DF
-OV_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/OV.Rda")
+OV_Res <- load_rda_get_infos("./data/external/Dr_Hornung/OV.Rda")
 OV_Res
 # ----- PAAD DF
-PAAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/PAAD.Rda")
+PAAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/PAAD.Rda")
 PAAD_Res
 # ----- PRAD DF
-PRAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/PRAD.Rda")
+PRAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/PRAD.Rda")
 PRAD_Res
 # ----- READ DF
-READ_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/READ.Rda")
+READ_Res <- load_rda_get_infos("./data/external/Dr_Hornung/READ.Rda")
 READ_Res
 # ----- SARC DF
-SARC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/SARC.Rda")
+SARC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/SARC.Rda")
 SARC_Res
 # ----- SKCM DF
-SKCM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/SKCM.Rda")
+SKCM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/SKCM.Rda")
 SKCM_Res
 # ----- STAD DF
-STAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/STAD.Rda")
+STAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/STAD.Rda")
 STAD_Res
 # ----- UCEC DF
-UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/original_processed_data/UCEC.Rda")
+UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/UCEC.Rda")
 UCEC_Res
 
 # Check DFs for 'gender' as clinical variable & get the distribution        ----
 # ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
-#   For each of the 21 DFs check whether a variable 'sex' or 'gender' is avaible
-#   within the clinical features of the dataset!
+
+# Check whether 'sex' or 'gender' is avaible in the clinical feas of the datasets!
 BLCA_Res$clin  # --> has gender as clin Variable! --> 3 clinical feas remaining
 COAD_Res$clin  # --> has gender as clin Variable! --> 4 clinical feas remaining
 ESCA_Res$clin  # --> has gender as clin Variable! --> 3 clinical feas remaining
@@ -244,16 +244,22 @@ DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
 
 #   Check the distribution for all DFs w/ gender!
 for (df_curr in DFs_w_gender) {
-  load(paste0("./data/external/Dr_Hornung/original_processed_data/", df_curr, ".Rda"))
+  load(paste0("./data/external/Dr_Hornung/", df_curr, ".Rda"))
   print(paste0("Distribution of 'gender' for DF: '", df_curr, "'"))
   print(prop.table(table(factor(clin$gender))))
   print("-------------------------------------------------------")
 }
 
 # Get the distribution of the amount of features in each block over all dfs ----
+# ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
 
-# "DFs_w_gender" needed for the looop is defined in chapter above!
+# Define DFs and Blocks that we want to inspect!
+DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
+                  "LGG", "LUAD", "LUSC", "PAAD", "READ", "SARC", "SKCM", "STAD")
 blocks <- c("cnv", "mirna", "mutation", "rna")
+
+# Loop over blocks in all different DFs, extract dimension for each and print 
+# summary of the dimensionality of block over all DFs_w_gender
 for (i in blocks) {
   feas <- c()
   for (df_curr in DFs_w_gender) { 
@@ -263,7 +269,10 @@ for (i in blocks) {
   print(summary(feas))
 }
 
+
 # Do the same, but subsett the blocks before [same dim in CV later then!]
+# Loop over blocks in all different DFs, subsett the blocks and extract the 
+# dimension for each and print summary of the dimensionality of block over all DFs_w_gender
 blocks <- c("cnv", "mirna", "mutation", "rna")
 for (i in blocks) {
   feas <- c()
@@ -285,7 +294,7 @@ for (i in blocks) {
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
-data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
+data_path    <- "./data/external/Dr_Hornung/"
 
 res_all <- list()
 
