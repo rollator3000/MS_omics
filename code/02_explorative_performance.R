@@ -18,7 +18,7 @@ library(randomForestSRC)
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
-data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
+data_path    <- "./data/external/Dr_Hornung/"
 
 eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
   "
@@ -68,7 +68,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
                          stringsAsFactors = F)
   
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
-  data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
+  data_path    <- "./data/external/Dr_Hornung/"
   
   # [2] Loop over all DFs w/ gender in their clinical variables!
   for (df in DFs_w_gender) {
@@ -225,7 +225,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
                          stringsAsFactors = F)
   
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
-  data_path    <- "./data/external/Dr_Hornung/original_processed_data/"
+  data_path    <- "./data/external/Dr_Hornung/"
   
   # [2] Loop over all DFs w/ gender in their clinical variables!
   for (df in DFs_w_gender) {
@@ -416,21 +416,31 @@ for (seed in c(1234, 12345, 123456)) {
 
 # Get Performances w/ joint subsetted blocks as feature spaces               ----
 for (rna_sub in c(0.75, 0.5, 0.25, 0.15, 1)) {
-  for (cnv_sub in c(0.005, 0.0125, 1)) {
-    eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
-                             seed_to_subset = 12345,
-                             fraction_cnv = cnv_sub, 
-                             fraction_mirna = 1,
-                             fraction_mutation = 1, 
-                             fraction_rna = rna_sub,
-                             fraction_clin = 1)
-    
-    eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
-                             seed_to_subset = 12345,
-                             fraction_cnv = cnv_sub, 
-                             fraction_mirna = 0.025,
-                             fraction_mutation = 0.025, 
-                             fraction_rna = rna_sub,
-                             fraction_clin = 1)
+  for (cnv_sub in c(0.005, 0.025, 0.0125, 1)) {
+    for (mut_sub in c(1, 0.5, 0.1)) {
+      eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
+                               seed_to_subset = 12345,
+                               fraction_cnv = cnv_sub, 
+                               fraction_mirna = 1,
+                               fraction_mutation = mut_sub, 
+                               fraction_rna = rna_sub,
+                               fraction_clin = 1)
+      
+      eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
+                               seed_to_subset = 12345,
+                               fraction_cnv = cnv_sub, 
+                               fraction_mirna = 0.5,
+                               fraction_mutation = mut_sub, 
+                               fraction_rna = rna_sub,
+                               fraction_clin = 1)
+      
+      eval_joint_block_subsets(DFs_w_gender = DFs_w_gender, 
+                               seed_to_subset = 12345,
+                               fraction_cnv = cnv_sub, 
+                               fraction_mirna = 0.1,
+                               fraction_mutation = mut_sub, 
+                               fraction_rna = rna_sub,
+                               fraction_clin = 1)
+    }
   }
 }
