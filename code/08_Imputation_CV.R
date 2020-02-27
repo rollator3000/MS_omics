@@ -290,7 +290,7 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   
   return(as.vector(res))
 }
-do_CV_missforrest_5   <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_1.RData",
+do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                                   num_trees = 100, min_node_size = 10, mtry = NULL,
                                   n_tree_impute = 100, maxiter_impute = 10) {
   "Evalute the Approach where we impute the block-wise missing values with the 
@@ -608,14 +608,14 @@ do_CV_missforrest_5   <- function(path = "data/external/Dr_Hornung/subsetted_123
               "settings" = settings))
 }
 
-path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData"
+path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData"
 num_trees = 100
 min_node_size = 10
 mtry = NULL
 n_tree_impute = 100
 maxiter_impute = 10
 
-do_CV_missforrest_3   <- function(path = "data/external/Dr_Hornung/subsetted_12345/missingness_1312/COAD_4.RData",
+do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                                   num_trees = 100, min_node_size = 10, mtry = NULL,
                                   n_tree_impute = 100, maxiter_impute = 10) {
   "Evalute the Approach where we impute the block-wise missing values with the 
