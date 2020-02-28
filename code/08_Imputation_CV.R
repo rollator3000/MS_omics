@@ -1,36 +1,37 @@
-"Script to tackle the blockwise missingness with the any Imputation Approach!
-  - missForest!
-  - MICE!
-  - mdd-sPLS
+"Script to tackle the blockwise missingness with the missForest Imputation!
+
+ For the Traindata with blockwise missingness, imputation is done, so that the 
+ resulting data has no missing values at all!
+ Then, we use features in the imputed data that are also features in the testset,
+ to fit a RF and do predicitons on the testset!
+ Then we evaluate how good the predicitons were and return the metrics!
 "
-# SetWD and define/load functions
+# SetWD, load packages, define Functions & set cores for parallel computing!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 library(missForest)
 library(checkmate)
 library(randomForestSRC)
-library(tidyverse)
 library(caret)
 library(doParallel)
 
-# Set Cores for parallel computaion!
 detectCores()
-registerDoParallel(cores = 3)
+registerDoParallel(cores = 2)
 
-load_CV_data          <- function(path) {
+load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
    induced already into the train split!
+   This function does a detailed check on the data in 'path', so that all 
+   approaches can deal with the data!
   
   Args:
     path (str) : Path to the data we want for CV!
                  Path must point to a list, that consits of two more lists 
-                 'data' & 'block_names'! 
-                 These two lists are further checked in this function!
-                 - $data (list) must contain n entrances of 'train' & 'test'
-                                where each is a dataframe!
-                 - $block_names (list) must contain at least 3 names!
+                 'data' & 'block_names'!
+                    - $data (list) must contain k entrances of 'train' & 'test'
+                                   where each is a dataframe!
+                    - $block_names (list) must contain at least 3 names!
   Return:
     A list, filled with 'data' & 'block_names' that can be used for CV!
-  
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 'path' of type string with '.RData' inside!
@@ -45,7 +46,7 @@ load_CV_data          <- function(path) {
   # 1-2-1 List with 2 entrances
   assert_list(data_, len = 2)
   
-  # 1-2-2 'data' and 'block_names'
+  # 1-2-2 'data' and 'block_names' as entrances!
   if (!('data' %in% names(data_))) stop("'path' should lead to list w/ 'data' entry")
   if (!('block_names' %in% names(data_))) stop("'path' should lead to list w/ 'block_names' entry")
   
@@ -74,12 +75,13 @@ load_CV_data          <- function(path) {
   # [2] Return the data  -------------------------------------------------------
   return(data_)
 }
-mcc_metric            <- function(conf_matrix) {
-  "Function to calculate the MCC [Matthews correlation coefficient] Metric
-   --> only for binary cases! If the Conf_Matrix has more than 2 classes 
-       it will return NULL instead of the MCC!
+mcc_metric          <- function(conf_matrix) {
+  "Calculate the MCC Metric [Matthews correlation coefficient]!
+   Works only for binary cases! 
+   If the Conf_Matrix has more than 2 classes it will return NA 
+   instead of the MCC!
        
-    Definition of the Metric:
+   Definition of the Metric:
       MCC takes into account true and false positives and negatives and is 
       generally regarded as a balanced measure which can be used even if the 
       classes are of very different sizes.
@@ -88,13 +90,13 @@ mcc_metric            <- function(conf_matrix) {
       - conf_matrix (confusionMatrix) : Confusion Matrix created with the 
                                         'caret'-Package!
     Return: 
-      Matthews correlation coefficient [1 is best, -1 is worst!]
+      - Matthews correlation coefficient (numeric): '1' is best & '-1' is worst
   "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-1 check amount of classes:
   if (nrow(conf_matrix$table) != 2) {
     warning("Can not calc the MCC-Metric! Return NULL")
-    return(NULL)
+    return(NA)
   }
   
   # 0-2 Check class of conf_matrix
@@ -103,22 +105,24 @@ mcc_metric            <- function(conf_matrix) {
   }
   
   # [1] Calc the Score ---------------------------------------------------------
+  # 1-1 Get the TruePositives, FalsePositives, FalseNegatives & TrueNegatives
   TP <- conf_matrix$table[1,1]
   TN <- conf_matrix$table[2,2]
   FP <- conf_matrix$table[1,2]
   FN <- conf_matrix$table[2,1]
   
-  mcc_num <- (TP*TN - FP*FN)
-  mcc_den <- 
-    as.double((TP+FP))*as.double((TP+FN))*as.double((TN+FP))*as.double((TN+FN))
+  # 1-2 Calc single parts of MMC [bases on TP, TN, FP, FN]
+  mcc_num <- (TP * TN - FP * FN)
+  mcc_den <- as.double((TP + FP)) * as.double((TP + FN)) * as.double((TN + FP)) * as.double((TN + FN))
   
+  # 1-3 Put together the single parts!
   mcc_final <- mcc_num/sqrt(mcc_den)
   
-  # [2] Return it --------------------------------------------------------------
+  # [2] Return  ----------------------------------------------------------------
   return(mcc_final)
 }
 impute_missing_values <- function(data, ntree_imp = 100, maxiter = 10) {
-  "Impute missin values in a dataframe with the missForest [RF for imputation]!
+  "Impute missin values with the missForest Approach!
    For this we look into 'data' and get the values we need to impute! 
    Then we apply the missForest approach to impute these!
     (For this we need to recode numeric columns to factors,
@@ -126,35 +130,36 @@ impute_missing_values <- function(data, ntree_imp = 100, maxiter = 10) {
      But these are converted back to numeric before returning!)
    
   Args:
-    - data (dataframe) : Dataframe with missing values in any column!
+    - data (dataframe) : Dataframe with (blockwise) missing values!
     - ntree_imp (int)  : Amount of trees we use for the imputation
-    - maxiter (int)    : Maximum number of iterations to be performed, as long 
+    - maxiter   (int)  : Maximum number of iterations to be performed, as long 
                          as the stopping criterion is not fullfilled yet!
-                         
   Return:
     - data (dataframe) : Dataframe with no more missing values! All values
                          that were missing in 'data' were imputed!
-                         Colnames, Coltypes, Dimension etc. stays as it was!
+                         Colnames, Coltypes, Dimension etc. stay as they were!
   "
   # [0] Check Inputs  ----------------------------------------------------------
-  assert_data_frame(data, min.rows = 1, min.cols = 2)
-  assert_int(ntree_imp, lower = 10)
-  assert_int(maxiter, lower = 1)
+  # 0-1 'data' to be a dataframe
+  assert_data_frame(data)
+  
+  # 0-2 'ntree_imp' & 'maxiter' must be integers!
+  assert_int(ntree_imp)
+  assert_int(maxiter)
   
   # [1] Prepare the data for the missForest imputation  ------------------------
-  # 1-1 Recode to factor if a missing numeric col has less than 5 unique values!
-  # 1-1-1 Count how many unique values each column has:
+  # 1-1 Remove the response from the data [will be added again after imputation]
+  resp_ <- data[,1]
+  data[,1] <- NULL
+  
+  # 1-2 Recode to factor if a numeric col has less than 5 unique values!
+  # 1-2-1 Count how many unique values each column has:
   unique_values_cols <- sapply(1:ncol(data), function(x) length(unique(data[,x])))
   
   # 1-1-2 Get the cols with less than 5 unique values!
   cols_to_recode <- which(unique_values_cols < 5)
   
-  # 1-1-3 Remove '1' if inside, as the response is always observed for all obs.!
-  if (1 %in% cols_to_recode) {
-    cols_to_recode <- cols_to_recode[-which(cols_to_recode == 1)]
-  }
-  
-  # 1-1-4 Convert numeric to factor - if there even is a col to recode!
+  # 1-1-3 Convert numeric to factor - if there even is a col to recode!
   if (length(cols_to_recode) > 1) {
     data[cols_to_recode] <- lapply(data[cols_to_recode], as.factor)
   }
@@ -176,12 +181,13 @@ impute_missing_values <- function(data, ntree_imp = 100, maxiter = 10) {
   }
   
   # [3] Return the imputed Dataframe  ------------------------------------------
-  return(data_imputed)
+  imputed_data_w_resp <- cbind(resp_, data_imputed)
+  return(imputed_data_w_resp)
 }
 do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
-  "Evaluate the Imputation Approach! MissForest was used to impute the missing 
-   Values in the training data. Evaluate the Approach on 'test'. 
-   For this we supply the features -only the ones avaible in 'test'- from 'train'
+  "Evaluate the Imputation Approach! MissForest is used to impute the missing 
+   values in the training data. Evaluate the performance of this on 'test'. 
+   For this we supply the train features - only the ones avaible in 'test' - 
    to train a regular RF on it. Then we evaluate the predicitve performance of
    the RF trained on imputed DF on the testdata and take the Acc, F1, ...
    
@@ -189,22 +195,20 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
     - train (data.frame) : Dataframe that has no missing data, as all missing 
                            datapoints were imputed!
     - test (data.frame)  : Dataframe we use to test the impuation approach!
-                           - Must not contain any variables not avaible in 
-                             'train'.
-    - num_trees (int) : Amount of trees to be fit on the imputed 'train'!
-                        --> RF will be fit on all feas in Train, that are also
-                            observed in 'test'
-                        If NULL: 1000 is the default!
+                           - Must not contain any variables not avaible in 'train'
+    - num_trees (int)    : Amount of trees to be fit on the imputed 'train'!
+                           --> RF will be fit on all feas in Train, that are 
+                               also observed in 'test'
+                             > If NULL: 1000 is the default!
     - min_node_size(int) : Amount of Observations a node must at least contain,
                            so the model keeps on trying to split them!  
-                        If NULL: 1 is the default!
+                             > If NULL: 1 is the default!
     - mtry (int)         : Amount of split-variables we try, when looking for
                            a split variable! 
-                        If 'NULL': mtry = sqrt(p)
-                        
+                             > If 'NULL': mtry = sqrt(p)
    Return:
-    - list w/ metrics [accuracy, f1, mcc, roc, ...] 
-        if F-1 Score is NA [as precision or recall = 0], we set it to 0 [not NA]
+    - list w/ metrics: accuracy, f1, mcc, roc & the selected Vars 
+      > Metrics w/ NA are replaced by their worst possible value!
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 'train' & 'test' must be dataframes
@@ -217,18 +221,14 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   }
   
   # 0-3 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
-  if (!is.null(num_trees)) {
-    assert_int(num_trees, lower = 10)
-  } else {
-    num_trees = 1000
-  }
-  if (!is.null(mtry)) assert_int(mtry, lower = 5)
+  if (!is.null(num_trees)) assert_int(num_trees, lower = 10)
+  if (!is.null(mtry)) assert_int(mtry)
   if (!is.null(min_node_size)) assert_int(min_node_size, lower = 1)
   
   # [1] Train a RF  ------------------------------------------------------------
   #     Train a RF on 'train', but only use the variables, that are avaible in
-  #     'test', as the RF must do predicitons on the 'test' set!
-  # 1-1 Remove the Features from Train that are not avaible in Test
+  #     'test', as the RF must do predicitons on this set!
+  # 1-1 Remove the features from Train that are not avaible in Test!
   test_col_names  <- colnames(test)
   curr_train_data <- train[,test_col_names]
   
@@ -293,15 +293,15 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
 do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                                   num_trees = 100, min_node_size = 10, mtry = NULL,
                                   n_tree_impute = 100, maxiter_impute = 10) {
-  "Evalute the Approach where we impute the block-wise missing values with the 
-   missForest Approach - for the cases with 5 blocks! [Scenario1, 2 or 3]
+  "Evalute the Approach where we impute the block-wise missing values with 
+   missForest - for the cases with 5 blocks! [Scenario1, 2 & 3]
    
    'path' must lead to a list with 2 entrances: 'data' & 'block_names'
-   - 'data' is a list filled with 'k' test-train-splits
-      --> k-fold-Validation on this test-train-splits!
-   - 'block_names' is a list filled with the names of the single blocks 
-      & must be ['A', 'B', 'C', 'D', 'clin_block']!
-      (Attention: With Scenario2 the order is different, but this is wanted!)
+     - 'data' is a list filled with 'k' test-train-splits
+        --> k-fold-Validation on this test-train-splits!
+     - 'block_names' is a list filled with the names of the single blocks 
+        & must be ['A', 'B', 'C', 'D', 'clin_block']!
+        (Attention: With Scenario2 the order is different, but this is wanted!)
       
    Based on the 'k' test-train-splits in 'data', we will evaluate the imputation
    approach. For this take the train data (that has blockwise missingness in it)
@@ -312,26 +312,28 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
    rated with Accuracy, Precision, Specifity, F1-Socre,...
    
    Args:
-    - path (str) : path to the data with blockwise missingness we want to CV
-                   --> must lead to list with 2 entrances 'data' & 'block_names'
-                       'data' consitis of 'k' test-train-splits, where train 
-                        has missingness induced and test fully observed!
-    - num_trees (int) : Amount of trees to be fit on the imputed data!
-                        --> RF will be fit on all feas in Train, that are also
-                            observed in 'Test'
-                        If NULL: 1000 is the default!
+    - path (str)         : path to data with blockwise missingness we want to CV
+                           --> List with 2 entrances: 'data' & 'block_names'
+                                 - 'data' consitis of 'k' test-train-splits, 
+                                    where train has missingness induced and the 
+                                    test-set is fully observed!
+                                 - 'block_names' contains all colnames of the 
+                                    different blocks!
+    - num_trees (int)    : Amount of trees to be fit on the imputed data!
+                           --> RF will be fit on all feas in Train, that are 
+                               also observed in 'Test'
+                                > If NULL: 1000 is the default!
     - min_node_size(int) : Amount of Observations a node must at least contain,
                            so the model keeps on trying to split them!  
-                        If NULL: 1 is the default!
+                                > If NULL: 1 is the default!
     - mtry (int)         : Amount of split-variables we try, when looking for
                            a split variable! 
-                        If 'NULL': mtry = sqrt(p)
+                                > If 'NULL': mtry = sqrt(p)
     - n_tree_impute (int)  : Amount of Trees we use for imputing the 
                              missing values in the 'data$train' section of the
                              data in 'path'
     - maxiter_impute (int) : Maximum amount of itterations for the Imputation 
                              with missForest!
-   
     Return:
       - list filled w/:
         * 'res_all' [the CV Results on different testsets]:
@@ -355,7 +357,6 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
             - datapath, seed, response, mtry, time for 
   "
   # [0] Check Inputs  ----------------------------------------------------------
-  # 0-0 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
   # 0-1 path must be string rest is checked in 'load_CV_data()'
   assert_string(path)
   if (!grepl("1.RData", path) & !grepl("2.RData", path) & !grepl("3.RData", path)) {
@@ -365,6 +366,11 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
   # 0-2 'n_tree_impute' & 'maxiter_impute' must be numeric!
   assert_int(n_tree_impute)
   assert_int(maxiter_impute)
+  
+  # 0-3 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
+  if (!is.null(num_trees)) assert_int(num_trees, lower = 10)
+  if (!is.null(mtry)) assert_int(mtry)
+  if (!is.null(min_node_size)) assert_int(min_node_size, lower = 1)
   
   # [1] Get the data and create list to save results  --------------------------
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
@@ -473,9 +479,9 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_BC[[i]] <- do_evaluation_imputed(train = train_imputed, 
-                                           test = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                     curr_data$block_names$B))], 
+    miss2_AD[[i]] <- do_evaluation_imputed(train = train_imputed, 
+                                           test = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                     curr_data$block_names$D))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
@@ -487,9 +493,9 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_BC[[i]] <- do_evaluation_imputed(train = train_imputed, 
-                                           test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
-                                                                                     curr_data$block_names$C))], 
+    miss2_AB[[i]] <- do_evaluation_imputed(train = train_imputed, 
+                                           test = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                     curr_data$block_names$B))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
@@ -575,7 +581,6 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
   }
-  
   # 2-6 Stop the time and take the difference!
   time_for_CV <- Sys.time() - start_time
   
@@ -607,14 +612,6 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
-
-path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData"
-num_trees = 100
-min_node_size = 10
-mtry = NULL
-n_tree_impute = 100
-maxiter_impute = 10
-
 do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                                   num_trees = 100, min_node_size = 10, mtry = NULL,
                                   n_tree_impute = 100, maxiter_impute = 10) {
@@ -636,20 +633,23 @@ do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/miss
    rated with Accuracy, Precision, Specifity, F1-Socre,...
    
    Args:
-    - path (str) : path to the data with blockwise missingness we want to CV
-                   --> must lead to list with 2 entrances 'data' & 'block_names'
-                       'data' consitis of 'k' test-train-splits, where train 
-                        has missingness induced and test fully observed!
-    - num_trees (int) : Amount of trees to be fit on the imputed data!
-                        --> RF will be fit on all feas in Train, that are also
-                            observed in 'Test'
-                        If NULL: 1000 is the default!
+    - path (str)         : path to data with blockwise missingness we want to CV
+                           --> List with 2 entrances: 'data' & 'block_names'
+                                - 'data' consitis of 'k' test-train-splits, 
+                                   where train has missingness induced and the 
+                                   test-set is fully observed!
+                                - 'block_names' contains all colnames of the 
+                                   different blocks!
+    - num_trees (int)    : Amount of trees to be fit on the imputed data!
+                           --> RF will be fit on all feas in Train, that are 
+                               also observed in 'Test'
+                                > If NULL: 1000 is the default!
     - min_node_size(int) : Amount of Observations a node must at least contain,
                            so the model keeps on trying to split them!  
-                        If NULL: 1 is the default!
+                                > If NULL: 1 is the default!
     - mtry (int)         : Amount of split-variables we try, when looking for
                            a split variable! 
-                        If 'NULL': mtry = sqrt(p)
+                                > If 'NULL': mtry = sqrt(p)
     - n_tree_impute (int)  : Amount of Trees we use for imputing the 
                              missing values in the 'data$train' section of the
                              data in 'path'
@@ -661,31 +661,30 @@ do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/miss
         * 'res_all' [the CV Results on different testsets]:
            >> A = CNV-Block, B = RNA-Block, C = Mutation-Block, D = Mirna-Block
             - full    : CV Results for each fold on the fully observed testdata!
-            - miss1_A : CV Results for each fold on the testdata, w/ missing cnv
-                        block [or in scenario2, what was sampled to be block 'A']
+            - miss1_A : CV Results for each fold on the testdata, w/ missing 
+                        block 'A' [2 random omics blocks united]
             - miss1_B : CV Results for each fold on the testdata, w/ missing rna 
-                        block [or in scenario2, what was sampled to be block 'B'] 
+                        block 'B' [2 random omics blocks united]
                 .
                 .
-            - miss2_AC: CV Results for each fold on the testdata, w/ missing cnv 
-                        & mutation block! [or in scenario2, what was sampled to 
-                                           be block 'A' & 'C'] 
-                .
-                .
-            - single_D: CV-Results for each fold on the testdata w/ minra block 
-                        only! [or in scenario2, what was sampled to be block 'D']
+            - single_B: CV-Results for each fold on the testdata w/ only block
+                        'B' [2 random omics blocks united] as features in test!
                          
         * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry, time for 
+            - datapath, seed, response, mtry, time for CV
   "
   # [0] Check Inputs  ----------------------------------------------------------
-  # 0-0 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
   # 0-1 path must be string rest is checked in 'load_CV_data()'
   assert_string(path, fixed = "4.RData")
   
   # 0-2 'n_tree_impute' & 'maxiter_impute' must be numeric!
   assert_int(n_tree_impute)
   assert_int(maxiter_impute)
+  
+  # 0-3 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
+  if (!is.null(num_trees)) assert_int(num_trees, lower = 10)
+  if (!is.null(mtry)) assert_int(mtry)
+  if (!is.null(min_node_size)) assert_int(min_node_size, lower = 1)
   
   # [1] Get the data and create list to save results  --------------------------
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
@@ -696,7 +695,7 @@ do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/miss
                        "B" %in% names(curr_data$block_names) &
                        "clin_block" %in% names(curr_data$block_names))
   
-  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B' & 'clin_block' as blocknames!")
   
   # 1-2 Create empty lists to store results in!
   # 1-2-1 Full TestSet
@@ -776,7 +775,6 @@ do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/miss
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
   }
-  
   # 2-6 Stop the time and take the difference!
   time_for_CV <- Sys.time() - start_time
   
@@ -800,3 +798,24 @@ do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/miss
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
+
+# Run Main  --------------------------------------------------------------------
+sit1 <- do_CV_missforrest_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                            num_trees = 300, min_node_size = 5, mtry = NULL,
+                            n_tree_impute = 100, maxiter_impute = 10)
+save(sit1, file = "./docs/CV_Res/gender/miss_forest/setting1/BLCA.RData")
+
+sit2 <- do_CV_missforrest_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                            num_trees = 300, min_node_size = 5, mtry = NULL,
+                            n_tree_impute = 100, maxiter_impute = 10)
+save(sit2, file = "./docs/CV_Res/gender/miss_forest/setting2/BLCA.RData")
+
+sit3 <- do_CV_missforrest_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+                            num_trees = 300, min_node_size = 5, mtry = NULL,
+                            n_tree_impute = 100, maxiter_impute = 10)
+save(sit3, file = "./docs/CV_Res/gender/miss_forest/setting3/BLCA.RData")
+
+sit4 <- do_CV_missforrest_3(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                            num_trees = 100, min_node_size = 10, mtry = NULL,
+                            n_tree_impute = 100, maxiter_impute = 10)
+save(sit4, file = "./docs/CV_Res/gender/miss_forest/setting4/BLCA.RData")
