@@ -239,9 +239,9 @@ do_evaluation_CC    <- function(train, test, num_trees, min_node_size, mtry,
   
   return(as.vector(res)) 
 }
-do_CV_missforrest_5 <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                                num_trees = 100, min_node_size = 5, mtry = NULL,
-                                min_obs = 5) {
+do_CV_CC_5 <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                       num_trees = 100, min_node_size = 5, mtry = NULL,
+                       min_obs = 5) {
   "Evalute the Approach that uses only complete cases for the model fitting! 
    For the cases with 5 blocks! [Scenario1, 2 or 3]
    
@@ -543,9 +543,9 @@ do_CV_missforrest_5 <- function(path = "data/processed/RH_subsetted_12345/missin
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
-do_CV_missforrest_3 <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                                num_trees = 100, min_node_size = 5, mtry = NULL,
-                                min_obs = 5) {
+do_CV_CC_3 <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                       num_trees = 100, min_node_size = 5, mtry = NULL,
+                       min_obs = 5) {
   "Evalute the Approach that only uses complete cases for the model fitting! 
    For the cases with 3 blocks! [Scenario4]
    
@@ -724,18 +724,18 @@ do_CV_missforrest_3 <- function(path = "data/processed/RH_subsetted_12345/missin
 }
 
 # RunMain ----------------------------------------------------------------------
-sit1 <- do_CV_missforrest_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                            num_trees = 100, min_node_size = 5, mtry = NULL, min_obs = 5)
+sit1 <- do_CV_CC_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
 save(sit1, file = "./docs/CV_Res/gender/complete_cases/setting1/BLCA.RData")
 
-sit2 <- do_CV_missforrest_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
-                            num_trees = 100, min_node_size = 5, mtry = NULL, min_obs = 5)
+sit2 <- do_CV_CC_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
 save(sit2, file = "./docs/CV_Res/gender/complete_cases/setting2/BLCA.RData")
 
-sit3 <- do_CV_missforrest_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
-                            num_trees = 100, min_node_size = 5, mtry = NULL, min_obs = 5)
+sit3 <- do_CV_CC_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
 save(sit3, file = "./docs/CV_Res/gender/complete_cases/setting3/BLCA.RData")
 
-sit4 <- do_CV_missforrest_3(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                            num_trees = 100, min_node_size = 5, mtry = NULL, min_obs = 5)
+sit4 <- do_CV_CC_3(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
 save(sit4, file = "./docs/CV_Res/gender/complete_cases/setting4/BLCA.RData")
