@@ -264,6 +264,7 @@ do_CV_CC_5 <- function(path = "data/processed/RH_subsetted_12345/missingness_123
    
    Args:
     - path (str)         : path to the data w/ blockwise missingness for the CV.
+                           Must end in '1.RData', '2.RData' or '3.RData'
                            --> List with 2 entrances: 'data' & 'block_names'
                                 - 'data' consitis of 'k' test-train-splits, 
                                    where train has missingness induced and the 
@@ -567,6 +568,7 @@ do_CV_CC_3 <- function(path = "data/processed/RH_subsetted_12345/missingness_123
    
    Args:
     - path (str)         : path to the data w/ blockwise missingness for the CV.
+                           Must end in '4.RData'
                            --> List with 2 entrances: 'data' & 'block_names'
                                 - 'data' consitis of 'k' test-train-splits, 
                                    where train has missingness induced and the 
