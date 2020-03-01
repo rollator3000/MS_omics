@@ -23,7 +23,7 @@ different Trees, that were not pruned in the first splitvar., and combine them!
 For this we obtain the predicition from each single tree and combine these!
 "
 # Load Funcitons, Classes, librarys & set the WD!
-setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
+# setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 source("./code/04_simpleRF_adaption.R")
 library(pROC)
 library(assertthat)
@@ -31,7 +31,7 @@ library(checkmate)
 library(doParallel)
 
 detectCores()
-CORES = 1         # Set the cores! Only possible on LInux to choose > 1!
+CORES = 5         # Set the cores! Only possible on LInux to choose > 1!
 
 load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -194,8 +194,8 @@ get_split_vars      <- function(Forest_) {
   
   # 0-2 All trees must have at least 1 element in 'split_varIDs'
   wrong_trees <- unlist(lapply(Forest_, FUN = function(x) {
-                                  length(x$child_nodeIDs) == 0
-                                })) 
+    length(x$child_nodeIDs) == 0
+  })) 
   
   if (any(wrong_trees)) stop("Not all Trees were grown correctly!")
   
@@ -293,7 +293,7 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
     # [if so the tree can not be used when ensembling prediciton results!]
     not_usable <- c(not_usable, all(is.na(tree_preds_all[[i]]$Class)))
   }
-
+  
   
   # 2-1 Check that there are still trees existing, else not preds possible!
   if (all(not_usable)) {
@@ -320,7 +320,7 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
       get_oob_weight_metric(trees = Forest[[l]], 
                             weight_metric = weight_metric)
     })
-
+    
     # Norm the weights
     tree_weights <- tree_weights /  sum(tree_weights)
     
@@ -448,25 +448,25 @@ get_oob_weight_metric     <- function(trees, weight_metric) {
   #     trees, that have the same OOB observation!
   all_oob_preds_class0 <- c()
   system.time(
-  for (curr_oob in unique_oob_ids) {
-    
-    # 1-3-1 Get all trees that have 'curr_oob' as OOB observation!
-    trees_same_oob <- unlist(sapply(usable_trees, function(x) {
-      if (curr_oob %in% trees[[x]]$oob_sampleIDs) x
-    }))
-    
-    # 1-3-2 Get the feas of the observation that is OOB for 'trees_same_oob' 
-    curr_oob_feas <- Data$new(data = trees[[1]]$data$data[curr_oob,])
-    
-    # 1-3-3 Get a Prediciton for the 'curr_oob' from all trees!
-    predicted_probs <- sapply(trees_same_oob, 
-                              function(x) trees[[x]]$predict(curr_oob_feas))
-    
-    # 1-3-4 Aggregate the predictions from the different trees and
-    #       Get the probability for class 0! [First Row is class 0]
-    all_oob_preds_class0 <- c(all_oob_preds_class0, 
-                              sum(predicted_probs[1,]) / length(trees_same_oob))
-  }
+    for (curr_oob in unique_oob_ids) {
+      
+      # 1-3-1 Get all trees that have 'curr_oob' as OOB observation!
+      trees_same_oob <- unlist(sapply(usable_trees, function(x) {
+        if (curr_oob %in% trees[[x]]$oob_sampleIDs) x
+      }))
+      
+      # 1-3-2 Get the feas of the observation that is OOB for 'trees_same_oob' 
+      curr_oob_feas <- Data$new(data = trees[[1]]$data$data[curr_oob,])
+      
+      # 1-3-3 Get a Prediciton for the 'curr_oob' from all trees!
+      predicted_probs <- sapply(trees_same_oob, 
+                                function(x) trees[[x]]$predict(curr_oob_feas))
+      
+      # 1-3-4 Aggregate the predictions from the different trees and
+      #       Get the probability for class 0! [First Row is class 0]
+      all_oob_preds_class0 <- c(all_oob_preds_class0, 
+                                sum(predicted_probs[1,]) / length(trees_same_oob))
+    }
   )
   
   # 1-4 Convert the probs to classes
@@ -643,10 +643,10 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
   
   # 1-1-1 Must contain 'A', 'B', 'C', 'D' & 'clin_block' as block_names
   corr_block_names <- ("A" %in% names(curr_data$block_names) & 
-                       "B" %in% names(curr_data$block_names) &
-                       "C" %in% names(curr_data$block_names) & 
-                       "D" %in% names(curr_data$block_names) &
-                       "clin_block" %in% names(curr_data$block_names))
+                         "B" %in% names(curr_data$block_names) &
+                         "C" %in% names(curr_data$block_names) & 
+                         "D" %in% names(curr_data$block_names) &
+                         "clin_block" %in% names(curr_data$block_names))
   
   if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
   
@@ -684,7 +684,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     observed_feas <- foreach(x = seq_len(nrow(train)), .combine = 'c') %dopar% {
       paste0(which(!(is.na(train[x,]))), collapse = "_")
     }
-
+    
     # 2-3-2 Keep the unique observed feas [equals the different folds]
     #       That we use to assign obs. to the differnt folds!
     observed_folds <- unique(observed_feas)
@@ -753,7 +753,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     print("Evaluation full TestSet -------------------------------------------")
     curr_Forest <- copy_forrest(Forest)
     system.time(full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
-                                 weighted = weighted, weight_metric = weight_metric))
+                                             weighted = weighted, weight_metric = weight_metric))
     
     # 2-5-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
@@ -1011,8 +1011,8 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
   
   # 1-1-1 Must contain 'A', 'B', $ 'clin_block' as block_names
   corr_block_names <- ("A" %in% names(curr_data$block_names) & 
-                       "B" %in% names(curr_data$block_names) &
-                       "clin_block" %in% names(curr_data$block_names))
+                         "B" %in% names(curr_data$block_names) &
+                         "clin_block" %in% names(curr_data$block_names))
   
   if (!corr_block_names) stop("'path' lead to a file without 'A', 'B' & 'clin_block' as blocknames!")
   
@@ -1132,7 +1132,7 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     miss1_B[[i]] <- do_evaluation(Forest = curr_Forest,  weighted = weighted,
                                   weight_metric = weight_metric,
                                   testdata = test[,-which(colnames(test) %in% curr_data$block_names$B)])
-   
+    
     # 2-5-3 Evaluation on single Block Testdata
     print("Evaluation TestSet w/ only 1 observed Block -----------------------")
     curr_Forest   <- copy_forrest(Forest)
@@ -1178,19 +1178,22 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
 }
 
 # Run Main                                                                  ----
-# Situation1
+print("Situation1")
+print("1/3")
 sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_acc.RData")
 
+print("2/3")
 sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_F1.RData")
 
+print("3/3")
 sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
@@ -1198,19 +1201,22 @@ sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_123
 save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA.RData")
 
 
-# Situation2
+print("Situation2")
+print("1/3")
 sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_acc.RData")
 
+print("2/3")
 sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_F1.RData")
 
+print("3/3")
 sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
@@ -1218,19 +1224,22 @@ sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_123
 save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA.RData")
 
 
-# Situation3
+print("Situation3")
+print("1/3")
 sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_acc.RData")
 
+print("2/3")
 sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_F1.RData")
 
+print("3/3")
 sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
@@ -1238,19 +1247,22 @@ sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_123
 save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA.RData")
 
 
-# Situtation4
+print("Situation4")
+print("1/3")
 sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_acc.RData")
 
+print("2/3")
 sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_F1.RData")
 
+print("3/3")
 sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
