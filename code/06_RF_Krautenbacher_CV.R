@@ -1,7 +1,9 @@
 " Script to crossValidate the adaption of N. Krautenbachers's RF Alogrithm!
-  For this we learn a seperate RF-Model for each block of features!
-  For predicitions on testdata we use the RFs, that use the features avaible in 
-  testdata! --> Then to obtain a final predicton we combine all created predicitons!
+ 
+  This approach learns a seperate RF on each of the feature blocks in the train-
+  set. For predicitions on testdata it only uses the RFs that use avaible features
+  in testdata! 
+  --> Then to obtain a final predicton we combine all created predicitons!
 "
 # SetWD and define/load functions
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
@@ -9,21 +11,21 @@ library(randomForestSRC)
 library(checkmate)
 library(caret)
 
-load_CV_data          <- function(path) {
+load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
    induced already into the train split!
+   This function does a detailed check on the data in 'path', so that all 
+   approaches can deal with the data!
   
   Args:
     path (str) : Path to the data we want for CV!
                  Path must point to a list, that consits of two more lists 
-                 'data' & 'block_names'! 
-                 These two lists are further checked in this function!
-                 - $data (list) must contain n entrances of 'train' & 'test'
-                                where each is a dataframe!
-                 - $block_names (list) must contain at least 3 names!
+                 'data' & 'block_names'!
+                    - $data (list) must contain k entrances of 'train' & 'test'
+                                   where each is a dataframe!
+                    - $block_names (list) must contain at least 3 names!
   Return:
     A list, filled with 'data' & 'block_names' that can be used for CV!
-  
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 'path' of type string with '.RData' inside!
@@ -38,7 +40,7 @@ load_CV_data          <- function(path) {
   # 1-2-1 List with 2 entrances
   assert_list(data_, len = 2)
   
-  # 1-2-2 'data' and 'block_names'
+  # 1-2-2 'data' and 'block_names' as entrances!
   if (!('data' %in% names(data_))) stop("'path' should lead to list w/ 'data' entry")
   if (!('block_names' %in% names(data_))) stop("'path' should lead to list w/ 'block_names' entry")
   
@@ -67,12 +69,13 @@ load_CV_data          <- function(path) {
   # [2] Return the data  -------------------------------------------------------
   return(data_)
 }
-mcc_metric            <- function(conf_matrix) {
-  "Function to calculate the MCC [Matthews correlation coefficient] Metric
-   --> only for binary cases! If the Conf_Matrix has more than 2 classes 
-       it will return NULL instead of the MCC!
+mcc_metric          <- function(conf_matrix) {
+  "Calculate the MCC Metric [Matthews correlation coefficient]!
+   Works only for binary cases! 
+   If the Conf_Matrix has more than 2 classes it will return NA 
+   instead of the MCC!
        
-    Definition of the Metric:
+   Definition of the Metric:
       MCC takes into account true and false positives and negatives and is 
       generally regarded as a balanced measure which can be used even if the 
       classes are of very different sizes.
@@ -81,13 +84,13 @@ mcc_metric            <- function(conf_matrix) {
       - conf_matrix (confusionMatrix) : Confusion Matrix created with the 
                                         'caret'-Package!
     Return: 
-      Matthews correlation coefficient [1 is best, -1 is worst!]
+      - Matthews correlation coefficient (numeric): '1' is best & '-1' is worst
   "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-1 check amount of classes:
   if (nrow(conf_matrix$table) != 2) {
     warning("Can not calc the MCC-Metric! Return NULL")
-    return(NULL)
+    return(NA)
   }
   
   # 0-2 Check class of conf_matrix
@@ -96,40 +99,45 @@ mcc_metric            <- function(conf_matrix) {
   }
   
   # [1] Calc the Score ---------------------------------------------------------
+  # 1-1 Get the TruePositives, FalsePositives, FalseNegatives & TrueNegatives
   TP <- conf_matrix$table[1,1]
   TN <- conf_matrix$table[2,2]
   FP <- conf_matrix$table[1,2]
   FN <- conf_matrix$table[2,1]
   
-  mcc_num <- (TP*TN - FP*FN)
-  mcc_den <- 
-    as.double((TP+FP))*as.double((TP+FN))*as.double((TN+FP))*as.double((TN+FN))
+  # 1-2 Calc single parts of MMC [bases on TP, TN, FP, FN]
+  mcc_num <- (TP * TN - FP * FN)
+  mcc_den <- as.double((TP + FP)) * as.double((TP + FN)) * as.double((TN + FP)) * as.double((TN + FN))
   
+  # 1-3 Put together the single parts!
   mcc_final <- mcc_num/sqrt(mcc_den)
   
-  # [2] Return it --------------------------------------------------------------
+  # [2] Return  ----------------------------------------------------------------
   return(mcc_final)
 }
 do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
-  " Get the aggregated predicition from all trees!
-    Evaluate the aggregated predicitons & return metrics!
+  " For a collection of blockwise fitted RFs [each RF fitted on diff. block] 
+    get the aggregated predicition from all trees!
+    Evaluate the these on 'testdata' & return metrics!
   
      Args:
       - Forest (list)         : list filled with the objects of class 'rfsrc'
       - testdata (data.frame) : testdata we want to get predicitons for!
                                 Must conatain the response we learned the Forest
-                                on in the first column!
+                                on [1st. column]
       - weights (vector)      : The weights for the different BlockWise RFs!
                                 As some of the blockwise RFs (in Forest) have a 
-                                higher Accuracy/ F1/ ... than others, it means
-                                that they have a higher predictive power!
-                                  --> give weights to them!
+                                higher Accuracy/ F1/ ... than others, they have 
+                                a higher predictive power!
+                                  We can weight the different predicitons based
+                                  on the oob performance, so that RFs w/ good 
+                                  pred. performance have higher influence!
                                   --> if we want equally weighted blocks, pass
                                       a vector filled w/ '1'
-                                --> needs same length as Forest!
+                                  --> needs same length as Forest!
      Return:
       - list w/ metrics [accuracy, f1, mcc, roc, ...] 
-        if F-1 Score is NA [as precision or recall = 0], we set it to 0 [not NA]
+        > Metrics w/ NA are replaced by their worst possible value!
   "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-1 Reponse Class in the testdata
@@ -243,7 +251,7 @@ do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
 }
 get_oob_weight_metric <- function(blockwise_RF) {
   "Funciton to evaluate how good the predicitive performance of 
-   a single block RF is! For this we let the already fitted model 
+   a single blockwise fitted RF is! For this we let the already fitted model 
    do predicitons on its OOB observations and get metrics! 
    [use all trees w/ same OOB observation to do a prediciton!]
    
@@ -253,12 +261,12 @@ get_oob_weight_metric <- function(blockwise_RF) {
     Return:
       - return the OOB_F1_Score and the OOB_Accuracy
   "
-  # [0] Check Inputs
+  # [0] Check Inputs  ----------------------------------------------------------
   if (!("rfsrc" %in% class(blockwise_RF))) {
     stop("'blockwise_RF' is not of class 'rfsrc'!")
   }
   
-  # [1] Calculate the metrics based on OOB observations! 
+  # [1] Calculate the metrics based on OOB observations!  ----------------------
   # 1-1 Get probabilites for class '0' and remove NAs [ID was in no tree oob!]
   preds_class_0                            <- blockwise_RF$predicted.oob[,1]
   to_rm_NA                                 <- which(is.na(preds_class_0))
@@ -276,37 +284,40 @@ get_oob_weight_metric <- function(blockwise_RF) {
   confmat_ <- caret::confusionMatrix(data      = true_classes, 
                                      reference = preds_class)
   
-  # [2] Return the F1-Score and the Accuracy!
+  # [2] Return the F1-Score and the Accuracy!  ---------------------------------
+  # 2-1 Extract F1-Score and Accuracy from 'confmat_'
   F1_curr  <- confmat_$byClass["F1"]
   Acc_curr <- confmat_$overall["Accuracy"]
   
+  # 2-2 If F1 is not defined replace it by 0!
   if (is.na(F1_curr)) F1_curr <- 0 
   
+  # 2-3 Create Vector with names of the metrics!
   oob_results <- c(F1_curr, Acc_curr)
   names(oob_results) <- c("F1", "Acc")
   
+  # 2-4 Return the named vector!
   return(oob_results)
 }
 
 do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                                  seed = 1312, weighted = TRUE, weight_metric = NULL,
-                                  num_trees = as.integer(10), mtry = NULL, 
-                                  min_node_size = 10) {
+                                  weighted = TRUE, weight_metric = NULL,
+                                  num_trees = 300, mtry = NULL, 
+                                  min_node_size = 5) {
   "CrossValidate the Approach when the Traindata has blockwise missingness
-   according to scenario 1, 2 or 3 --> 'path' must end in '1.RData', '2.RData' or 
-                                                          '3.RData' else error!
+   according to scenario 1, 2 or 3!
    
    'path' must lead to a list with 2 entrances: 'data' & 'block_names'
-   - 'data' is a list filled with 'k' test-train-splits
-      --> k-fold-Validation on this test-train-splits!
-   - 'block_names' is a list filled with the names of the single blocks 
-      & must be ['A', 'B', 'C', 'D', 'clin_block']!
-      (Attention: With Scenario2 the order is different, but this is wanted!)
+     - 'data' is a list filled with 'k' test-train-splits
+        --> k-fold-Validation on this test-train-splits!
+     - 'block_names' is a list filled with the names of the single blocks 
+        & must be ['A', 'B', 'C', 'D', 'clin_block']!
+        (Attention: With Scenario2 the order is different, but this is wanted!)
       
    Based on the 'k' test-train-splits in 'data', we will fit blokwise RFs to the
    train data (that has blockwise missingness in it). Then we ensemble the 
    predicitons from blockwise fitted RFs to single predicitons & rate these with 
-   Accuracy, Precision, Specifity, F1-Socre,...
+   Accuracy, Precision, Specifity, F1-Score,...
    
    The TestingSituations are different, as we can test the models on fully 
    observed testdata, on testdata w/ 1 missing block, etc...
@@ -314,27 +325,30 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
         possible testsituations - 20 in total!
    
   Args:
-      - path (char)         : Path to the data that is already split to test train
-                              Must end in '1.RData', '2.RData' or '3.RData'
+      - path (char)         : path to data w/ blockwise missingness for the CV.
+                             --> List with 2 entrances: 'data' & 'block_names'
+                                  - 'data' consitis of 'k' test-train-splits, 
+                                     where train has missingness induced and the 
+                                     test-set is fully observed!
+                                  - 'block_names' contains all colnames of the 
+                                     different blocks!
       - weighted (bool)     : When ensembling the prediciton from the blockwise
                               RFs shall we weight the predictions by the OOB 
                               performance of the foldwise fitted RFs? 
-                              The higher the OOB-Metric for a blockwise fitted RF, 
-                              the higher its contribution to the prediction!
+                              The better the OOB-Metric for a blockwise fitted RF, 
+                              the higher its contribution to the final prediction!
       - weight_metric (chr) : Which metric to use to assigning weights to the 
                               different predictions? 
                                 - must be 'Acc' or 'F1' 
                                 - if weighted = FALSE, it will be ignored!
-      - num_trees (int)     : Amount of trees, we shall grow on each (!)
-                              block!
+      - num_trees (int)     : Amount of trees, we shall grow on each block!
+                                      > If NULL: 1000 is the default!
       - mtry (int)          : Amount of split-variables we try, when looking for 
                               a split variable! 
-                                - If 'NULL': mtry = sqrt(p)
-      - min_node_size (int) : Amount of Observations a node must at least 
-                              contain, so the model keeps on trying to split 
-                              them!  
-                                - If NULL: min_node_size = 1 for classification...
-                                  [see ?randomForestSRC()]
+                                      > If 'NULL': mtry = sqrt(p)
+      - min_node_size (int) : Amount of Observations a node must at least contain
+                              so the model keeps on trying to split them!  
+                                      > If NULL: min_node_size = 1 
   Return:
       - list filled w/:
         * 'res_all' [the CV Results on different testsets]:
@@ -355,10 +369,9 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
                         only! [or in scenario2, what was sampled to be block 'D']
                          
         * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry, time for 
+            - datapath, response, mtry, time for CV
   "
   # [0] Check Inputs -----------------------------------------------------------
-  # 0-0 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
   # 0-1 path must be string and have '1.RData' | '2.RData' | '3.RData' in it!
   assert_string(path)
   if (!grepl("1.RData", path) & !grepl("2.RData", path) & !grepl("3.RData", path)) {
@@ -368,7 +381,12 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
   # 0-2 weighted must be a single boolean
   assert_logical(weighted, len = 1)
   
-  # 0-3 Check weight_metric to be meaningful [if weighted is true at all]!
+  # 0-3 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
+  if (!is.null(num_trees)) assert_int(num_trees, lower = 10)
+  if (!is.null(mtry)) assert_int(mtry)
+  if (!is.null(min_node_size)) assert_int(min_node_size, lower = 1)
+  
+  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
     
     # check that it is character
@@ -569,7 +587,6 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
                                                                                          curr_data$block_names$B,
                                                                                          curr_data$block_names$A))])
   }
-  
   # 2-6 Stop the time and take the difference!
   time_for_CV <- Sys.time() - start_time
   
@@ -604,17 +621,17 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
 }
 
 do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                                  seed = 1312, weighted = TRUE, weight_metric = NULL,
+                                  weighted = TRUE, weight_metric = NULL,
                                   num_trees = as.integer(10), mtry = NULL, 
                                   min_node_size = 10) {
   "CrossValidate the Approach when the Traindata has blockwise missingness
-   according to scenario 4 --> 'path' must end in '4.RData' else error!
+   according to scenario 4!
    
    'path' must lead to a list with 2 entrances: 'data' & 'block_names'
-   - 'data' is a list filled with 'k' test-train-splits
-      --> k-fold-Validation on this test-train-splits!
-   - 'block_names' is a list filled with the names of the single blocks 
-      & must be ['A', 'B', 'clin_block']!
+       - 'data' is a list filled with 'k' test-train-splits
+          --> k-fold-Validation on this test-train-splits!
+       - 'block_names' is a list filled with the names of the single blocks 
+          & must be ['A', 'B', 'clin_block']!
       
    Based on the 'k' test-train-splits in 'data', we will fit blokwise RFs to the
    train data (that has blockwise missingness in it). Then we ensemble the 
@@ -627,27 +644,29 @@ do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
         possible testsituations - 6 in total!
    
   Args:
-      - path (char)         : Path to the data that is already split to test train
-                              Must end in '4.RData'
+      - path (char)         : path to data with blockwise missingness we want to CV
+                              --> List with 2 entrances: 'data' & 'block_names':
+                                  - 'data' consitis of 'k' test-train-splits, 
+                                     where train has missingness induced and the 
+                                     test-set is fully observed!
+                                  - 'block_names' contains all colnames of the 
+                                     different blocks!
       - weighted (bool)     : When ensembling the prediciton from the blockwise
                               RFs shall we weight the predictions by the OOB 
                               performance of the foldwise fitted RFs? 
-                              The higher the OOB-Metric for a blockwise fitted RF, 
+                              The better the OOB-Metric for a blockwise fitted RF, 
                               the higher its contribution to the prediction!
       - weight_metric (chr) : Which metric to use to assigning weights to the 
-                              different predictions? 
-                                - must be 'Acc' or 'F1' 
+                              different predictions? ['Acc', 'F1']
                                 - if weighted = FALSE, it will be ignored!
-      - num_trees (int)     : Amount of trees, we shall grow on each (!)
-                              block!
+      - num_trees (int)     : Amount of trees, we shall grow on each block!
+                                    > if NULL: 1000 is the default
       - mtry (int)          : Amount of split-variables we try, when looking for 
                               a split variable! 
-                                - If 'NULL': mtry = sqrt(p)
-      - min_node_size (int) : Amount of Observations a node must at least 
-                              contain, so the model keeps on trying to split 
-                              them!  
-                                - If NULL: min_node_size = 1 for classification...
-                                  [see ?randomForestSRC()]
+                                    > If 'NULL': mtry = sqrt(p)
+      - min_node_size (int) : Amount of Observations a node must at least contain,
+                              so the model keeps on trying to split them!  
+                                    > If NULL: 1 is the default!
   Return:
       - list filled w/:
         * 'res_all' [the CV Results on different testsets]:
@@ -663,17 +682,21 @@ do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
                          data only!
                          
         * 'settings' [settings used to do the CV - all arguments!]
-            - datapath, seed, response, mtry, time for 
+            - datapath, response, mtry, time for CV
   "
   # [0] Check Inputs -----------------------------------------------------------
-  # 0-0 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
   # 0-1 path must be numeric and have '4.RData' in it!
   assert_string(path, fixed = "4.RData")
   
   # 0-2 weighted must be a single boolean
   assert_logical(weighted, len = 1)
   
-  # 0-3 Check weight_metric to be meaningful [if weighted is true at all]!
+  # 0-3 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
+  if (!is.null(num_trees)) assert_int(num_trees, lower = 10)
+  if (!is.null(mtry)) assert_int(mtry)
+  if (!is.null(min_node_size)) assert_int(min_node_size, lower = 1)
+  
+  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
     
     # check that it is character
@@ -807,7 +830,6 @@ do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
                                            testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                          curr_data$block_names$B))])
   }
-  
   # 2-6 Stop the time and take the difference!
   time_for_CV <- Sys.time() - start_time
   
@@ -835,26 +857,68 @@ do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
 }
 
 # Run Main                                                                  ----
+# Situatuion 1 
 sit1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                          seed = 1312, weighted = TRUE, weight_metric = "Acc",
-                          num_trees = as.integer(10), mtry = NULL, 
-                          min_node_size = 10)
+                          weighted = FALSE, weight_metric = NULL,
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
 save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA.RData")
 
+sit1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                          weighted = TRUE, weight_metric = "Acc",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_acc.RData")
+
+sit1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                          weighted = TRUE, weight_metric = "F1",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_f1.RData")
+
+
+# Situation 2
 sit2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
-                          seed = 1312, weighted = TRUE, weight_metric = "Acc",
-                          num_trees = as.integer(10), mtry = NULL, 
-                          min_node_size = 10)
+                          weighted = FALSE, weight_metric = NULL,
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
 save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA.RData")
 
+sit2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                          weighted = TRUE, weight_metric = "Acc",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_acc.RData")
+
+sit2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                          weighted = TRUE, weight_metric = "F1",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_f1.RData")
+
+
+# Situation 3
 sit3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
-                          seed = 1312, weighted = TRUE, weight_metric = "Acc",
-                          num_trees = as.integer(10), mtry = NULL, 
-                          min_node_size = 10)
+                          weighted = FALSE, weight_metric = NULL,
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
 save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA.RData")
 
+sit3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+                          weighted = TRUE, weight_metric = "Acc",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_acc.RData")
+
+sit3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+                          weighted = TRUE, weight_metric = "F1",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_f1.RData")
+
+
+# Situtation 4
 sit4 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                          seed = 1312, weighted = TRUE, weight_metric = "Acc",
-                          num_trees = as.integer(10), mtry = NULL, 
-                          min_node_size = 10)
+                          weighted = FALSE, weight_metric = NULL,
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
 save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA.RData")
+
+sit4 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                          weighted = TRUE, weight_metric = "Acc",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_acc.RData")
+
+sit4 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                          weighted = 300, mtry = NULL, min_node_size = 5)
+save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_f1.RData")
