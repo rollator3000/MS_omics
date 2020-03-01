@@ -31,7 +31,7 @@ library(checkmate)
 library(doParallel)
 
 detectCores()
-registerDoParallel(cores = 2)
+CORES = 1         # Set the cores! Only possible on LInux to choose > 1!
 
 load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -729,7 +729,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
       fold_RF <- mclapply(fold_RF, function(x) {
         x$grow(replace = TRUE)
         x
-      }, mc.cores = 1)
+      }, mc.cores = CORES)
       
       # 2-4-3-3 Check that all trees were grown correctly
       #         --> none w/o 'child_node_ID' after that!
@@ -1096,7 +1096,7 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
       fold_RF <- mclapply(fold_RF, function(x) {
         x$grow(replace = TRUE)
         x
-      }, mc.cores = 1)
+      }, mc.cores = CORES)
       
       # 2-4-3-3 Check that all trees were grown correctly
       #         --> none w/o 'child_node_ID' after that!

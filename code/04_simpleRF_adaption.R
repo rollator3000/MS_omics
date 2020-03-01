@@ -4,7 +4,7 @@
   [collection of trees basically]!
   We do this by enlarging the functionality of the 'simpleRF' package!
 "
-setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
+# setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 require(parallel)
 library(checkmate)
 library(ROCR)
