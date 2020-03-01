@@ -782,7 +782,7 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
       min_node_size <- as.integer(3)
     }
   } else {
-    assert_int(min_node_size, lower = 1, upper = nrow(data))
+    assert_int(min_node_size, lower = 1)
   }
   
   # [2-3] Splitrule - choose depening on class of response 
