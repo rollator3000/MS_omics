@@ -29,6 +29,7 @@ library(pROC)
 library(assertthat)
 library(checkmate)
 library(doParallel)
+library(e1071)
 
 detectCores()
 CORES = 5         # Set the cores! Only possible on LInux to choose > 1!
