@@ -221,58 +221,6 @@ get_split_vars      <- function(Forest_) {
   # [2] Return the names of the used split variables  --------------------------
   return(used_split_var_names)
 }
-all_trees_grown_correctly <- function(trees) {
-  "Check, whether 'trees', were grown correctly & if not grow these trees again,
-   as long, as they are grown correctly! 
-      --> Growning not correctly: No 'childNodeIDs', no split variables etc...
-  
-   Args:
-      trees (list) : list filled with object of the class 'Tree'! 
-                     For each object in there check, whether it was grown 
-                     correctly (has childNodeIDs) - if not grown it again!
-                     
-   Return: 
-      list of trees, where all of these trees were grown correctly
-      --> each tree has at least one 'childNodeID'
-  "
-  # [0] Check Inputs  ----------------------------------------------------------
-  # 0-1 All Objects in 'trees' of class 'Tree'
-  trees_classes <- sapply(trees, function(x) class(x))
-  if (any(!grepl("Tree", trees_classes))) {
-    stop("Not all Objects in 'trees' are of class 'Tree'")
-  }
-  
-  # [1] Get the entrance of the objects, that miss child node IDs  -------------
-  wrong_trees  <- unlist(lapply(1:length(trees), 
-                                FUN = function(x) {
-                                  if (length(trees[[x]]$child_nodeIDs) == 0) x
-                                }))
-  
-  # [2] Regrow the trees, that were not grown correctly  -----------------------
-  #     If there are any trees not grown correctly, grow them again until all
-  #     of the trees were grown correctly!
-  while (length(wrong_trees) > 0) {
-    
-    # grow the errours trees again
-    trees[wrong_trees] <- mclapply(trees[wrong_trees], 
-                                   function(x) {
-                                     x$grow(replace = TRUE)
-                                     x
-                                   }, mc.cores = 1)
-    
-    # check whether any of the trees is not grown correctly!
-    wrong_trees  <- unlist(lapply(1:length(trees), 
-                                  FUN = function(x) {
-                                    if (length(trees[[x]]$child_nodeIDs) == 0) x
-                                  }))
-  }
-  
-  # [3] Return the correclty grown trees  --------------------------------------
-  return(trees)
-}
-
-
-
 do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
   " Get the aggregated predicition from all trees for each of the observations
     in testdata! Evaluate the aggregated predicitons & return metrics!
@@ -288,10 +236,10 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
       - weight_metric (chr)   : Which Metric to use, to weight the predicitons
                                 of the different trees in 'Forest'
                                 Has to be 'F1' or 'Acc'
-                                [will be ignored, when 'weighted' = FALSE]
+                                [ignored, when 'weighted' = FALSE]
      Return:
       - list w/ metrics [accuracy, f1, mcc, roc, ...] 
-        if F-1 Score is NA [as precision or recall = 0], we set it to 0 [not NA]
+                > Metrics w/ NA are replaced by their worst possible value!
   "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-1 All Elements in Forest of class 'Tree'
@@ -345,6 +293,7 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
     # [if so the tree can not be used when ensembling prediciton results!]
     not_usable <- c(not_usable, all(is.na(tree_preds_all[[i]]$Class)))
   }
+
   
   # 2-1 Check that there are still trees existing, else not preds possible!
   if (all(not_usable)) {
@@ -364,14 +313,14 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
   #     [lower ACC --> lower weight | lower F1-Score --> lower weight]
   #     ATTENTION: No need to calc weights when there is only one foldwise RF left!
   if (weighted & length(Forest) > 1) {
-    tree_weights <- c()
     
-    # Think about putting this in parallel!
+    # Get the weights for each foldwise Forest!
+    tree_weights <- c()
     tree_weights <- sapply(seq_len(length(Forest)), function(l) {
       get_oob_weight_metric(trees = Forest[[l]], 
                             weight_metric = weight_metric)
     })
-    
+
     # Norm the weights
     tree_weights <- tree_weights /  sum(tree_weights)
     
@@ -445,7 +394,7 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
   
   return(as.vector(res))
 }
-get_oob_weight_metric <- function(trees, weight_metric) {
+get_oob_weight_metric     <- function(trees, weight_metric) {
   "Calculate OOB Metrirc ['F1' or 'Acc'] of a list of trees! For this we go 
    through all OOB Predictions and obtain aggregated predicitons from all 
    trees, that have the same observation as out-of-bag!
@@ -490,7 +439,6 @@ get_oob_weight_metric <- function(trees, weight_metric) {
     usable_trees <- unlist(usable_trees)
   }
   
-  
   # 1-2 For all usable trees [not pruned in first split variable] get the IDs
   #     of the OOB observations. Then collect all and only keep unique IDs!
   oob_ids_all_trees <- sapply(usable_trees, function(x) trees[[x]]$oob_sampleIDs)
@@ -499,6 +447,7 @@ get_oob_weight_metric <- function(trees, weight_metric) {
   # 1-3 Loop over all 'unique_oob_ids' and get the oob predictions from all 
   #     trees, that have the same OOB observation!
   all_oob_preds_class0 <- c()
+  system.time(
   for (curr_oob in unique_oob_ids) {
     
     # 1-3-1 Get all trees that have 'curr_oob' as OOB observation!
@@ -518,6 +467,7 @@ get_oob_weight_metric <- function(trees, weight_metric) {
     all_oob_preds_class0 <- c(all_oob_preds_class0, 
                               sum(predicted_probs[1,]) / length(trees_same_oob))
   }
+  )
   
   # 1-4 Convert the probs to classes
   predicted_oob_classes <- ifelse(all_oob_preds_class0 > 0.5, 0, 1)
@@ -531,18 +481,59 @@ get_oob_weight_metric <- function(trees, weight_metric) {
   if (weight_metric == "Acc") return(conf_mat_oob$overall["Accuracy"])
   if (weight_metric == "F1")  return(conf_mat_oob$byClass["F1"])
 }
-
-path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
-weighted = TRUE
-weight_metric = "Acc"
-num_trees = 10
-mtry = NULL
-min_node_size = NULL
-unorderd_factors = "ignore"
+all_trees_grown_correctly <- function(trees) {
+  "Check, whether 'trees', were grown correctly & if not grow these trees again,
+   as long, as they are grown correctly! 
+      --> Growning not correctly: No 'childNodeIDs', no split variables etc...
+  
+   Args:
+      trees (list) : list filled with object of the class 'Tree'! 
+                     For each object in there check, whether it was grown 
+                     correctly (has childNodeIDs) - if not grown it again!
+                     
+   Return: 
+      list of trees, where all of these trees were grown correctly
+      --> each tree has at least one 'childNodeID'
+  "
+  # [0] Check Inputs  ----------------------------------------------------------
+  # 0-1 All Objects in 'trees' of class 'Tree'
+  trees_classes <- sapply(trees, function(x) class(x))
+  if (any(!grepl("Tree", trees_classes))) {
+    stop("Not all Objects in 'trees' are of class 'Tree'")
+  }
+  
+  # [1] Get the entrance of the objects, that miss child node IDs  -------------
+  wrong_trees  <- unlist(lapply(1:length(trees), 
+                                FUN = function(x) {
+                                  if (length(trees[[x]]$child_nodeIDs) == 0) x
+                                }))
+  
+  # [2] Regrow the trees, that were not grown correctly  -----------------------
+  #     If there are any trees not grown correctly, grow them again until all
+  #     of the trees were grown correctly!
+  while (length(wrong_trees) > 0) {
+    
+    # grow the errours trees again
+    trees[wrong_trees] <- mclapply(trees[wrong_trees], 
+                                   function(x) {
+                                     x$grow(replace = TRUE)
+                                     x
+                                   }, mc.cores = 1)
+    
+    # check whether any of the trees is not grown correctly!
+    wrong_trees  <- unlist(lapply(1:length(trees), 
+                                  FUN = function(x) {
+                                    if (length(trees[[x]]$child_nodeIDs) == 0) x
+                                  }))
+  }
+  
+  # [3] Return the correclty grown trees  --------------------------------------
+  return(trees)
+}
 
 do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                            weighted = TRUE, weight_metric = "Acc", 
-                           num_trees = 10, mtry = NULL, min_node_size = NULL,
+                           num_trees = 300, mtry = NULL, min_node_size = 5,
                            unorderd_factors = "ignore") {
   "CrossValidate the Foldwise-Approach when the Traindata has blockwise 
    missingness according to scenario 1, 2 or 3!
@@ -582,16 +573,14 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                               different predictions? 
                                 - must be 'Acc' or 'F1' 
                                 - if weighted = FALSE, it will be ignored!
-      - num_trees (int)     : Amount of trees, we shall grow on each (!)
-                              foldwise fitted random Forest!
+      - num_trees (int)     : Amount of trees, we shall grow on each foldwise 
+                              fitted random Forest must be int > 10!
       - mtry (int)          : Amount of split-variables we try, when looking for 
                               a split variable! 
                                 - If 'NULL': mtry = sqrt(p)
       - min_node_size (int) : Amount of Observations a node must at least 
                               contain, so the model keeps on trying to split 
-                              them!  
-                                - If 'NULL: It is automatically set to 10 in the
-                                            'simpleRF()' function!
+                              them! Must be int >= 1.
       - unorderd_factors (chr) : How to handle non numeric features!
                                 ['ignore', 'order_once', 'order_split', 'partition']
   Return:
@@ -617,7 +606,6 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
             - datapath, response, mtry, time for CV,.... 
   "
   # [0] Check Inputs  ----------------------------------------------------------
-  # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
   # 0-1 path must be numeric and have '1.RData' | '2.RData' | '3.RData' in it!
   assert_string(path)
   if (!grepl("1.RData", path) & !grepl("2.RData", path) & !grepl("3.RData", path)) {
@@ -627,7 +615,12 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
   # 0-2 weighted must be a single boolean
   assert_logical(weighted, len = 1)
   
-  # 0-3 unorderd factors must be a legit value
+  # 0-3 'num_trees', 'min_node_size' must be intgers > 0  & 'mtry' only if NOT NULL
+  assert_int(num_trees, lower = 10)
+  assert_int(min_node_size, lower = 1)
+  if (!is.null(mtry)) assert_int(mtry)
+  
+  # 0-4 unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
     stop("Unknown value for argument 'unordered_factors'")
   }
@@ -688,14 +681,13 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     
     # 2-3 Get the Observations that belong to the same fold [same feature space]
     # 2-3-1 Get for each obs. the index of the observed feas
-    observed_feas <- sapply(seq_len(nrow(train)), function(x) {
+    observed_feas <- foreach(x = seq_len(nrow(train)), .combine = 'c') %dopar% {
       paste0(which(!(is.na(train[x,]))), collapse = "_")
-    })
-    
+    }
+
     # 2-3-2 Keep the unique observed feas [equals the different folds]
     #       That we use to assign obs. to the differnt folds!
     observed_folds <- unique(observed_feas)
-    
     print(paste0("Found ", length(observed_folds), " unique folds!"))
     
     # 2-4 Train foldwise RFs for each fold seperatly! For this loop over all folds
@@ -727,7 +719,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                           data              = curr_fold_train_data, 
                           num_trees         = num_trees, 
                           mtry              = mtry, 
-                          min_node_size     = min_node_size,
+                          min_node_size     = as.integer(min_node_size),
                           replace           = TRUE,  # always TRUE, as we need OOB!
                           splitrule         = NULL,  # always NULL!
                           unordered_factors = unorderd_factors)
@@ -760,8 +752,8 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     # 2-5-1 Full TestSet!
     print("Evaluation full TestSet -------------------------------------------")
     curr_Forest <- copy_forrest(Forest)
-    full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
-                                 weighted = weighted, weight_metric = weight_metric)
+    system.time(full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
+                                 weighted = weighted, weight_metric = weight_metric))
     
     # 2-5-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
@@ -881,7 +873,6 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                                                                                    curr_data$block_names$D,
                                                                                    curr_data$block_names$C))])
   }
-  
   # 2-6 Take the time difference for the k fold CV!
   time_for_CV <- difftime(Sys.time(), start_time, units = "mins")
   
@@ -918,16 +909,16 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
 
 do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                            weighted = TRUE, weight_metric = "Acc", 
-                           num_trees = 10, mtry = NULL, min_node_size = NULL,
+                           num_trees = 300, mtry = NULL, min_node_size = 5,
                            unorderd_factors = "ignore") {
   "CrossValidate the Approach when the Traindata has blockwise missingness
    according to scenario 4 --> 'path' must end in '4.RData'!
    
    'path' must lead to a list with 2 entrances: 'data'  &  'block_names'
-   - 'data' is a list filled with 'k' test-train-splits
-      --> k-fold-Validation on this test-train-splits!
-   - 'block_names' is a list filled with the names of the single blocks 
-      & must be 'A', 'B' & 'clin_block' for this scenario!
+       - 'data' is a list filled with 'k' test-train-splits
+          --> k-fold-Validation on this test-train-splits!
+       - 'block_names' is a list filled with the names of the single blocks 
+          & must be 'A', 'B' & 'clin_block' for this scenario!
       
    Based on the 'k' test-train-splits in 'data', we will fit foldwise RFs to the
    train data (that has blockwise missingness in it). Then we ensemble the 
@@ -957,16 +948,14 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                               different predictions? 
                                 - must be 'Acc' or 'F1' 
                                 - if weighted = FALSE, it will be ignored!
-      - num_trees (int)     : Amount of trees, we shall grow on each (!)
-                              foldwise fitted random Forest!
+      - num_trees (int)     : Amount of trees, we shall grow on each foldwise 
+                              fitted random Forest must be int > 10!
       - mtry (int)          : Amount of split-variables we try, when looking for 
                               a split variable! 
                                 - If 'NULL': mtry = sqrt(p)
       - min_node_size (int) : Amount of Observations a node must at least 
                               contain, so the model keeps on trying to split 
-                              them!  
-                                - If 'NULL: It is automatically set to 10 in the
-                                            'simpleRF()' function!
+                              them! Must be int >= 1.
       - unorderd_factors (chr) : How to handle non numeric features!
                                 ['ignore', 'order_once', 'order_split', 'partition']
   Return:
@@ -988,25 +977,29 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
             - datapath, response, mtry, time for CV, ...
   "
   # [0] Check Inputs  ----------------------------------------------------------
-  # 0-0 mtry, min_node_size & num_trees are all checked within 'simpleRF()'
   # 0-1 path must be numeric and have '1.RData' in it!
   assert_string(path, fixed = "4.RData")
   
   # 0-2 weighted must be a single boolean 
   assert_logical(weighted, len = 1)
   
-  # 0-3 unorderd factors must be a legit value
+  # 0-3 'num_trees', 'min_node_size' must be intgers > 0  & 'mtry' only if NOT NULL
+  assert_int(num_trees, lower = 10)
+  assert_int(min_node_size, lower = 1)
+  if (!is.null(mtry)) assert_int(mtry)
+  
+  # 0-4 unorderd factors must be a legit value
   if (!(unorderd_factors %in% c("ignore", "order_once", "order_split", "partition"))) {
     stop("Unknown value for argument 'unordered_factors'")
   }
   
-  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
+  # 0-5 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
     
-    # 0-4-1 Check that it is character
+    # 0-5-1 Check that it is character
     assert_character(weight_metric, len = 1)
     
-    # 0-4-2 Check it has a valid value!
+    # 0-5-2 Check it has a valid value!
     if (!(weight_metric %in% c("Acc", "F1"))) {
       stop("'weight_metric' must be 'Acc' or 'F1'!")
     }
@@ -1159,7 +1152,6 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                                      testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                    curr_data$block_names$B))])
   }
-  
   # 2-6 Take the time difference for the k fold CV!
   time_for_CV <- difftime(Sys.time(), start_time, units = "mins")
   
@@ -1186,26 +1178,81 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
 }
 
 # Run Main                                                                  ----
+# Situation1
 sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = TRUE, weight_metric = "Acc", 
-                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_acc.RData")
+
+sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                       weighted = TRUE, weight_metric = "F1", 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_F1.RData")
+
+sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                       weighted = FALSE, weight_metric = NULL, 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA.RData")
 
+
+# Situation2
 sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = TRUE, weight_metric = "Acc", 
-                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_acc.RData")
+
+sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                       weighted = TRUE, weight_metric = "F1", 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_F1.RData")
+
+sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                       weighted = FALSE, weight_metric = NULL, 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA.RData")
 
+
+# Situation3
 sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = TRUE, weight_metric = "Acc", 
-                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_acc.RData")
+
+sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+                       weighted = TRUE, weight_metric = "F1", 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_F1.RData")
+
+sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+                       weighted = FALSE, weight_metric = NULL, 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA.RData")
 
+
+# Situtation4
 sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = TRUE, weight_metric = "Acc", 
-                       num_trees = 50, mtry = NULL, min_node_size = NULL,
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_acc.RData")
+
+sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                       weighted = TRUE, weight_metric = "F1", 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
+                       unorderd_factors = "ignore")
+save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_F1.RData")
+
+sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                       weighted = FALSE, weight_metric = NULL, 
+                       num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA.RData")
