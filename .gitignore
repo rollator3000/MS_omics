@@ -8,3 +8,4 @@ sources/Online Sources
 .RData
 *.db
 *.zip
+.Rproj.user
