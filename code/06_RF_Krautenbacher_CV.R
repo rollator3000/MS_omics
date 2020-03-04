@@ -6,7 +6,6 @@
   --> Then to obtain a final predicton we combine all created predicitons!
 "
 # SetWD and define/load functions
-setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 library(randomForestSRC)
 library(checkmate)
 library(caret)
@@ -206,15 +205,19 @@ do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
                                     reference = testdata[,1])
   
   # 5-2 Are under the ROC Curve
-  roc1 <- pROC::auc(pROC::roc(as.numeric(testdata[,1]), 
-                              as.numeric(all_forrest_preds_class),
-                              levels = unique(as.numeric(testdata[,1])),
-                              direction = "<"))
+  roc1 <- tryCatch(pROC::auc(pROC::roc(as.numeric(testdata[,1]), 
+                                       as.numeric(all_forrest_preds_class),
+                                       levels = unique(as.numeric(testdata[,1])),
+                                       direction = "<")),
+                   error = function(e) "not defined!")
+  if (is.numeric(roc1)) roc1 <- as.numeric(roc1)
   
-  roc2 <- pROC::auc(pROC::roc(as.numeric(testdata[,1]), 
-                              as.numeric(all_forrest_preds_class),
-                              levels = unique(as.numeric(testdata[,1])),
-                              direction = ">"))
+  roc2 <- tryCatch(pROC::auc(pROC::roc(as.numeric(testdata[,1]), 
+                                       as.numeric(all_forrest_preds_class),
+                                       levels = unique(as.numeric(testdata[,1])),
+                                       direction = ">")),
+                   error = function(e) "not defined")
+  if (is.numeric(roc2)) roc2 <- as.numeric(roc2)
   
   # 5-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
@@ -234,8 +237,8 @@ do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
               "Pos_Pred_Value" =  confmat$byClass["Pos Pred Value"],
               "Neg_Pred_Value" =  confmat$byClass["Neg Pred Value"],
               "Prevalence"  = confmat$byClass["Prevalence"],      
-              "AUC1"        = as.numeric(roc1),
-              "AUC2"        = as.numeric(roc2),
+              "AUC1"        = roc1,
+              "AUC2"        = roc2,
               "MCC"         = mcc,
               "Selected_Vars" = used_split_vars)
   
@@ -860,67 +863,68 @@ do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
 
 # Run Main                                                                  ----
 # Situatuion 1 
-sit1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+sit1_1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                           weighted = FALSE, weight_metric = NULL,
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA.RData")
+save(sit1_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA.RData")
 
-sit1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                          weighted = TRUE, weight_metric = "Acc",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_acc.RData")
-
-sit1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+sit1_2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                           weighted = TRUE, weight_metric = "F1",
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_f1.RData")
+save(sit1_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_f1.RData")
+
+sit1_3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+                          weighted = TRUE, weight_metric = "Acc",
+                          num_trees = 300, mtry = NULL, min_node_size = 5)
+save(sit1_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_acc.RData")
 
 
 # Situation 2
-sit2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+sit2_1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                           weighted = FALSE, weight_metric = NULL,
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA.RData")
+save(sit2_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA.RData")
 
-sit2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+sit2_2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                           weighted = TRUE, weight_metric = "Acc",
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_acc.RData")
+save(sit2_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_acc.RData")
 
-sit2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+sit2_3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                           weighted = TRUE, weight_metric = "F1",
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_f1.RData")
+save(sit2_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_f1.RData")
 
 
 # Situation 3
-sit3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+sit3_1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                           weighted = FALSE, weight_metric = NULL,
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA.RData")
+save(sit3_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA.RData")
 
-sit3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+sit3_2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                           weighted = TRUE, weight_metric = "Acc",
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_acc.RData")
+save(sit3_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_acc.RData")
 
-sit3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+sit3_3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                           weighted = TRUE, weight_metric = "F1",
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_f1.RData")
+save(sit3_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_f1.RData")
 
 
 # Situtation 4
-sit4 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+sit4_1 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                           weighted = FALSE, weight_metric = NULL,
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA.RData")
+save(sit4_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA.RData")
 
-sit4 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+sit4_2 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                           weighted = TRUE, weight_metric = "Acc",
                           num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_acc.RData")
+save(sit4_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_acc.RData")
 
-sit4 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+sit4_3 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+                            weighted = TRUE, weight_metric = "F1",
                           weighted = 300, mtry = NULL, min_node_size = 5)
-save(sit4, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_f1.RData")
+save(sit4_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_f1.RData")

@@ -199,15 +199,19 @@ do_evaluation_CC    <- function(train, test, num_trees, min_node_size, mtry,
   confmat <- caret::confusionMatrix(predicitons$class, test[,1])
   
   # 3-2 Are under the ROC Curve
-  roc1 <- pROC::auc(pROC::roc(as.numeric(test[,1]), 
+  roc1 <- tryCatch(pROC::auc(pROC::roc(as.numeric(test[,1]), 
                               as.numeric(predicitons$class),
                               levels = unique(as.numeric(test[,1])),
-                              direction = "<"))
+                              direction = "<")),
+                   error = function(e) "not defined!")
+  if (is.numeric(roc1)) roc1 <- as.numeric(roc1)
   
-  roc2 <- pROC::auc(pROC::roc(as.numeric(test[,1]), 
+  roc2 <- tryCatch(pROC::auc(pROC::roc(as.numeric(test[,1]), 
                               as.numeric(predicitons$class),
                               levels = unique(as.numeric(test[,1])),
-                              direction = ">"))
+                              direction = ">")),
+                   error = function(e) "not defined!")
+  if (is.numeric(roc2)) roc2 <- as.numeric(roc2)
   
   # 3-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
@@ -224,8 +228,8 @@ do_evaluation_CC    <- function(train, test, num_trees, min_node_size, mtry,
               "Pos_Pred_Value" =  confmat$byClass["Pos Pred Value"],
               "Neg_Pred_Value" =  confmat$byClass["Neg Pred Value"],
               "Prevalence"  = confmat$byClass["Prevalence"],      
-              "AUC1"        = as.numeric(roc1),
-              "AUC2"        = as.numeric(roc2),
+              "AUC1"        = roc1,
+              "AUC2"        = roc2,
               "MCC"         = mcc,
               "Selected_Vars" = RF$var.used)
   

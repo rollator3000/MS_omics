@@ -354,13 +354,17 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
                                     reference = testdata[,1])
   
   # 5-2 Are under the ROC Curve
-  roc1 <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
+  roc1 <- tryCatch(pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
                               levels = levels(Forest[[1]][[1]]$data$data[,1]), 
-                              direction = "<"))
+                              direction = "<")),
+                   error = function(e) "not defined!")
+  if (is.numeric(roc1)) roc1 <- as.numeric(roc1)
   
-  roc2 <- pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
+  roc2 <- tryCatch(pROC::auc(pROC::roc(testdata[,1], all_forrest_preds_probs_class_0, 
                               levels = levels(Forest[[1]][[1]]$data$data[,1]), 
-                              direction = ">"))
+                              direction = ">")),
+                   error = function(e) "not defined!")
+  if (is.numeric(roc2)) roc2 <- as.numeric(roc2)
   
   # 5-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
@@ -380,8 +384,8 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
               "Pos_Pred_Value" =  confmat$byClass["Pos Pred Value"],
               "Neg_Pred_Value" =  confmat$byClass["Neg Pred Value"],
               "Prevalence"  = confmat$byClass["Prevalence"],      
-              "AUC1"        = as.numeric(roc1),
-              "AUC2"        = as.numeric(roc2),
+              "AUC1"        = roc1,
+              "AUC2"        = roc2,
               "MCC"         = mcc,
               "Selected_Vars" = used_split_vars)
   
