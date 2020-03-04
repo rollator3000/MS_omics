@@ -849,7 +849,7 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
     # Pass the necesary Information to the trees!
     temp <- lapply(trees, function(x) {
       x$mtry              <- mtry
-      x$min_node_size     <- min_node_size
+      x$min_node_size     <- as.integer(min_node_size)
       x$splitrule         <- splitrule
       x$unordered_factors <- unordered_factors
       x$data              <- Data$new(data = model.data)
