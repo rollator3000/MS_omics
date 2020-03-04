@@ -32,7 +32,7 @@ library(doParallel)
 library(e1071)
 
 detectCores()
-CORES = 5         # Set the cores! Only possible on LInux to choose > 1!
+CORES = 1         # Set the cores! Only possible on LInux to choose > 1!
 
 load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -1181,91 +1181,91 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
 # Run Main                                                                  ----
 print("Situation1")
 print("1/3")
-sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+sit1_1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_acc.RData")
+save(sit1_1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_acc.RData")
 
 print("2/3")
-sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+sit1_2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_F1.RData")
+save(sit1_2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA_F1.RData")
 
 print("3/3")
-sit1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+sit1_3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA.RData")
+save(sit1_3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting1/BLCA.RData")
 
 
 print("Situation2")
 print("1/3")
-sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+sit2_1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_acc.RData")
+save(sit2_1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_acc.RData")
 
 print("2/3")
-sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+sit2_2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_F1.RData")
+save(sit2_2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_F1.RData")
 
 print("3/3")
-sit2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+sit2_3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA.RData")
+save(sit2_3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA.RData")
 
 
 print("Situation3")
 print("1/3")
-sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+sit3_1 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_acc.RData")
+save(sit3_1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_acc.RData")
 
 print("2/3")
-sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+sit3_2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_F1.RData")
+save(sit3_2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_F1.RData")
 
 print("3/3")
-sit3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
+sit3_3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA.RData")
+save(sit3_3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA.RData")
 
 
 print("Situation4")
 print("1/3")
-sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+sit4_1 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = TRUE, weight_metric = "Acc", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_acc.RData")
+save(sit4_1, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_acc.RData")
 
 print("2/3")
-sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+sit4_2 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = TRUE, weight_metric = "F1", 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_F1.RData")
+save(sit4_2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA_F1.RData")
 
 print("3/3")
-sit4 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+sit4_3 <- do_CV_2_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                        weighted = FALSE, weight_metric = NULL, 
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
-save(sit4, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA.RData")
+save(sit4_3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting4/BLCA.RData")
