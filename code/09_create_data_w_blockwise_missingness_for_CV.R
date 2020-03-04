@@ -1,8 +1,7 @@
 "Script to split the data into k different Train & TestSets. To each of the 'k' 
  TrainSets we will induce block-wise missingness of a certain scenario - totally 4.
 "
-# Load Funcitons, librarys & set the WD!
-setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
+# Load Librarys & Define Funcitons!
 library(checkmate)
 library(caret)
 
