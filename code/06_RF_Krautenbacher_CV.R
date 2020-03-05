@@ -926,5 +926,5 @@ save(sit4_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_ac
 
 sit4_3 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                             weighted = TRUE, weight_metric = "F1",
-                          weighted = 300, mtry = NULL, min_node_size = 5)
+                            num_trees = 300, mtry = NULL, min_node_size = 5)
 save(sit4_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_f1.RData")
