@@ -22,8 +22,7 @@ To obtain a final prediction by a foldwise RF we combine the predicitons from th
 different Trees, that were not pruned in the first splitvar., and combine them!
 For this we obtain the predicition from each single tree and combine these!
 "
-# Load Funcitons, Classes, librarys & set the WD!
-# setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
+# Load Functions, Classes & Librarys!
 source("./code/04_simpleRF_adaption.R")
 library(pROC)
 library(assertthat)
@@ -32,7 +31,6 @@ library(doParallel)
 library(e1071)
 
 detectCores()
-CORES = 1         # Set the cores! Only possible on LInux to choose > 1!
 
 load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -260,9 +258,6 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
   
   # 0-3 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
-    
-    # check that it is character
-    assert_character(weight_metric, len = 1)
     
     # check it has a valid value!
     if (!(weight_metric %in% c("Acc", "F1"))) {
@@ -536,6 +531,15 @@ all_trees_grown_correctly <- function(trees) {
   return(trees)
 }
 
+
+path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
+weighted = TRUE
+weight_metric = "Acc"
+num_trees = 300
+mtry = NULL
+min_node_size = 5
+unorderd_factors = "ignore"
+
 do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                            weighted = TRUE, weight_metric = "Acc", 
                            num_trees = 300, mtry = NULL, min_node_size = 5,
@@ -630,13 +634,10 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     stop("Unknown value for argument 'unordered_factors'")
   }
   
-  # 0-4 Check weight_metric to be meaningful [if weighted is true at all]!
+  # 0-5 Check weight_metric to be meaningful [if weighted is true at all]!
   if (weighted) {
     
-    # 0-4-1 Check that it is character
-    assert_character(weight_metric, len = 1)
-    
-    # 0-4-2 Check it has a valid value!
+    # 0-4-1 Check it has a valid value!
     if (!(weight_metric %in% c("Acc", "F1"))) {
       stop("'weight_metric' must be 'Acc' or 'F1'!")
     }
@@ -701,8 +702,9 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     #         entrance consits of 'num_trees' foldwise fitted trees!
     Forest <- list(); i_  <- 1
     
-    for (fold_ in observed_folds) {
+    foreach(j_ = 1:length(observed_folds)) %dopar% {
       
+      fold_ = observed_folds[j_]
       # 2-4-1 Get all Obs. with the feture space as in 'fold_'
       fold_obs_ <- which(observed_feas == fold_)
       
@@ -734,7 +736,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
       fold_RF <- mclapply(fold_RF, function(x) {
         x$grow(replace = TRUE)
         x
-      }, mc.cores = CORES)
+      }, mc.cores = 1)
       
       # 2-4-3-3 Check that all trees were grown correctly
       #         --> none w/o 'child_node_ID' after that!
