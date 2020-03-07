@@ -529,15 +529,6 @@ all_trees_grown_correctly <- function(trees) {
   return(trees)
 }
 
-path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
-weighted = TRUE
-weight_metric = "F1"
-num_trees = 300
-mtry = NULL
-min_node_size = 5
-unorderd_factors = "ignore"
-
-
 do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                            weighted = TRUE, weight_metric = "Acc", 
                            num_trees = 300, mtry = NULL, min_node_size = 5,
@@ -745,8 +736,8 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     # 2-5-1 Full TestSet!
     print("Evaluation full TestSet -------------------------------------------")
     curr_Forest <- copy_forrest(Forest)
-    system.time(full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
-                                             weighted = weighted, weight_metric = weight_metric))
+    full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
+                                             weighted = weighted, weight_metric = weight_metric)
     
     # 2-5-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
