@@ -31,6 +31,7 @@ library(doParallel)
 library(e1071)
 
 detectCores()
+registerDoParallel(cores = 5)
 
 load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -276,20 +277,19 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
   
   # [2] Get Predicitons  ------------------------------------------------------- 
   #     Get a prediction for every observation in TestData from all foldwise
-  #     fitted RandomForests [4 predicitons per testobs.]      
+  #     fitted RandomForests ['unique_folds' predicitons per testobs.] 
   tree_preds_all <- list()
-  not_usable     <- c()
-  for (i in 1:length(Forest)) {
+  tree_preds_all <- foreach(i = 1:length(Forest)) %dopar% {
     
     # save the predictions as 'treeX_pred'
-    tree_preds_all[[i]] <- get_pruned_prediction(trees = Forest[[i]], 
-                                                 test_set = tree_testsets[[i]])
-    
-    # check whether all of the predicted values are NA 
-    # [if so the tree can not be used when ensembling prediciton results!]
-    not_usable <- c(not_usable, all(is.na(tree_preds_all[[i]]$Class)))
+    return(get_pruned_prediction(trees = Forest[[i]], 
+                                 test_set = tree_testsets[[i]]))
   }
   
+  # Check whether any of the RFs is not usable [only NA predicitons]
+  not_usable <- sapply(seq_len(length(tree_preds_all)), function(x) {
+    all(is.na(tree_preds_all[[i]]$Class))
+  })
   
   # 2-1 Check that there are still trees existing, else not preds possible!
   if (all(not_usable)) {
@@ -312,10 +312,10 @@ do_evaluation       <- function(Forest, testdata, weighted, weight_metric) {
     
     # Get the weights for each foldwise Forest!
     tree_weights <- c()
-    tree_weights <- sapply(seq_len(length(Forest)), function(l) {
+    tree_weights <- foreach(l = seq_len(length(Forest)), .combine = "c") %dopar% {
       get_oob_weight_metric(trees = Forest[[l]], 
                             weight_metric = weight_metric)
-    })
+    }
     
     # Norm the weights
     tree_weights <- tree_weights /  sum(tree_weights)
@@ -414,11 +414,7 @@ get_oob_weight_metric     <- function(trees, weight_metric) {
     stop("not all elements in 'trees' are of class 'Tree'")
   }
   
-  # 0-2 Check 'weight_metric' to be one character w/ F1 or Acc
-  #     check that it is character
-  assert_character(weight_metric, len = 1)
-  
-  #     check it has a valid value!
+  # 0-2 Check 'weight_metric' has a valid value!
   if (!(weight_metric %in% c("Acc", "F1"))) stop("'weight_metric' must be 'Acc' or 'F1'!")
   
   # [1] Get the OOB Predicitons ------------------------------------------------
@@ -447,27 +443,25 @@ get_oob_weight_metric     <- function(trees, weight_metric) {
   # 1-3 Loop over all 'unique_oob_ids' and get the oob predictions from all 
   #     trees, that have the same OOB observation!
   all_oob_preds_class0 <- c()
-  system.time(
-    for (curr_oob in unique_oob_ids) {
-      
-      # 1-3-1 Get all trees that have 'curr_oob' as OOB observation!
-      trees_same_oob <- unlist(sapply(usable_trees, function(x) {
-        if (curr_oob %in% trees[[x]]$oob_sampleIDs) x
-      }))
-      
-      # 1-3-2 Get the feas of the observation that is OOB for 'trees_same_oob' 
-      curr_oob_feas <- Data$new(data = trees[[1]]$data$data[curr_oob,])
-      
-      # 1-3-3 Get a Prediciton for the 'curr_oob' from all trees!
-      predicted_probs <- sapply(trees_same_oob, 
-                                function(x) trees[[x]]$predict(curr_oob_feas))
-      
-      # 1-3-4 Aggregate the predictions from the different trees and
-      #       Get the probability for class 0! [First Row is class 0]
-      all_oob_preds_class0 <- c(all_oob_preds_class0, 
-                                sum(predicted_probs[1,]) / length(trees_same_oob))
-    }
-  )
+  for (curr_oob in unique_oob_ids) {
+    
+    # 1-3-1 Get all trees that have 'curr_oob' as OOB observation!
+    trees_same_oob <- unlist(sapply(usable_trees, function(x) {
+      if (curr_oob %in% trees[[x]]$oob_sampleIDs) x
+    }))
+    
+    # 1-3-2 Get the feas of the observation that is OOB for 'trees_same_oob' 
+    curr_oob_feas <- Data$new(data = trees[[1]]$data$data[curr_oob,])
+    
+    # 1-3-3 Get a Prediciton for the 'curr_oob' from all trees!
+    predicted_probs <- sapply(trees_same_oob, 
+                              function(x) trees[[x]]$predict(curr_oob_feas))
+    
+    # 1-3-4 Aggregate the predictions from the different trees and
+    #       Get the probability for class 0! [First Row is class 0]
+    all_oob_preds_class0 <- c(all_oob_preds_class0, 
+                              sum(predicted_probs[1,]) / length(trees_same_oob))
+  }
   
   # 1-4 Convert the probs to classes
   predicted_oob_classes <- ifelse(all_oob_preds_class0 > 0.5, 0, 1)
@@ -477,6 +471,10 @@ get_oob_weight_metric     <- function(trees, weight_metric) {
   # [2] Compare predicted Classes with the true classes & get the 'weight_metric'!
   conf_mat_oob <- caret::confusionMatrix(predicted_oob_classes, 
                                          trees[[1]]$data$data[unique_oob_ids, 1])
+  
+  # 2-1 Check, that neither Acc nor F1 is not defined, if replace it with worst value
+  if (is.na(conf_mat_oob$overall["Accuracy"])) conf_mat_oob$overall["Accuracy"] <- 0 
+  if (is.na(conf_mat_oob$byClass["F1"])) conf_mat_oob$byClass["F1"]             <- 0 
   
   if (weight_metric == "Acc") return(conf_mat_oob$overall["Accuracy"])
   if (weight_metric == "F1")  return(conf_mat_oob$byClass["F1"])
@@ -530,15 +528,6 @@ all_trees_grown_correctly <- function(trees) {
   # [3] Return the correclty grown trees  --------------------------------------
   return(trees)
 }
-
-
-path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
-weighted = TRUE
-weight_metric = "Acc"
-num_trees = 300
-mtry = NULL
-min_node_size = 5
-unorderd_factors = "ignore"
 
 do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                            weighted = TRUE, weight_metric = "Acc", 
@@ -700,9 +689,8 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     #     [observed_folds contains all unique features observed for diff folds]!
     #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
     #         entrance consits of 'num_trees' foldwise fitted trees!
-    Forest <- list(); i_  <- 1
-    
-    foreach(j_ = 1:length(observed_folds)) %dopar% {
+    Forest <- list()
+    Forest <- foreach(j_ = 1:length(observed_folds)) %dopar% {
       
       fold_ = observed_folds[j_]
       # 2-4-1 Get all Obs. with the feture space as in 'fold_'
@@ -731,27 +719,16 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                           splitrule         = NULL,  # always NULL!
                           unordered_factors = unorderd_factors)
       
-      print(paste0("Fit FoldWise RF on current fold: ", i_))
-      
-      fold_RF <- mclapply(fold_RF, function(x) {
+      fold_RF <- lapply(fold_RF, function(x) {
         x$grow(replace = TRUE)
         x
-      }, mc.cores = 1)
+      })
       
       # 2-4-3-3 Check that all trees were grown correctly
       #         --> none w/o 'child_node_ID' after that!
       fold_RF <- all_trees_grown_correctly(fold_RF)
       
-      # 2-4-4 Add the fitted tree to the Forest!
-      # 2-4-4-1 Copy the tree first, so we do no overwriting!
-      fold_RF_copy <- sapply(fold_RF, function(x) x$copy())
-      
-      # 2-4-4-2 Remove the fold_RF and add the copied fold_RF_copy to 'Forest'
-      rm(fold_RF)
-      Forest[[i_]] <- fold_RF_copy
-      
-      # 2-4-5 Count up i_ - used to fill Forest list!
-      i_  = i_ + 1
+      return(fold_RF)
     }
     
     # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
@@ -759,8 +736,8 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     # 2-5-1 Full TestSet!
     print("Evaluation full TestSet -------------------------------------------")
     curr_Forest <- copy_forrest(Forest)
-    system.time(full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
-                                             weighted = weighted, weight_metric = weight_metric))
+    full[[i]]   <- do_evaluation(Forest = curr_Forest, testdata = test, 
+                                             weighted = weighted, weight_metric = weight_metric)
     
     # 2-5-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
@@ -1252,6 +1229,12 @@ sit3_3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit3_3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA.RData")
+print("2_3/3")
+sit2_3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                         weighted = FALSE, weight_metric = NULL, 
+                         num_trees = 300, mtry = NULL, min_node_size = 5,
+                         unorderd_factors = "ignore")
+save(sit2_3, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA.RData")
 
 
 print("Situation4")
