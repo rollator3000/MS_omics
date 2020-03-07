@@ -954,14 +954,14 @@ get_pruned_prediction <- function(trees, test_set) {
   # [2] Get Prediciton of the trees --------------------------------------------
   # [2-1] Get the predicitons of the trees
   #       [each tree a prediciton for each observation in 'test_set']
-  predictions <- mclapply(trees, function(x) {
+  predictions <- lapply(trees, function(x) {
     res <- x$predict(test_set)
     res
-  }, mc.cores = 1)
+  })
   
   # [2-2] Form an aggregated prediciton over all trees for all observations!
   # [2-2-1] Aggregated ClassProbabilities
-  aggregated_predictions_prob <- mclapply(seq(test_set$nrow), 
+  aggregated_predictions_prob <- lapply(seq(test_set$nrow), 
                                           function(x) {
                                             'For each observation aggregate the prediciton from all single trees!
                                              Trees, that can not be used for predicitons are not considered
@@ -976,13 +976,13 @@ get_pruned_prediction <- function(trees, test_set) {
                                             preds = apply(preds_obs_x, MARGIN = 1, 
                                                           FUN = function(x) sum(x)/length(predictions))
                                             preds
-                                          }, mc.cores = 1)
+                                          })
   
   # [2-2-2] Get Class Predictions [= Class w/ highest probability]
   poss_classes <- as.character(levels(trees[[1]]$data$subset( ,1)))
   
   aggregated_predictions_class <- unlist(
-    mclapply(aggregated_predictions_prob, FUN = function(x) {
+    lapply(aggregated_predictions_prob, FUN = function(x) {
       "From the class probabilites extract the class prediction itself"
       class_highest_prob <- poss_classes[which(x == max(x))]
       class_highest_prob
