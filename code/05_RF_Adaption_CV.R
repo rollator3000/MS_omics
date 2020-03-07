@@ -512,11 +512,11 @@ all_trees_grown_correctly <- function(trees) {
   while (length(wrong_trees) > 0) {
     
     # grow the errours trees again
-    trees[wrong_trees] <- mclapply(trees[wrong_trees], 
+    trees[wrong_trees] <- lapply(trees[wrong_trees], 
                                    function(x) {
                                      x$grow(replace = TRUE)
                                      x
-                                   }, mc.cores = 1)
+                                   })
     
     # check whether any of the trees is not grown correctly!
     wrong_trees  <- unlist(lapply(1:length(trees), 
@@ -1077,10 +1077,10 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
       
       print(paste0("Fit FoldWise RF on current fold: ", i_))
       
-      fold_RF <- mclapply(fold_RF, function(x) {
+      fold_RF <- lapply(fold_RF, function(x) {
         x$grow(replace = TRUE)
         x
-      }, mc.cores = CORES)
+      })
       
       # 2-4-3-3 Check that all trees were grown correctly
       #         --> none w/o 'child_node_ID' after that!
