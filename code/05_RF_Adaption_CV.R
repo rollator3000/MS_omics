@@ -690,7 +690,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
     #         entrance consits of 'num_trees' foldwise fitted trees!
     Forest <- list()
-    Forest <- foreach(j_ = 1:length(observed_folds)) %dopar% {
+    Forest <- foreach(j_ = 1:length(observed_folds)) %do% {
       
       fold_ = observed_folds[j_]
       # 2-4-1 Get all Obs. with the feture space as in 'fold_'
@@ -1222,6 +1222,11 @@ sit3_2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1
                        num_trees = 300, mtry = NULL, min_node_size = 5,
                        unorderd_factors = "ignore")
 save(sit3_2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting3/BLCA_F1.RData")
+sit2_2 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+                         weighted = TRUE, weight_metric = "F1", 
+                         num_trees = 300, mtry = NULL, min_node_size = 5,
+                         unorderd_factors = "ignore")
+save(sit2_2, file = "./docs/CV_Res/gender/Roman_final_subsets/setting2/BLCA_F1.RData")
 
 print("3/3")
 sit3_3 <- do_CV_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
