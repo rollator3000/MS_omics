@@ -1031,24 +1031,23 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
     
     # 2-3 Get the Observations that belong to the same fold [same feature space]
     # 2-3-1 Get for each obs. the index of the observed feas
-    observed_feas <- sapply(seq_len(nrow(train)), function(x) {
+    observed_feas <- foreach(x = seq_len(nrow(train)), .combine = 'c') %dopar% {
       paste0(which(!(is.na(train[x,]))), collapse = "_")
-    })
+    }
     
     # 2-3-2 Keep the unique observed feas [equals the different folds]
     #       That we use to assign obs. to the differnt folds!
     observed_folds <- unique(observed_feas)
-    
     print(paste0("Found ", length(observed_folds), " unique folds!"))
     
     # 2-4 Train foldwise RFs for each fold seperatly! For this loop over all folds
     #     [observed_folds contains all unique features observed for diff folds]!
     #     --> Results in a Forest of length 'lenght(observed_folds)' & each 
     #         entrance consits of 'num_trees' foldwise fitted trees!
-    Forest <- list(); i_  <- 1
-    
-    for (fold_ in observed_folds) {
+    Forest <- list()
+    Forest <- foreach(j_ = 1:length(observed_folds)) %do% {
       
+      fold_ = observed_folds[j_]
       # 2-4-1 Get all Obs. with the feture space as in 'fold_'
       fold_obs_ <- which(observed_feas == fold_)
       
@@ -1070,12 +1069,10 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                           data              = curr_fold_train_data, 
                           num_trees         = num_trees, 
                           mtry              = mtry, 
-                          min_node_size     = min_node_size,
+                          min_node_size     = as.integer(min_node_size),
                           replace           = TRUE,  # always TRUE, as we need OOB!
                           splitrule         = NULL,  # always NULL!
                           unordered_factors = unorderd_factors)
-      
-      print(paste0("Fit FoldWise RF on current fold: ", i_))
       
       fold_RF <- lapply(fold_RF, function(x) {
         x$grow(replace = TRUE)
@@ -1086,16 +1083,7 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
       #         --> none w/o 'child_node_ID' after that!
       fold_RF <- all_trees_grown_correctly(fold_RF)
       
-      # 2-4-4 Add the fitted tree to the Forest!
-      # 2-4-4-1 Copy the tree first, so we do no overwriting!
-      fold_RF_copy <- sapply(fold_RF, function(x) x$copy())
-      
-      # 2-4-4-2 Remove the fold_RF and add the copied fold_RF_copy to 'Forest'
-      rm(fold_RF)
-      Forest[[i_]] <- fold_RF_copy
-      
-      # 2-4-5 Count up i_ - used to fill Forest list!
-      i_  = i_ + 1
+      return(fold_RF)
     }
     
     # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
