@@ -1,10 +1,10 @@
 "
 Script to visualize the different Results from the CVs
 "
-setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 library(ggplot2)
 require(gridExtra)
 library(reshape2)
+library(checkmate)
 
 extract_metrics <- function(x, metric, train_sit) {
   "
@@ -38,9 +38,14 @@ extract_metrics <- function(x, metric, train_sit) {
   
   # 0-2 'metric' must be in 'x'
   assert_string(metric)
-  if (!(metric  %in% names(x$res_all[[1]][[1]]))) {
-    print("There exist only the metrics:\n")
-    print(names(x$res_all[[1]][[1]]))
+  
+  # extract all used  metrics and check whether 'metric' exist!
+  met_meas <- unique(
+    unlist(sapply(names(x$res_all), function(j) {
+    names(x$res_all[[j]][[1]])
+  })))
+  
+  if (!(metric %in% met_meas)) {
     stop("'metric' is not within these!")
   }
   
@@ -69,7 +74,7 @@ extract_metrics <- function(x, metric, train_sit) {
                          "Metric"         = character())
   
   # 1-3-1 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
-  #       & 
+  #       & fill 'DF_final'
   for (j in seq_len(ncol(res_curr_train_set))) {
     
     # 1-3-1-1 Extract TrainSetting, folds, test_situation and the metrics
@@ -78,6 +83,19 @@ extract_metrics <- function(x, metric, train_sit) {
     folds      <- seq_len(nrow(res_curr_train_set))
     test_sit   <- rep(colnames(res_curr_train_set)[j], times = nrow(res_curr_train_set))
     metric_c   <- unlist(res_curr_train_set[,j])
+    
+    # If metric_c contains any NA replace these by '0' or '-1' if the metric is MMC
+    if (any(is.na(metric_c))) {
+      to_replace <- which(is.na(metric_c))
+      if (metric == "MCC") {
+        replace_value <- -1
+      } else {
+        replace_value <- 0
+      }
+      
+      metric_c[to_replace] <- replace_value
+      metric_c             <- as.numeric(metric_c)
+    }
     
     # 1-3-1-2 Bind it to the DF with all Results
     df_current <- data.frame("Trainsituation" = train_sit_,
@@ -101,9 +119,14 @@ extract_metrics <- function(x, metric, train_sit) {
   DF_final$mtry               <- x_settings$mtry
   DF_final$min_node_size      <- x_settings$min_node_size
   DF_final$weighted_ens       <- x_settings$weighted
-  ifelse(!x_settings$weighted,
-         DF_final$weight_metric <- NA,
-         DF_final$weight_metric <- x_settings$weight_metric)
+  
+  if (is.null(BLCA$settings[["weighted"]])) {
+    DF_final$weight_metric <- NA
+  } else {
+    ifelse(!x_settings$weighted,
+           DF_final$weight_metric <- NA,
+           DF_final$weight_metric <- x_settings$weight_metric)
+  }
   
   # [3] Return 'DF_final'
   return(DF_final)
@@ -265,95 +288,94 @@ plot_df <- melt(DF, id.vars = c("Data", "Block"),
 
 # Analyse Results of Romans Approach on the fixed DFs                       ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Roman_final_subsets/TrainSetting1"
+data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
 files <- list.files(data_path)
 
 # 1-2 Load the Results for all TrainSettings
-DF1 <- load(paste0(data_path, "/", files[1]))
-DF1 <- eval(as.symbol(DF1))
-DF2 <- load(paste0(data_path, "/", files[2]))
-DF2 <- eval(as.symbol(DF2))
+BLCA <- load(paste0(data_path, "/", files[1]))
+BLCA <- eval(as.symbol(BLCA))
+BLCA_acc <- load(paste0(data_path, "/", files[2]))
+BLCA_acc <- eval(as.symbol(BLCA_acc))
+BLCA_f1 <- load(paste0(data_path, "/", files[3]))
+BLCA_f1 <- eval(as.symbol(BLCA_f1))
 
 # 1-3 Extract the Metrics and TestSetting as desired:
-# DF1 with LGG DF 
-DF1_1  <- extract_metrics(x = DF1[[1]], metric = "F1", train_sit = 1)
-DF1_12 <- extract_metrics(x = DF1[[1]], metric = "Accuracy", train_sit = 1)
-DF1_2  <- extract_metrics(x = DF1[[2]], metric = "F1", train_sit = 1)
-DF1_22 <- extract_metrics(x = DF1[[2]], metric = "Accuracy", train_sit = 1)
-DF1_3  <- extract_metrics(x = DF1[[3]], metric = "F1", train_sit = 1)
-DF1_32 <- extract_metrics(x = DF1[[3]], metric = "Accuracy", train_sit = 1)
+# BLCA
+res_blca <- extract_metrics(x = BLCA, metric = "F1", train_sit = 1)
+res_blca_acc <- extract_metrics(x = BLCA_acc, metric = "F1", train_sit = 1)
+res_blca_f1 <- extract_metrics(x = BLCA_f1, metric = "F1", train_sit = 1)
 
-# DF2 with LIHC DF
-DF2_1  <- extract_metrics(x = DF2[[1]], metric = "F1", train_sit = 1)
-DF2_12 <- extract_metrics(x = DF2[[1]], metric = "Accuracy", train_sit = 1)
-DF2_2  <- extract_metrics(x = DF2[[2]], metric = "F1", train_sit = 1)
-DF2_22 <- extract_metrics(x = DF2[[2]], metric = "Accuracy", train_sit = 1)
-DF2_3  <- extract_metrics(x = DF2[[3]], metric = "F1", train_sit = 1)
-DF2_32 <- extract_metrics(x = DF2[[3]], metric = "Accuracy", train_sit = 1)
+# Bind to a single DF
+plot_df <- rbind(res_blca, res_blca_acc, res_blca_f1)
 
-# 1-4 Bind the results to a single DF
-DF1_all <- rbind(DF1_1, DF1_12, DF1_2, DF1_22, DF1_3, DF1_32)
-DF2_all <- rbind(DF2_1, DF2_12, DF2_2, DF2_22, DF2_3, DF2_32)
-DF_all  <- rbind(DF1_all, DF2_all)
-
-ggplot(data = DF_all, aes(x = Testsituation, y = Metric, 
-                          fill = performance_metric)) +
+ggplot(data = plot_df, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("Romans Method applied to 2 fixed data subsets",
-          subtitle = "split by the weighting used for ensembling!") +
+  ggtitle("Romans Method applied to a data subset",
+          subtitle = "split by the weighting used for the single folds!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15)) +
-  facet_grid(. ~ weight_metric)
+        text = element_text(size = 15)) 
 
 
 # Analyse Results of Norberts Approach on the fixed DFs                     ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/TrainSetting1"
+data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting1/"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
 files <- list.files(data_path)
 
 # 1-2 Load the Results for all TrainSettings
-DF1 <- load(paste0(data_path, "/", files[1]))
-DF1 <- eval(as.symbol(DF1))
-DF2 <- load(paste0(data_path, "/", files[2]))
-DF2 <- eval(as.symbol(DF2))
+BLCA <- load(paste0(data_path, "/", files[1]))
+BLCA <- eval(as.symbol(BLCA))
+BLCA_acc <- load(paste0(data_path, "/", files[2]))
+BLCA_acc <- eval(as.symbol(BLCA_acc))
+BLCA_f1 <- load(paste0(data_path, "/", files[3]))
+BLCA_f1 <- eval(as.symbol(BLCA_f1))
 
 # 1-3 Extract the Metrics and TestSetting as desired:
-# DF1 with LGG DF 
-DF1_1  <- extract_metrics(x = DF1[[1]], metric = "F1", train_sit = 1)
-DF1_12 <- extract_metrics(x = DF1[[1]], metric = "Accuracy", train_sit = 1)
-DF1_2  <- extract_metrics(x = DF1[[2]], metric = "F1", train_sit = 1)
-DF1_22 <- extract_metrics(x = DF1[[2]], metric = "Accuracy", train_sit = 1)
-DF1_3  <- extract_metrics(x = DF1[[3]], metric = "F1", train_sit = 1)
-DF1_32 <- extract_metrics(x = DF1[[3]], metric = "Accuracy", train_sit = 1)
+# BLCA
+res_blca <- extract_metrics(x = BLCA, metric = "F1", train_sit = 1)
+res_blca_acc <- extract_metrics(x = BLCA_acc, metric = "F1", train_sit = 1)
+res_blca_f1 <- extract_metrics(x = BLCA_f1, metric = "F1", train_sit = 1)
 
-# DF2 with LIHC DF
-DF2_1  <- extract_metrics(x = DF2[[1]], metric = "F1", train_sit = 1)
-DF2_12 <- extract_metrics(x = DF2[[1]], metric = "Accuracy", train_sit = 1)
-DF2_2  <- extract_metrics(x = DF2[[2]], metric = "F1", train_sit = 1)
-DF2_22 <- extract_metrics(x = DF2[[2]], metric = "Accuracy", train_sit = 1)
-DF2_3  <- extract_metrics(x = DF2[[3]], metric = "F1", train_sit = 1)
-DF2_32 <- extract_metrics(x = DF2[[3]], metric = "Accuracy", train_sit = 1)
+# Bind to a single DF
+plot_df <- rbind(res_blca, res_blca_acc, res_blca_f1)
 
-# 1-4 Bind the results to a single DF
-DF1_all <- rbind(DF1_1, DF1_12, DF1_2, DF1_22, DF1_3, DF1_32)
-DF2_all <- rbind(DF2_1, DF2_12, DF2_2, DF2_22, DF2_3, DF2_32)
-DF_all  <- rbind(DF1_all, DF2_all)
-
-ggplot(data = DF_all, aes(x = Testsituation, y = Metric, 
-                          fill = performance_metric)) +
-  geom_boxplot() +
+ggplot(data = plot_df, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
+  geom_boxplot() + 
   theme_bw() +
-  ggtitle("Norberts Method applied to 2 fixed data subsets",
-          subtitle = "split by the weighting used for ensembling!") +
+  ggtitle("Norberts Method applied to a data subset",
+          subtitle = "split by the weighting used for the single folds!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15)) +
-  facet_grid(. ~ weight_metric)
+        text = element_text(size = 15)) 
+
+
+# Analyse Results of the complete case Approach on the fixed DFs            ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/gender/complete_cases/setting1/"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-2 Load the Results for all TrainSettings
+BLCA <- load(paste0(data_path, "/", files[1]))
+BLCA <- eval(as.symbol(BLCA))
+
+# 1-3 Extract the Metrics and TestSetting as desired:
+# BLCA
+res_blca <- extract_metrics(x = BLCA, metric = "F1", train_sit = 1)
+
+ggplot(data = res_blca, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ggtitle("Complete Cases Approach applied to a data subset") +
+  xlab("TestSituations") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 15))
