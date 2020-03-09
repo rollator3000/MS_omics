@@ -670,13 +670,13 @@ induce_blockmiss_4 <- function(data_and_names, seed) {
 }
 
 # Run TestTrainSplitting - and induce blockwise missingness to TrainSets  ------
-DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
+DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 data_path    <- "./data/processed/RH_subsetted_12345/"   # Path to the data
 response_    <- "gender"                                 # response from 'clin' block
-seed         <- 1312                                     # seed for reprducibility!
+seed         <- 1234                                     # seed for reprducibility!
 
-for (curr_df in DFs_w_gender[1]) {
+for (curr_df in DFs_w_gender) {
   
   # [1] Create the path to the subsetted DF, we want to induce blockwise missingness!
   curr_path <- paste0(data_path, curr_df, "_subset.RData")
