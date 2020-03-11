@@ -288,7 +288,7 @@ plot_df <- melt(DF, id.vars = c("Data", "Block"),
 
 # Analyse Results of Romans Approach on the fixed DFs                       ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
+data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting4"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
