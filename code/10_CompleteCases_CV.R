@@ -730,18 +730,66 @@ do_CV_CC_3 <- function(path = "data/processed/RH_subsetted_12345/missingness_123
 }
 
 # RunMain ----------------------------------------------------------------------
-sit1 <- do_CV_CC_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-save(sit1, file = "./docs/CV_Res/gender/complete_cases/setting1/BLCA.RData")
+"Run the CV for all DFs from the missForest paper ------------------------------"
+DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
+                  "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 
-sit2 <- do_CV_CC_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
-                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-save(sit2, file = "./docs/CV_Res/gender/complete_cases/setting2/BLCA.RData")
+# ----- Situation 1
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
+  
+  print("Setting - 1/1")
+  sit1_1 <- do_CV_CC_5(path = curr_path,
+                       num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
+  save(sit1_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting1/", DF, ".RData"))
+  
+}
 
-sit3 <- do_CV_CC_5(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
-                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-save(sit3, file = "./docs/CV_Res/gender/complete_cases/setting3/BLCA.RData")
+# ----- Situation 2
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 2 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
+  
+  print("Setting - 1/1")
+  sit2_1 <- do_CV_CC_5(path = curr_path,
+                       num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
+  save(sit2_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting2/", DF, ".RData"))
+  
+}
 
-sit4 <- do_CV_CC_3(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                   num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-save(sit4, file = "./docs/CV_Res/gender/complete_cases/setting4/BLCA.RData")
+# ----- Situation 3
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 3 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
+  
+  print("Setting - 1/1")
+  sit3_1 <- do_CV_CC_5(path = curr_path,
+                       num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
+  save(sit3_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting3/", DF, ".RData"))
+  
+}
+
+# ----- Situation 4
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
+  
+  print("Setting - 1/1")
+  sit2_1 <- do_CV_CC_3(path = curr_path,
+                       num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
+  save(sit2_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting4/", DF, ".RData"))
+  
+}
