@@ -861,70 +861,116 @@ do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
               "settings" = settings))
 }
 
+
 # Run Main                                                                  ----
-# Situatuion 1 
-sit1_1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                          weighted = FALSE, weight_metric = NULL,
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit1_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA.RData")
+"Run the CV for all DFs from the missForest paper ------------------------------"
+DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
+                  "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 
-sit1_2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                          weighted = TRUE, weight_metric = "F1",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit1_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_f1.RData")
+# ----- Situation 1
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
+  
+  print("Setting - 1/3")
+  sit1_1 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = FALSE, weight_metric = NULL,
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit1_1, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting1/", DF, ".RData"))
+  
+  print("Setting - 2/3")
+  sit1_2 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "F1",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit1_2, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting1/", DF, "_f1.RData"))
+  
+  print("Setting - 3/3")
+  sit1_3 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "Acc",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit1_3, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting1/", DF, "_acc.RData"))
+}
 
-sit1_3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                          weighted = TRUE, weight_metric = "Acc",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit1_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting1/BLCA_acc.RData")
+# ----- Situation 2
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 2 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
+  
+  print("Setting - 1/3")
+  sit2_1 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = FALSE, weight_metric = NULL,
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit2_1, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting2/", DF, ".RData"))
+  
+  print("Setting - 2/3")
+  sit2_2 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "F1",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit2_2, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting2/", DF, "_f1.RData"))
+  
+  print("Setting - 3/3")
+  sit2_3 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "Acc",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit2_3, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting2/", DF, "_acc.RData"))
+}
 
+# ----- Situation 3
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 3 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
+  
+  print("Setting - 1/3")
+  sit3_1 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = FALSE, weight_metric = NULL,
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit3_1, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting3/", DF, ".RData"))
+  
+  print("Setting - 2/3")
+  sit3_2 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "F1",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit3_2, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting3/", DF, "_f1.RData"))
+  
+  print("Setting - 3/3")
+  sit3_3 <- do_CV_NK_5_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "Acc",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit3_3, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting3/", DF, "_acc.RData"))
+}
 
-# Situation 2
-sit2_1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
-                          weighted = FALSE, weight_metric = NULL,
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit2_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA.RData")
-
-sit2_2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
-                          weighted = TRUE, weight_metric = "Acc",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit2_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_acc.RData")
-
-sit2_3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
-                          weighted = TRUE, weight_metric = "F1",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit2_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting2/BLCA_f1.RData")
-
-
-# Situation 3
-sit3_1 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
-                          weighted = FALSE, weight_metric = NULL,
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit3_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA.RData")
-
-sit3_2 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
-                          weighted = TRUE, weight_metric = "Acc",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit3_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_acc.RData")
-
-sit3_3 <- do_CV_NK_5_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_3.RData",
-                          weighted = TRUE, weight_metric = "F1",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit3_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting3/BLCA_f1.RData")
-
-
-# Situtation 4
-sit4_1 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                          weighted = FALSE, weight_metric = NULL,
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit4_1, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA.RData")
-
-sit4_2 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                          weighted = TRUE, weight_metric = "Acc",
-                          num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit4_2, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_acc.RData")
-
-sit4_3 <- do_CV_NK_3_blocks(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                            weighted = TRUE, weight_metric = "F1",
-                            num_trees = 300, mtry = NULL, min_node_size = 5)
-save(sit4_3, file = "./docs/CV_Res/gender/Norbert_final_subsets/setting4/BLCA_f1.RData")
+# ----- Situation 4
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
+  
+  print("Setting - 1/3")
+  sit4_1 <- do_CV_NK_3_blocks(path = curr_path,
+                              weighted = FALSE, weight_metric = NULL,
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit4_1, file =  paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting4/", DF, ".RData"))
+  
+  print("Setting - 2/3")
+  sit4_2 <- do_CV_NK_3_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "F1",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit4_2, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting4/", DF, "_f1.RData"))
+  
+  print("Setting - 3/3")
+  sit4_3 <- do_CV_NK_3_blocks(path = curr_path,
+                              weighted = TRUE, weight_metric = "Acc",
+                              num_trees = 300, mtry = NULL, min_node_size = 5)
+  save(sit4_3, file = paste0("./docs/CV_Res/gender/Norbert_final_subsets/setting4/", DF, "_acc.RData"))
+}
