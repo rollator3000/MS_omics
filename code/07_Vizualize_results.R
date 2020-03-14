@@ -120,7 +120,127 @@ extract_metrics <- function(x, metric, train_sit) {
   DF_final$min_node_size      <- x_settings$min_node_size
   DF_final$weighted_ens       <- x_settings$weighted
   
-  if (is.null(BLCA$settings[["weighted"]])) {
+  if (is.null(x_settings[["weighted"]]) || !x_settings[["weighted"]]) {
+    DF_final$weight_metric <- NA
+  } else {
+    ifelse(!x_settings$weighted,
+           DF_final$weight_metric <- NA,
+           DF_final$weight_metric <- x_settings$weight_metric)
+  }
+  
+  # [3] Return 'DF_final'
+  return(DF_final)
+}
+
+extract_avg_metrics <- function(x, metric, train_sit) {
+  "
+  Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
+  to a DF, that we can use for plotting!
+  'x' is the result of a CV of one trainsetting & all has results for all of 
+  the 20 testsettings! From this list we extract the metric for all of the 
+  different trainsettings!
+    --> Only grab the average values for the metric of all folds!
+  
+   Args:
+    x (list)           : list filled with the metrics for every single 
+                         Itteration in CV + the settings it was created from!
+                         Needs the names:
+                         ['res_all' & 'settings']
+    metric (str)       : the metric we shall extraxt from the result list!
+                         Needs to be in:
+                         ['Accuracy', 'Sensitifity', 'Specificity', 'Precision', 
+                          'Recall', 'F1', 'Balance_Acc', 'AUC', 'MCC']
+    train_sit (int)    : Which TrainingSituation do the results come from!
+                         [four different trainsettings in total s. MS Thesis!]
+
+   Return:
+    DF, suited for plotting, with all metric for all testsettings in 'x'
+  "
+  # [0] Check Inputs 
+  # 0-1 'x' must be a list of length 2 w/ names 'res_all' & 'settings'
+  assert_list(x, len = 2)
+  if (!('res_all' %in% names(x)) | !('settings' %in% names(x))) {
+    stop("'x' needs 2 entrances called 'res_all' & 'settings'")
+  }
+  
+  # 0-2 'metric' must be in 'x'
+  assert_string(metric)
+  
+  # extract all used  metrics and check whether 'metric' exist!
+  met_meas <- unique(
+    unlist(sapply(names(x$res_all), function(j) {
+      names(x$res_all[[j]][[1]])
+    })))
+  
+  if (!(metric %in% met_meas)) {
+    stop("'metric' is not within these!")
+  }
+  
+  # 0-3 'train_sit' must be integer [1; 4]
+  assert_int(train_sit, lower = 1, upper = 4)
+  
+  # [1] Unpack the lists and put them into a single regular DF
+  # 1-1 Seperate Results and Settings
+  x_res      <- x$res_all
+  x_settings <- x$settings
+  
+  # 1-2 Extract the metric from the wanted TrainSetting for all 20 TestSettings!
+  #     ["full", "miss_1A", ...]
+  res_curr_train_set <- sapply(names(x_res), function(x) c(x_res[[x]][[1]][metric],
+                                                           x_res[[x]][[2]][metric],
+                                                           x_res[[x]][[3]][metric],
+                                                           x_res[[x]][[4]][metric],
+                                                           x_res[[x]][[5]][metric]))
+  
+  # 1-3 Convert the results to a usable DF
+  res_curr_train_set <- as.data.frame(res_curr_train_set)
+  
+  # 1-3-1 Average the values, so for each DF we only recieve the averge metric of
+  #       all folds!
+  res_curr_train_set_avg <- sapply(1:ncol(res_curr_train_set), 
+                                   function(x) mean(as.numeric(unlist(res_curr_train_set[,x])), na.rm = T))
+  
+  # 1-3-2 Add the names of the testsituations
+  names(res_curr_train_set_avg) <- colnames(res_curr_train_set)
+  
+  # 1-4 Create a DF holding all results and Metainfos!
+  DF_final <- data.frame("Trainsituation" = numeric(),
+                         "Testsituation"  = character(),
+                         "Metric"         = character())
+  
+  # 1-4-1 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
+  #       & fill 'DF_final'
+  for (j in seq_len(length(res_curr_train_set_avg))) {
+    
+    # 1-4-1-1 Extract TrainSetting, folds, test_situation and the metrics
+    #         for the given column!
+    train_sit_ <- train_sit
+    test_sit   <- names(res_curr_train_set_avg)[j]
+    metric_c   <- res_curr_train_set_avg[j]
+    
+    # 1-4-1-2 Bind it to the DF with all Results
+    df_current <- data.frame("Trainsituation" = train_sit_,
+                             "Testsituation"  = test_sit,
+                             "Metric"         = metric_c)
+    DF_final <- rbind(DF_final, df_current)
+  }
+  
+  # [2] Add the settings that have been used
+  # 2-1 Add used DF and used Seed
+  path_split       <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_final$DF      <- path_split[length(path_split)]
+  DF_final$DF_seed <- path_split[length(path_split) - 1]
+  
+  # 2-2 Add the infos from "x_settings"
+  DF_final$performance_metric <- metric
+  DF_final$reponse            <- x_settings$response
+  DF_final$model_seed         <- x_settings$seed
+  DF_final$num_trees          <- x_settings$num_trees
+  DF_final$mtry               <- x_settings$mtry
+  DF_final$min_node_size      <- x_settings$min_node_size
+  DF_final$weighted_ens       <- x_settings$weighted
+  
+  if (is.null(x_settings[["weighted"]] || !x_settings[["weighted"]])) {
     DF_final$weight_metric <- NA
   } else {
     ifelse(!x_settings$weighted,
@@ -288,72 +408,150 @@ plot_df <- melt(DF, id.vars = c("Data", "Block"),
 
 # Analyse Results of Romans Approach on the fixed DFs                       ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting4"
+data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
 
 # [1] Load all Results w/ Romans Approach
-# 1-1 get all files in the folder, that are singleblock performances
+# 1-1 List all files from the 'data_path'
 files <- list.files(data_path)
 
-# 1-2 Load the Results for all TrainSettings
-BLCA <- load(paste0(data_path, "/", files[1]))
-BLCA <- eval(as.symbol(BLCA))
-BLCA_acc <- load(paste0(data_path, "/", files[2]))
-BLCA_acc <- eval(as.symbol(BLCA_acc))
-BLCA_f1 <- load(paste0(data_path, "/", files[3]))
-BLCA_f1 <- eval(as.symbol(BLCA_f1))
+# 1-2 Assign Files to the different approaches
+f1_weighted  <- files[c(grep("f1", files), grep("F1", files))]
+acc_weighted <- files[grep("acc", files)]
+no_weighted  <- files[!grepl("acc", files) & !grepl("f1", files)  & !grepl("F1", files)]
 
-# 1-3 Extract the Metrics and TestSetting as desired:
-# BLCA
-res_blca <- extract_metrics(x = BLCA, metric = "F1", train_sit = 1)
-res_blca_acc <- extract_metrics(x = BLCA_acc, metric = "F1", train_sit = 1)
-res_blca_f1 <- extract_metrics(x = BLCA_f1, metric = "F1", train_sit = 1)
+# 1-3 Extract the results Load the Results for all TrainSettings
+# 1-3-1 F1-Weighting
+f1_res <- data.frame()
+for (file_ in f1_weighted) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  # Extract the Metrics for the current file
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  
+  # Merge curr_df into the f1_res
+  f1_res <- rbind(f1_res, curr_df)
+}
 
-# Bind to a single DF
-plot_df <- rbind(res_blca, res_blca_acc, res_blca_f1)
+# 1-3-2 Acc-Weighting
+acc_res <- data.frame()
+for (file_ in acc_weighted) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  # Extract the Metrics for the current file
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  
+  # Merge curr_df into the f1_res
+  acc_res <- rbind(acc_res, curr_df)
+}
 
-ggplot(data = plot_df, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
+# 1-3-3 No weighting
+no_res <- data.frame()
+for (file_ in no_weighted) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  # Extract the Metrics for the current file
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  
+  # Merge curr_df into the f1_res
+  no_res <- rbind(no_res, curr_df)
+}
+
+# 1-4 Bind all DFs to a single DF
+DF_all <- rbind(f1_res, acc_res, no_res)
+
+# [2] Plot the Results
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
   ggtitle("Romans Method applied to a data subset",
           subtitle = "split by the weighting used for the single folds!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15)) 
-
+        text = element_text(size = 15)) +
+  geom_vline(xintercept = seq(from = 1.5, to = 19.5, by = 1),
+             col = "red", lty = 2) 
 
 # Analyse Results of Norberts Approach on the fixed DFs                     ----
-# [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting1/"
+data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting1"
 
 # [1] Load all Results w/ Romans Approach
-# 1-1 get all files in the folder, that are singleblock performances
+# 1-1 List all files from the 'data_path'
 files <- list.files(data_path)
 
-# 1-2 Load the Results for all TrainSettings
-BLCA <- load(paste0(data_path, "/", files[1]))
-BLCA <- eval(as.symbol(BLCA))
-BLCA_acc <- load(paste0(data_path, "/", files[2]))
-BLCA_acc <- eval(as.symbol(BLCA_acc))
-BLCA_f1 <- load(paste0(data_path, "/", files[3]))
-BLCA_f1 <- eval(as.symbol(BLCA_f1))
+# 1-2 Assign Files to the different approaches
+f1_weighted  <- files[c(grep("f1", files), grep("F1", files))]
+acc_weighted <- files[grep("acc", files)]
+no_weighted  <- files[!grepl("acc", files) & !grepl("f1", files)  & !grepl("F1", files)]
 
-# 1-3 Extract the Metrics and TestSetting as desired:
-# BLCA
-res_blca <- extract_metrics(x = BLCA, metric = "F1", train_sit = 1)
-res_blca_acc <- extract_metrics(x = BLCA_acc, metric = "F1", train_sit = 1)
-res_blca_f1 <- extract_metrics(x = BLCA_f1, metric = "F1", train_sit = 1)
+# 1-3 Extract the results Load the Results for all TrainSettings
+# 1-3-1 F1-Weighting
+f1_res <- data.frame()
+for (file_ in f1_weighted) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  # Extract the Metrics for the current file
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  
+  # Merge curr_df into the f1_res
+  f1_res <- rbind(f1_res, curr_df)
+}
 
-# Bind to a single DF
-plot_df <- rbind(res_blca, res_blca_acc, res_blca_f1)
+# 1-3-2 Acc-Weighting
+acc_res <- data.frame()
+for (file_ in acc_weighted) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  # Extract the Metrics for the current file
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  
+  # Merge curr_df into the f1_res
+  acc_res <- rbind(acc_res, curr_df)
+}
 
-ggplot(data = plot_df, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
+# 1-3-3 No weighting
+no_res <- data.frame()
+for (file_ in no_weighted) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  # Extract the Metrics for the current file
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  
+  # Merge curr_df into the f1_res
+  no_res <- rbind(no_res, curr_df)
+}
+
+# 1-4 Bind all DFs to a single DF
+DF_all <- rbind(f1_res, acc_res, no_res)
+
+# [2] Plot the Results
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
   ggtitle("Norberts Method applied to a data subset",
           subtitle = "split by the weighting used for the single folds!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15)) 
+        text = element_text(size = 15)) +
+  geom_vline(xintercept = seq(from = 1.5, to = 19.5, by = 1),
+             col = "red", lty = 2) 
 
 
 # Analyse Results of the complete case Approach on the fixed DFs            ----
