@@ -767,7 +767,7 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
   # [2] Check Arguments, that can be passed w/ 'NULL'
   # [2-1] mtry - set to standard values from literature if NULL & < ncol(data)
   if (is.null(mtry)) {
-    mtry <- as.integer(sqrt(ncol(model.data) - 1))
+    mtry <- as.integer(ceiling(sqrt(ncol(model.data) - 1))) # -1 to exclude response
   } else if (mtry > ncol(model.data) - 1) {
     stop("'mtry' cannot be larger than number of feature variables!")
   }
