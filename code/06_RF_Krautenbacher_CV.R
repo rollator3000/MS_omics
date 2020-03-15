@@ -174,6 +174,12 @@ do_evaluation_rfsrc   <- function(Forest, testdata, weights) {
     weights <- weights[-c(which(forrest_to_rm))]
   } 
   
+  # 1-3-1 Check whether the remaning 'weights' are not only 0's
+  #       --> this leads to an error in 'weighted.mean()' calculation
+  if (all(weights == 0)) {
+    weights <- rep(1, times = length(weights))
+  }
+  
   # 1-4 Check whether there are any forrests left to do predicitons with 
   #     & if so, print the amount of usable trees!
   if (length(Forest) < 1) stop("Forest can not predicit on TestData, as all 
@@ -302,6 +308,13 @@ get_oob_weight_metric <- function(blockwise_RF) {
   # 2-4 Return the named vector!
   return(oob_results)
 }
+
+path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
+weighted = TRUE
+weight_metric = "F1"
+num_trees = 300
+mtry = NULL 
+min_node_size = 5
 
 do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                                   weighted = TRUE, weight_metric = NULL,
@@ -488,7 +501,7 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
     }
     
     # 2-4 Get the OOB metrics of the blockwise fitted RFs
-    # 2-4-1 If weighted, loop over the blockwise RFs and get the oob F1/ Acc
+    # 2-4-1 If weighted, loop over the blockwise RFs and get the oob F1 / Acc
     #       of each blockwise fitted RF!
     if (weighted) {
       weights <- c()
