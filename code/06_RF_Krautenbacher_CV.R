@@ -309,13 +309,6 @@ get_oob_weight_metric <- function(blockwise_RF) {
   return(oob_results)
 }
 
-path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
-weighted = TRUE
-weight_metric = "F1"
-num_trees = 300
-mtry = NULL 
-min_node_size = 5
-
 do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                                   weighted = TRUE, weight_metric = NULL,
                                   num_trees = 300, mtry = NULL, 
@@ -639,8 +632,8 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
 
 do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
                                   weighted = TRUE, weight_metric = NULL,
-                                  num_trees = as.integer(10), mtry = NULL, 
-                                  min_node_size = 10) {
+                                  num_trees = as.integer(300), mtry = NULL, 
+                                  min_node_size = 5) {
   "CrossValidate the Approach when the Traindata has blockwise missingness
    according to scenario 4!
    
