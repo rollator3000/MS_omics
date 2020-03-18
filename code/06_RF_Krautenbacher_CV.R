@@ -507,8 +507,10 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
       weights <- rep(1, times = length(Forest))
     }
     
-    # 2-4-2 Norm the weights
-    weights <- weights / sum(weights)
+    # 2-4-2 Norm the weights - if not all are 0 - if all are 0, 
+    #       give each block same weights
+    if (any(weights != 0)) weights <- weights / sum(weights)
+    if (all(weights == 0)) weights <-  rep(1, times = length(Forest))
     
     # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
     #     missing blocks to TestSets w/ only one observed Block!
