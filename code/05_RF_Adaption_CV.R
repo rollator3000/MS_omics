@@ -839,8 +839,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                  curr_data$block_names$C))])
     curr_Forest   <- copy_forrest(Forest)
-    miss2_AD[[i]] <- do_evaluation(Forest = curr_Forest, weighted = weighted,
-                                   weight_metric = weight_metric,
+    miss2_AD[[i]] <- do_evaluation(Forest = curr_Forest,
                                    testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                  curr_data$block_names$D))])
     curr_Forest   <- copy_forrest(Forest)
@@ -1155,8 +1154,6 @@ do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
   settings <- list("data_path"     = path,
                    "num_folds"     = k_splits,
                    "response"      = response,
-                   "weighted"      = weighted,
-                   "weight_metric" = weight_metric,
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
@@ -1181,26 +1178,9 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
   
-  print("Setting - 1/3")
-  sit1_1 <- do_CV_5_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "Acc", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit1_1, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting1/", DF, "_acc.RData"))
-  
-  print("Setting - 2/3")
-  sit1_2 <- do_CV_5_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "F1", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit1_2, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting1/", DF, "_f1.RData"))
-  
-  print("Setting - 3/3")
-  sit1_3 <- do_CV_5_blocks(path = curr_path,
-                           weighted = FALSE, weight_metric = NULL, 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit1_3, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting1/", DF, ".RData"))
+  sit1 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                         min_node_size = 5, unorderd_factors = "ignore")
+  save(sit1, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting1/", DF, ".RData"))
 }
 
 # ----- Situation 2
@@ -1211,26 +1191,9 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
   
-  print("Setting - 1/3")
-  sit2_1 <- do_CV_5_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "Acc", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit2_1, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting2/", DF, "_acc.RData"))
-  
-  print("Setting - 2/3")
-  sit2_2 <- do_CV_5_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "F1", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit2_2, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting2/", DF, "_f1.RData"))
-  
-  print("Setting - 3/3")
-  sit2_3 <- do_CV_5_blocks(path = curr_path,
-                           weighted = FALSE, weight_metric = NULL, 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit2_3, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting2/", DF, ".RData"))
+  sit2 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                         min_node_size = 5, unorderd_factors = "ignore")
+  save(sit2, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting2/", DF, ".RData"))
 }
 
 # ----- Situation 3
@@ -1241,26 +1204,9 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
   
-  print("Setting - 1/3")
-  sit3_1 <- do_CV_5_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "Acc", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit3_1, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting3/", DF, "_acc.RData"))
-  
-  print("Setting - 2/3")
-  sit3_2 <- do_CV_5_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "F1", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit3_2, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting3/", DF, "_f1.RData"))
-  
-  print("Setting - 3/3")
-  sit3_3 <- do_CV_5_blocks(path = curr_path,
-                           weighted = FALSE, weight_metric = NULL, 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit3_3, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting3/", DF, ".RData"))
+  sit3 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                         min_node_size = 5, unorderd_factors = "ignore")
+  save(sit3, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting3/", DF, ".RData"))
 }
 
 # ----- Situation 4
@@ -1271,24 +1217,7 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
   
-  print("Setting - 1/3")
-  sit4_1 <- do_CV_2_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "Acc", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit4_1, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting4/", DF, "_acc.RData"))
-  
-  print("Setting - 2/3")
-  sit4_2 <- do_CV_2_blocks(path = curr_path,
-                           weighted = TRUE, weight_metric = "F1", 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit4_2, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting4/", DF, "_f1.RData"))
-  
-  print("Setting - 3/3")
-  sit4_3 <- do_CV_2_blocks(path = curr_path,
-                           weighted = FALSE, weight_metric = NULL, 
-                           num_trees = 300, mtry = NULL, min_node_size = 5,
-                           unorderd_factors = "ignore")
-  save(sit4_3, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting4/", DF, ".RData"))
+  sit4 <- do_CV_2_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                         min_node_size = 5, unorderd_factors = "ignore")
+  save(sit4, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting4/", DF, ".RData"))
 }
