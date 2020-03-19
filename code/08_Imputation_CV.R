@@ -1,18 +1,18 @@
-"Script to tackle the blockwise missingness with the missForest Imputation!
+"Script to tackle the blockwise missingness with Imputation!
 
  For the Traindata with blockwise missingness, imputation is done, so that the 
- resulting data has no missing values at all!
- Then, we use features in the imputed data that are also features in the testset,
- to fit a RF and do predicitons on the testset!
+ resulting data has no missing values at all! Then, we use features in the 
+ imputed data that are also features in the testset, to fit a RF and do 
+ predicitons on the testset!
  Then we evaluate how good the predicitons were and return the metrics!
 "
 # SetWD, load packages, define Functions & set cores for parallel computing!
-setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
-library(missForest)
 library(checkmate)
 library(randomForestSRC)
 library(caret)
 library(doParallel)
+library(mice)
+library(parallel)
 
 detectCores()
 registerDoParallel(cores = 2)
@@ -121,19 +121,12 @@ mcc_metric          <- function(conf_matrix) {
   # [2] Return  ----------------------------------------------------------------
   return(mcc_final)
 }
-impute_missing_values <- function(data, ntree_imp = 100, maxiter = 10) {
-  "Impute missin values with the missForest Approach!
-   For this we look into 'data' and get the values we need to impute! 
-   Then we apply the missForest approach to impute these!
-    (For this we need to recode numeric columns to factors,
-     if the numeric column has less than 5 unique numeric values. 
-     But these are converted back to numeric before returning!)
+impute_missing_values <- function(data) {
+  "Impute missin values with the MICE Approach!
    
   Args:
     - data (dataframe) : Dataframe with (blockwise) missing values!
-    - ntree_imp (int)  : Amount of trees we use for the imputation
-    - maxiter   (int)  : Maximum number of iterations to be performed, as long 
-                         as the stopping criterion is not fullfilled yet!
+    
   Return:
     - data (dataframe) : Dataframe with no more missing values! All values
                          that were missing in 'data' were imputed!
@@ -143,14 +136,15 @@ impute_missing_values <- function(data, ntree_imp = 100, maxiter = 10) {
   # 0-1 'data' to be a dataframe
   assert_data_frame(data)
   
-  # 0-2 'ntree_imp' & 'maxiter' must be integers!
-  assert_int(ntree_imp)
-  assert_int(maxiter)
-  
   # [1] Prepare the data for the missForest imputation  ------------------------
   # 1-1 Remove the response from the data [will be added again after imputation]
   resp_ <- data[,1]
   data[,1] <- NULL
+  
+  
+  system.time(parlmice(data, m = 5, maxit = 15, meth = 'pmm', seed = 500, n.core = 2))
+  
+  system.time(mice.par(data, m = 5, maxit = 15, meth = 'pmm', seed = 500))
   
   # 1-2 Recode to factor if a numeric col has less than 5 unique values!
   # 1-2-1 Count how many unique values each column has:
@@ -294,11 +288,16 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   
   return(as.vector(res))
 }
+
+path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
+num_trees = 100
+min_node_size = 10
+mtry = NULL
+
 do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
-                                  num_trees = 100, min_node_size = 10, mtry = NULL,
-                                  n_tree_impute = 100, maxiter_impute = 10) {
+                                  num_trees = 100, min_node_size = 10, mtry = NULL) {
   "Evalute the Approach where we impute the block-wise missing values with 
-   missForest - for the cases with 5 blocks! [Scenario1, 2 & 3]
+   Imputation - for cases with 5 blocks [Scenario 1, 2 & 3]
    
    'path' must lead to a list with 2 entrances: 'data' & 'block_names'
      - 'data' is a list filled with 'k' test-train-splits
@@ -309,11 +308,10 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
       
    Based on the 'k' test-train-splits in 'data', we will evaluate the imputation
    approach. For this take the train data (that has blockwise missingness in it)
-   and impute missing values with missForest.
-   Then for each testsituation (fully observed testset,.., single block testset) 
-   we prune the imputed data, so that only features that are also in test remain.
-   On this data a RF is fitted and the performance is measured in the testset &
-   rated with Accuracy, Precision, Specifity, F1-Socre,...
+   and impute missing values. Then for each testsituation we prune the imputed 
+   & completly observed dataset, so that only features that are also in testset
+   remain. On this data a RF is fitted and the performance is measured in the 
+   testset & rated with Accuracy, Precision, Specifity, F1-Socre,...
    
    Args:
     - path (str)         : path to data with blockwise missingness we want to CV
@@ -334,11 +332,6 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     - mtry (int)         : Amount of split-variables we try, when looking for
                            a split variable! 
                                 > If 'NULL': mtry = sqrt(p)
-    - n_tree_impute (int)  : Amount of Trees we use for imputing the 
-                             missing values in the 'data$train' section of the
-                             data in 'path'
-    - maxiter_impute (int) : Maximum amount of itterations for the Imputation 
-                             with missForest!
     Return:
       - list filled w/:
         * 'res_all' [the CV Results on different testsets]:
@@ -368,11 +361,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     stop("'path' must end in '1.RData' | '2.RData' | '3.RData'")
   }
   
-  # 0-2 'n_tree_impute' & 'maxiter_impute' must be numeric!
-  assert_int(n_tree_impute)
-  assert_int(maxiter_impute)
-  
-  # 0-3 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
+  # 0-2 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
   if (!is.null(num_trees)) assert_int(num_trees, lower = 10)
   if (!is.null(mtry)) assert_int(mtry)
   if (!is.null(min_node_size)) assert_int(min_node_size, lower = 1)
@@ -420,6 +409,11 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     # 2-2 Extract the test and train set from 'curr_data'
     train <- curr_data$data[[i]]$train
     test  <- curr_data$data[[i]]$test
+    
+    #### TEMPORARY --- SUBSET COLUMNS!
+    cols_to_keep <- c(1, 2, 3, sample(4:ncol(train), 200))
+    train <- train[,cols_to_keep]
+    test  <- test[,cols_to_keep]
     
     # 2-3 Call Imput Function and impute the missing values!
     train_imputed <- impute_missing_values(data = train, 

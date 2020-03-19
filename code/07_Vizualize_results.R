@@ -481,7 +481,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
              col = "red", lty = 2) 
 
 # Analyse Results of Norberts Approach on the fixed DFs                     ----
-data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting1"
+data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting4"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
@@ -556,7 +556,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
 
 # Analyse Results of the complete case Approach on the fixed DFs            ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/complete_cases/setting1/"
+data_path <- "./docs/CV_Res/gender/complete_cases/setting4/"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
