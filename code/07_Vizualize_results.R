@@ -253,10 +253,9 @@ extract_avg_metrics <- function(x, metric, train_sit) {
 }
 
 
-# Used to extract Results from Romans Approach
-x = file_curr
-metric = "F1"
-train_sit = 1
+# Used to extract Results from Romans Approach 
+# - as these have a slightly different structure due to 
+#   performance realted changes
 extract_metrics_FW <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
@@ -291,7 +290,8 @@ extract_metrics_FW <- function(x, metric, train_sit) {
   # 0-2 'metric' must be a string, also existing in 'x'
   assert_string(metric)
   
-  #      Get all exisiting metrics 'x' contains
+  #      Get all exisiting metrics 'x' contains 
+  #      - check for 'full' results, as aslways has results!
   exis_meas_no_weight <- names(x$res_all$full[[1]]$no_weighting)
   exis_meas_f1_weight <- names(x$res_all$full[[1]]$f1_weighting)
   exis_meas_acc_weight <- names(x$res_all$full[[1]]$acc_weighting)
@@ -347,49 +347,94 @@ extract_metrics_FW <- function(x, metric, train_sit) {
   # 1-2-3 F1_WEIGHTING
   #       Loop over all possible TestSets
   res_f1_weight <- sapply(names(x$res_all), function(setting) {
-    #     For each fold check whether it contains only a single character 
-    #     [-> only happens when the tree had to be pruned] - if not extract the 
-    #     metric for the current 'Setting' and the current 'fold'
-    sapply(1:5, function(fold) {
-      if (is.character(x$res_all[[setting]][[fold]])) {
-        NA
-      }
-      else {
-        x$res_all[[setting]][[fold]][["f1_weighting"]][metric]
-      }
-    })
+      #     For each fold check whether it contains only a single character 
+      #     [-> only happens when the tree had to be pruned] - if not extract the 
+      #     metric for the current 'Setting' and the current 'fold'
+      sapply(1:5, function(fold) {
+        if (is.character(x$res_all[[setting]][[fold]])) {
+          NA
+        }
+        else {
+          x$res_all[[setting]][[fold]][["f1_weighting"]][metric]
+        }
+      })
   })
 
-  # 1-3 Convert to DF & add the type of weighting
-  res_no_weight            <- as.data.frame(res_no_weight)
-  res_no_weight$weighting  <- "None"
+  # 1-3 Convert the results to a usable DF
+  DF_final <- data.frame("Trainsituation" = numeric(),
+                         "Testsituation"  = character(),
+                         "Fold"           = numeric(),
+                         "Metric"         = character())
   
-  res_f1_weight            <- as.data.frame(res_f1_weight)
-  res_f1_weight$weighting  <- "F1"
+  # 1-3-1 Loop over each of the different weighted results
+  for (res_curr_train_set in list(as.data.frame(res_no_weight), 
+                                  as.data.frame(res_f1_weight),
+                                  as.data.frame(res_acc_weight))) {
+    
+    # 1-3-2 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
+    #       & fill 'DF_final'
+    for (j in seq_len(ncol(res_curr_train_set))) {
+      
+      # 1-3-2-1 Extract TrainSetting, folds, test_situation and the metrics
+      #         for the given column!
+      train_sit_ <- rep(train_sit, times = nrow(res_curr_train_set))
+      folds      <- seq_len(nrow(res_curr_train_set))
+      test_sit   <- rep(colnames(res_curr_train_set)[j], times = nrow(res_curr_train_set))
+      metric_c   <- unlist(res_curr_train_set[,j])
+      
+      # If metric_c contains any NA replace these by '0' or '-1' if the metric is MMC
+      if (any(is.na(metric_c))) {
+        to_replace <- which(is.na(metric_c))
+        if (metric == "MCC") {
+          replace_value <- -1
+        } else {
+          replace_value <- 0
+        }
+        
+        metric_c[to_replace] <- replace_value
+        metric_c             <- as.numeric(metric_c)
+      }
+      
+      # 1-3-2-2 Bind it to the DF with all Results
+      df_current <- data.frame("Trainsituation" = train_sit_,
+                               "Testsituation"  = test_sit,
+                               "Fold"           = folds,
+                               "Metric"         = metric_c)
+      DF_final <- rbind(DF_final, df_current)
+    }
+  }
   
-  res_acc_weight           <- as.data.frame(res_acc_weight)
-  res_acc_weight$weighting <- "ACC"
+  # 1-4 Add the Type of Weighting - always added to DF_final in same order
+  # 1-4-1 Generate names of the weighting
+  weighted_ens_names <- c(rep("no", times = length(res_no_weight)),
+                          rep("F1", times = length(res_f1_weight)),
+                          rep("Acc", times = length(res_acc_weight)))
   
-  # 1-4 Bind them to a single DF!
-  DF_all <- rbind(res_no_weight, res_f1_weight, res_acc_weight)
+  weighted_bool <- c(rep(FALSE, times = length(res_no_weight)),
+                     rep(TRUE, times = length(res_f1_weight) + 
+                                       length(res_acc_weight)))
+  
+  # 1-4-2 Add to DF_final
+  DF_final$weighted_ens <- weighted_bool
+  DF_final$weight_metric <- weighted_ens_names
+
   
   # [2] Add the settings that have been used
   # 2-1 Add used DF and used Seed
-  path_split     <- unlist(strsplit(x_settings$data_path, split = "/"))
-  DF_all$DF      <- path_split[length(path_split)]
-  DF_all$DF_seed <- path_split[length(path_split) - 1]
+  path_split       <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_final$DF      <- path_split[length(path_split)]
+  DF_final$DF_seed <- path_split[length(path_split) - 1]
   
   # 2-2 Add the infos from "x_settings"
-  DF_all$performance_metric <- metric
-  DF_all$reponse            <- x_settings$response
-  DF_all$model_seed         <- x_settings$seed
-  DF_all$num_trees          <- x_settings$num_trees
-  DF_all$mtry               <- x_settings$mtry
-  DF_all$min_node_size      <- x_settings$min_node_size
-  DF_all$weighted_ens       <- x_settings$weighted
+  DF_final$performance_metric <- metric
+  DF_final$reponse            <- x_settings$response
+  DF_final$model_seed         <- x_settings$seed
+  DF_final$num_trees          <- x_settings$num_trees
+  DF_final$mtry               <- x_settings$mtry
+  DF_final$min_node_size      <- x_settings$min_node_size
   
   # [3] Return 'DF_final'
-  return(DF_all)
+  return(DF_final)
 }
 
 extract_avg_metrics_FW <- function(x, metric, train_sit) {
@@ -496,7 +541,12 @@ extract_avg_metrics_FW <- function(x, metric, train_sit) {
   })
   
   # 1-3 Convert to DF, aberage the results and add the type of weighting
-  res_no_weight            <- as.data.frame(res_no_weight)
+  res_f1_weight            <- as.data.frame(res_f1_weight)
+  
+  sapply(1:ncol(res_f1_weight), function(col_) {
+    unlist(res_f1_weight[,col_])
+  })
+  unlist(res_f1_weight[,1])
   
   apply(res_f1_weight, MARGIN = 2, function(x) mean(x, na.rm = TRUE))
   res_no_weight$weighting  <- "None"
@@ -696,14 +746,15 @@ data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
 files <- list.files(data_path)
 
 # 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
 for (curr_file in files) {
   
   # Load the result and assign it to 'file_curr'
   file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  
-  
+  curr_df   <- extract_metrics_FW(file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
 }
 
 # [2] Plot the Results
@@ -719,7 +770,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
              col = "red", lty = 2) 
 
 # Analyse Results of Norberts Approach on the fixed DFs                     ----
-data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting4"
+data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting1"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
