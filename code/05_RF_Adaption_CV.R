@@ -302,13 +302,14 @@ get_oob_weight_metric     <- function(trees) {
                                          trees[[1]]$data$data[unique_oob_ids, 1])
   
   # 2-1 Check, that neither Acc nor F1 is not defined, if replace it with worst value
-  if (is.na(conf_mat_oob$overall["Accuracy"])) conf_mat_oob$overall["Accuracy"] <- 0 
-  if (is.na(conf_mat_oob$byClass["F1"])) conf_mat_oob$byClass["F1"]             <- 0 
+  Acc_ <- conf_mat_oob$overall["Accuracy"]
+  f1_  <- conf_mat_oob$byClass["F1"]
+  
+  if (is.na(Acc_)) Acc_ <- 0 
+  if (is.na(f1_))  f1_  <- 0 
   
   # [3] Return it as named vector!
-  return(
-  setNames(c(conf_mat_oob$overall["Accuracy"], conf_mat_oob$byClass["F1"]),
-           c("Acc", "F1")))
+  return(setNames(c(Acc_, f1_),c("Acc", "F1")))
 }
 all_trees_grown_correctly <- function(trees) {
   "Check, whether 'trees', were grown correctly & if not grow these trees again,
@@ -484,7 +485,7 @@ do_evaluation             <- function(Forest, testdata) {
   }
   
   # Check whether any of the RFs is not usable [only NA predicitons]
-  not_usable <- sapply(seq_len(length(tree_preds_all)), function(x) {
+  not_usable <- sapply(seq_len(length(tree_preds_all)), function(i) {
     all(is.na(tree_preds_all[[i]]$Class))
   })
   
@@ -526,19 +527,6 @@ do_evaluation             <- function(Forest, testdata) {
     F1_weights  <- rep(1, times = length(Forest))
   }
   
-  # 3-1 Check the weights and norm them!
-  # 3-1-1 Check that weights are not only consist of 0's - If they ONLY consit 
-  #       of 0's then replace all weights with 1's
-  if (all(F1_weights == 0))  F1_weights  <- rep(1, times = length(Forest))
-  if (all(Acc_weights == 0)) Acc_weights <- rep(1, times = length(Forest))
-  if (all(No_weights == 0))  No_weights  <- rep(1, times = length(Forest))
-  
-  # 3-1-2 Norm the weights, but only if at least one is != 0
-  if (any(F1_weights != 0))  F1_weights  <- F1_weights  / sum(F1_weights)
-  if (any(Acc_weights != 0)) Acc_weights <- Acc_weights / sum(Acc_weights)
-  if (any(No_weights != 0))  No_weights  <- No_weights  / sum(No_weights)
-  
-
   # [4] Aggregate Predictions from the different foldwise fitted RFs!  ---------
   # --- 4-1 Get the probabilities of all test obs to be of class '0' - NO WEIGHTS
   probs_class_0_no_weight <- sapply(1:nrow(testdata), FUN = function(x) {
@@ -621,6 +609,12 @@ do_evaluation             <- function(Forest, testdata) {
                   "f1_weighting"  = f1_weighting)
   return(as.vector(res_all))
 }
+
+path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
+num_trees = 50
+mtry = NULL
+min_node_size = 5
+unorderd_factors = "ignore"
 
 do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                            num_trees = 300, mtry = NULL, min_node_size = 5,
@@ -801,6 +795,8 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
       
       return(fold_RF)
     }
+    
+    org_Forest <- copy_forrest(Forest)
     
     # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
     #     missing blocks to TestSets w/ only one observed Block!
