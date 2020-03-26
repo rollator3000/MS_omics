@@ -610,12 +610,6 @@ do_evaluation             <- function(Forest, testdata) {
   return(as.vector(res_all))
 }
 
-path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
-num_trees = 50
-mtry = NULL
-min_node_size = 5
-unorderd_factors = "ignore"
-
 do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
                            num_trees = 300, mtry = NULL, min_node_size = 5,
                            unorderd_factors = "ignore") {
