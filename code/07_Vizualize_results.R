@@ -436,7 +436,6 @@ extract_metrics_FW <- function(x, metric, train_sit) {
   # [3] Return 'DF_final'
   return(DF_final)
 }
-
 extract_avg_metrics_FW <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
@@ -540,47 +539,77 @@ extract_avg_metrics_FW <- function(x, metric, train_sit) {
     })
   })
   
-  # 1-3 Convert to DF, aberage the results and add the type of weighting
-  res_f1_weight            <- as.data.frame(res_f1_weight)
+  # 1-3 Convert the results to a usable DF
+  DF_final <- data.frame("Trainsituation" = numeric(),
+                         "Testsituation"  = character(),
+                         "Metric"         = character())
   
-  sapply(1:ncol(res_f1_weight), function(col_) {
-    unlist(res_f1_weight[,col_])
-  })
-  unlist(res_f1_weight[,1])
+  # 1-3-1 Loop over each of the different weighted results
+  for (res_curr_train_set in list(as.data.frame(res_f1_weight), 
+                                  as.data.frame(res_acc_weight),
+                                  as.data.frame(res_no_weight))) {
+    
+    # 1-3-2 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
+    #       & fill 'DF_final'
+    for (j in seq_len(ncol(res_curr_train_set))) {
+      
+      # 1-3-2-1 Extract TrainSetting, folds, test_situation and the metrics
+      #         for the given column!
+      train_sit_ <- train_sit
+      test_sit   <- colnames(res_curr_train_set)[j]
+      metric_c   <- mean(unlist(res_curr_train_set[,j]), na.rm = T)
+      
+      # If metric_c contains any NA replace these by '0' or '-1' if the metric is MMC
+      if (any(is.na(metric_c))) {
+        to_replace <- which(is.na(metric_c))
+        if (metric == "MCC") {
+          replace_value <- -1
+        } else {
+          replace_value <- 0
+        }
+        
+        metric_c[to_replace] <- replace_value
+        metric_c             <- as.numeric(metric_c)
+      }
+      
+      # 1-3-2-2 Bind it to the DF with all Results
+      df_current <- data.frame("Trainsituation" = train_sit_,
+                               "Testsituation"  = test_sit,
+                               "Metric"         = metric_c)
+      DF_final <- rbind(DF_final, df_current)
+    }
+  }
   
-  apply(res_f1_weight, MARGIN = 2, function(x) mean(x, na.rm = TRUE))
-  res_no_weight$weighting  <- "None"
+  # 1-4 Add the Type of Weighting - always added to DF_final in same order
+  # 1-4-1 Generate names of the weighting
+  weighted_ens_names <- c(rep("F1", times  = nrow(DF_final)/3),
+                          rep("Acc", times = nrow(DF_final)/3),
+                          rep("No", times  = nrow(DF_final)/3))
   
+  weighted_bool <- c(rep(TRUE, times = nrow(DF_final)/3 + nrow(DF_final)/3),
+                     rep(FALSE, times = nrow(DF_final)/3))
   
-  res_f1_weight            <- as.data.frame(res_f1_weight)
-  res_f1_weight$weighting  <- "F1"
+  # 1-4-2 Add to DF_final
+  DF_final$weighted_ens  <- weighted_bool
+  DF_final$weight_metric <- weighted_ens_names
   
-  res_acc_weight           <- as.data.frame(res_acc_weight)
-  res_acc_weight$weighting <- "ACC"
-  
-  # 1-3-1 Average the Results for each TestSet
-  
-  
-  # 1-4 Bind them to a single DF!
-  DF_all <- rbind(res_no_weight, res_f1_weight, res_acc_weight)
   
   # [2] Add the settings that have been used
   # 2-1 Add used DF and used Seed
-  path_split     <- unlist(strsplit(x_settings$data_path, split = "/"))
-  DF_all$DF      <- path_split[length(path_split)]
-  DF_all$DF_seed <- path_split[length(path_split) - 1]
+  path_split       <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_final$DF      <- path_split[length(path_split)]
+  DF_final$DF_seed <- path_split[length(path_split) - 1]
   
   # 2-2 Add the infos from "x_settings"
-  DF_all$performance_metric <- metric
-  DF_all$reponse            <- x_settings$response
-  DF_all$model_seed         <- x_settings$seed
-  DF_all$num_trees          <- x_settings$num_trees
-  DF_all$mtry               <- x_settings$mtry
-  DF_all$min_node_size      <- x_settings$min_node_size
-  DF_all$weighted_ens       <- x_settings$weighted
+  DF_final$performance_metric <- metric
+  DF_final$reponse            <- x_settings$response
+  DF_final$model_seed         <- x_settings$seed
+  DF_final$num_trees          <- x_settings$num_trees
+  DF_final$mtry               <- x_settings$mtry
+  DF_final$min_node_size      <- x_settings$min_node_size
   
   # [3] Return 'DF_final'
-  return(DF_all)
+  return(DF_final)
 }
 
 # Analyse the explorative singleblock single block Results                  ----
@@ -744,6 +773,7 @@ data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
 files <- list.files(data_path)
+files <- "BLCA.RData"
 
 # 1-2 Loop over all the files and extract the results
 DF_all <- data.frame()
@@ -845,7 +875,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
 
 # Analyse Results of the complete case Approach on the fixed DFs            ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/complete_cases/setting4/"
+data_path <- "./docs/CV_Res/gender/complete_cases/setting2/"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
