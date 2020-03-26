@@ -6,6 +6,7 @@ require(gridExtra)
 library(reshape2)
 library(checkmate)
 
+# Used for all Results except from 'Romans Approach'
 extract_metrics <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
@@ -131,7 +132,6 @@ extract_metrics <- function(x, metric, train_sit) {
   # [3] Return 'DF_final'
   return(DF_final)
 }
-
 extract_avg_metrics <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
@@ -250,6 +250,287 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   
   # [3] Return 'DF_final'
   return(DF_final)
+}
+
+
+# Used to extract Results from Romans Approach
+x = file_curr
+metric = "F1"
+train_sit = 1
+extract_metrics_FW <- function(x, metric, train_sit) {
+  "
+  Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
+  to a DF, that we can use for plotting!
+  'x' is the result of a CV of one trainsetting & all has results for all of 
+  the 20 testsettings! From this list we extract the metric for all of the 
+  different trainsettings!
+    --> Only grab the average values for the metric of all folds!
+  
+   Args:
+    x (list)           : list filled with the metrics for every single 
+                         Itteration in CV + the settings it was created from!
+                         Needs the names:
+                         ['res_all' & 'settings']
+    metric (str)       : the metric we shall extraxt from the result list!
+                         Needs to be in:
+                         ['Accuracy', 'Sensitifity', 'Specificity', 'Precision', 
+                          'Recall', 'F1', 'Balance_Acc', 'AUC', 'MCC']
+    train_sit (int)    : Which TrainingSituation do the results come from!
+                         [four different trainsettings in total s. MS Thesis!]
+
+   Return:
+    DF, suited for plotting, with all metric for all testsettings in 'x'
+  "
+  # [0] Check Inputs  ---------------------------------------------------------- 
+  # 0-1 'x' must be a list of length 2 w/ names 'res_all' & 'settings'
+  assert_list(x, len = 2)
+  if (!('res_all' %in% names(x)) | !('settings' %in% names(x))) {
+    stop("'x' needs 2 entrances called 'res_all' & 'settings'")
+  }
+  
+  # 0-2 'metric' must be a string, also existing in 'x'
+  assert_string(metric)
+  
+  #      Get all exisiting metrics 'x' contains
+  exis_meas_no_weight <- names(x$res_all$full[[1]]$no_weighting)
+  exis_meas_f1_weight <- names(x$res_all$full[[1]]$f1_weighting)
+  exis_meas_acc_weight <- names(x$res_all$full[[1]]$acc_weighting)
+  
+  metric_exisits <- metric %in% exis_meas_no_weight && 
+                    metric %in% exis_meas_f1_weight && 
+                    metric %in% exis_meas_acc_weight
+  
+  if (!metric_exisits) stop("metric doesn't exist in 'x'")
+  
+  # 0-3 'train_sit' must be integer [1; 4]
+  assert_int(train_sit, lower = 1, upper = 4)
+  
+  # [1] Extract the metric for all testsettings  -------------------------------
+  # 1-1 Get the settings the model has been trained with
+  x_settings <- x$settings
+  
+  # 1-2 Extract the metric for all 20 TestSettings ["full", "miss_1A", ...]!
+  #     --> NA weights stand for trees that were pruned at the first splitvar.
+  #         so that the trees could not be used for a predicition
+  # 1-2-1 NO_WEIGHTING
+  #       Loop over all possible TestSets
+  res_no_weight <- sapply(names(x$res_all), function(setting) {
+    #     For each fold check whether it contains only a single character 
+    #     [-> only happens when the tree had to be pruned] - if not extract the 
+    #     metric for the current 'Setting' and the current 'fold'
+    sapply(1:5, function(fold) {
+      if (is.character(x$res_all[[setting]][[fold]])) {
+        NA
+      }
+      else {
+        x$res_all[[setting]][[fold]][["no_weighting"]][metric]
+      }
+    })
+  })
+  
+  # 1-2-2 ACC_WEIGHTING
+  #       Loop over all possible TestSets
+  res_acc_weight <- sapply(names(x$res_all), function(setting) {
+    #     For each fold check whether it contains only a single character 
+    #     [-> only happens when the tree had to be pruned] - if not extract the 
+    #     metric for the current 'Setting' and the current 'fold'
+    sapply(1:5, function(fold) {
+      if (is.character(x$res_all[[setting]][[fold]])) {
+        NA
+      }
+      else {
+        x$res_all[[setting]][[fold]][["acc_weighting"]][metric]
+      }
+    })
+  })
+  
+  # 1-2-3 F1_WEIGHTING
+  #       Loop over all possible TestSets
+  res_f1_weight <- sapply(names(x$res_all), function(setting) {
+    #     For each fold check whether it contains only a single character 
+    #     [-> only happens when the tree had to be pruned] - if not extract the 
+    #     metric for the current 'Setting' and the current 'fold'
+    sapply(1:5, function(fold) {
+      if (is.character(x$res_all[[setting]][[fold]])) {
+        NA
+      }
+      else {
+        x$res_all[[setting]][[fold]][["f1_weighting"]][metric]
+      }
+    })
+  })
+
+  # 1-3 Convert to DF & add the type of weighting
+  res_no_weight            <- as.data.frame(res_no_weight)
+  res_no_weight$weighting  <- "None"
+  
+  res_f1_weight            <- as.data.frame(res_f1_weight)
+  res_f1_weight$weighting  <- "F1"
+  
+  res_acc_weight           <- as.data.frame(res_acc_weight)
+  res_acc_weight$weighting <- "ACC"
+  
+  # 1-4 Bind them to a single DF!
+  DF_all <- rbind(res_no_weight, res_f1_weight, res_acc_weight)
+  
+  # [2] Add the settings that have been used
+  # 2-1 Add used DF and used Seed
+  path_split     <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_all$DF      <- path_split[length(path_split)]
+  DF_all$DF_seed <- path_split[length(path_split) - 1]
+  
+  # 2-2 Add the infos from "x_settings"
+  DF_all$performance_metric <- metric
+  DF_all$reponse            <- x_settings$response
+  DF_all$model_seed         <- x_settings$seed
+  DF_all$num_trees          <- x_settings$num_trees
+  DF_all$mtry               <- x_settings$mtry
+  DF_all$min_node_size      <- x_settings$min_node_size
+  DF_all$weighted_ens       <- x_settings$weighted
+  
+  # [3] Return 'DF_final'
+  return(DF_all)
+}
+
+extract_avg_metrics_FW <- function(x, metric, train_sit) {
+  "
+  Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
+  to a DF, that we can use for plotting!
+  'x' is the result of a CV of one trainsetting & all has results for all of 
+  the 20 testsettings! From this list we extract the metric for all of the 
+  different trainsettings!
+    --> Only grab the average values for the metric of all folds!
+  
+   Args:
+    x (list)           : list filled with the metrics for every single 
+                         Itteration in CV + the settings it was created from!
+                         Needs the names:
+                         ['res_all' & 'settings']
+    metric (str)       : the metric we shall extraxt from the result list!
+                         Needs to be in:
+                         ['Accuracy', 'Sensitifity', 'Specificity', 'Precision', 
+                          'Recall', 'F1', 'Balance_Acc', 'AUC', 'MCC']
+    train_sit (int)    : Which TrainingSituation do the results come from!
+                         [four different trainsettings in total s. MS Thesis!]
+
+   Return:
+    DF, suited for plotting, with all metric for all testsettings in 'x'
+  "
+  # [0] Check Inputs  ---------------------------------------------------------- 
+  # 0-1 'x' must be a list of length 2 w/ names 'res_all' & 'settings'
+  assert_list(x, len = 2)
+  if (!('res_all' %in% names(x)) | !('settings' %in% names(x))) {
+    stop("'x' needs 2 entrances called 'res_all' & 'settings'")
+  }
+  
+  # 0-2 'metric' must be a string, also existing in 'x'
+  assert_string(metric)
+  
+  #      Get all exisiting metrics 'x' contains
+  exis_meas_no_weight <- names(x$res_all$full[[1]]$no_weighting)
+  exis_meas_f1_weight <- names(x$res_all$full[[1]]$f1_weighting)
+  exis_meas_acc_weight <- names(x$res_all$full[[1]]$acc_weighting)
+  
+  metric_exisits <- metric %in% exis_meas_no_weight && 
+    metric %in% exis_meas_f1_weight && 
+    metric %in% exis_meas_acc_weight
+  
+  if (!metric_exisits) stop("metric doesn't exist in 'x'")
+  
+  # 0-3 'train_sit' must be integer [1; 4]
+  assert_int(train_sit, lower = 1, upper = 4)
+  
+  # [1] Extract the metric for all testsettings  -------------------------------
+  # 1-1 Get the settings the model has been trained with
+  x_settings <- x$settings
+  
+  # 1-2 Extract the metric for all 20 TestSettings ["full", "miss_1A", ...]!
+  #     --> NA weights stand for trees that were pruned at the first splitvar.
+  #         so that the trees could not be used for a predicition
+  # 1-2-1 NO_WEIGHTING
+  #       Loop over all possible TestSets
+  res_no_weight <- sapply(names(x$res_all), function(setting) {
+    #     For each fold check whether it contains only a single character 
+    #     [-> only happens when the tree had to be pruned] - if not extract the 
+    #     metric for the current 'Setting' and the current 'fold'
+    sapply(1:5, function(fold) {
+      if (is.character(x$res_all[[setting]][[fold]])) {
+        NA
+      }
+      else {
+        x$res_all[[setting]][[fold]][["no_weighting"]][metric]
+      }
+    })
+  })
+  
+  # 1-2-2 ACC_WEIGHTING
+  #       Loop over all possible TestSets
+  res_acc_weight <- sapply(names(x$res_all), function(setting) {
+    #     For each fold check whether it contains only a single character 
+    #     [-> only happens when the tree had to be pruned] - if not extract the 
+    #     metric for the current 'Setting' and the current 'fold'
+    sapply(1:5, function(fold) {
+      if (is.character(x$res_all[[setting]][[fold]])) {
+        NA
+      }
+      else {
+        x$res_all[[setting]][[fold]][["acc_weighting"]][metric]
+      }
+    })
+  })
+  
+  # 1-2-3 F1_WEIGHTING
+  #       Loop over all possible TestSets
+  res_f1_weight <- sapply(names(x$res_all), function(setting) {
+    #     For each fold check whether it contains only a single character 
+    #     [-> only happens when the tree had to be pruned] - if not extract the 
+    #     metric for the current 'Setting' and the current 'fold'
+    sapply(1:5, function(fold) {
+      if (is.character(x$res_all[[setting]][[fold]])) {
+        NA
+      }
+      else {
+        x$res_all[[setting]][[fold]][["f1_weighting"]][metric]
+      }
+    })
+  })
+  
+  # 1-3 Convert to DF, aberage the results and add the type of weighting
+  res_no_weight            <- as.data.frame(res_no_weight)
+  
+  apply(res_f1_weight, MARGIN = 2, function(x) mean(x, na.rm = TRUE))
+  res_no_weight$weighting  <- "None"
+  
+  
+  res_f1_weight            <- as.data.frame(res_f1_weight)
+  res_f1_weight$weighting  <- "F1"
+  
+  res_acc_weight           <- as.data.frame(res_acc_weight)
+  res_acc_weight$weighting <- "ACC"
+  
+  # 1-3-1 Average the Results for each TestSet
+  
+  
+  # 1-4 Bind them to a single DF!
+  DF_all <- rbind(res_no_weight, res_f1_weight, res_acc_weight)
+  
+  # [2] Add the settings that have been used
+  # 2-1 Add used DF and used Seed
+  path_split     <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_all$DF      <- path_split[length(path_split)]
+  DF_all$DF_seed <- path_split[length(path_split) - 1]
+  
+  # 2-2 Add the infos from "x_settings"
+  DF_all$performance_metric <- metric
+  DF_all$reponse            <- x_settings$response
+  DF_all$model_seed         <- x_settings$seed
+  DF_all$num_trees          <- x_settings$num_trees
+  DF_all$mtry               <- x_settings$mtry
+  DF_all$min_node_size      <- x_settings$min_node_size
+  DF_all$weighted_ens       <- x_settings$weighted
+  
+  # [3] Return 'DF_final'
+  return(DF_all)
 }
 
 # Analyse the explorative singleblock single block Results                  ----
@@ -414,59 +695,16 @@ data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
 # 1-1 List all files from the 'data_path'
 files <- list.files(data_path)
 
-# 1-2 Assign Files to the different approaches
-f1_weighted  <- files[c(grep("f1", files), grep("F1", files))]
-acc_weighted <- files[grep("acc", files)]
-no_weighted  <- files[!grepl("acc", files) & !grepl("f1", files)  & !grepl("F1", files)]
-
-# 1-3 Extract the results Load the Results for all TrainSettings
-# 1-3-1 F1-Weighting
-f1_res <- data.frame()
-for (file_ in f1_weighted) {
+# 1-2 Loop over all the files and extract the results
+for (curr_file in files) {
   
   # Load the result and assign it to 'file_curr'
-  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  # Extract the Metrics for the current file
-  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
   
-  # Merge curr_df into the f1_res
-  f1_res <- rbind(f1_res, curr_df)
+  
 }
-
-# 1-3-2 Acc-Weighting
-acc_res <- data.frame()
-for (file_ in acc_weighted) {
-  
-  # Load the result and assign it to 'file_curr'
-  file_curr <- load(paste0(data_path, "/", file_))
-  file_curr <- eval(as.symbol(file_curr))
-  
-  # Extract the Metrics for the current file
-  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
-  
-  # Merge curr_df into the f1_res
-  acc_res <- rbind(acc_res, curr_df)
-}
-
-# 1-3-3 No weighting
-no_res <- data.frame()
-for (file_ in no_weighted) {
-  
-  # Load the result and assign it to 'file_curr'
-  file_curr <- load(paste0(data_path, "/", file_))
-  file_curr <- eval(as.symbol(file_curr))
-  
-  # Extract the Metrics for the current file
-  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
-  
-  # Merge curr_df into the f1_res
-  no_res <- rbind(no_res, curr_df)
-}
-
-# 1-4 Bind all DFs to a single DF
-DF_all <- rbind(f1_res, acc_res, no_res)
 
 # [2] Plot the Results
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
