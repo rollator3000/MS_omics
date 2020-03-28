@@ -37,7 +37,7 @@ library(doParallel)
 library(e1071)
 
 detectCores()
-registerDoParallel(cores = 5)
+registerDoParallel(cores = 8)
 
 load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -495,16 +495,31 @@ do_evaluation             <- function(Forest, testdata) {
     return("No Predictions possible as all trees are pruned at the 1. splitvar!")
   }
   
-  # 2-2 Remove the SubRFs, that are not usable from Forest % tree_preds_all
+  # 2-2 Remove the SubRFs, that are not usable from Forest, tree_preds_all & tree_testsets
   if (any(not_usable)) {
     Forest         <- Forest[-c(which(not_usable))]
     tree_preds_all <- tree_preds_all[-c(which(not_usable))]
+    tree_testsets  <- tree_testsets[-c(which(not_usable))]
   }
   
   # [3] If we want to create weighted ensemble of the predicitons, we need to ----
   #     calc the OOB-Accuracy/ -F1-Score per foldwise fitted RF. These are used
   #     as weights when assembeling the predicitons [low Metric -> low weight]!
   #     ATTENTION: No need to calc weights when only a single foldwise RF left!
+  
+  # 3-1 Firstly prune the trees according to the current testset & then get the oob 
+  #     performance, so the pruned RF is rated and not the fully grown one 
+  #     [where test set misses the used split variables of the trees]!
+  #     --> child nodeIDs to 'pruned', if split_var not in test
+  
+  #    Loop over all trees and prune them according to the testdata!
+  #    [--> had to be added, as the pruning is not saved when running in parallel]
+  for (i_ in 1:length(Forest)) {
+    curr_test_set <- tree_testsets[[i_]]
+    tmp <- sapply(Forest[[i_]], FUN = function(x) x$prune(curr_test_set))
+  }
+  
+  # 3-2 Get the oob performance of the pruned trees!
   if (length(Forest) > 1) {
     
     # Get the ACC & F1 weights for each of the foldwise fitted Forests!
@@ -610,7 +625,7 @@ do_evaluation             <- function(Forest, testdata) {
   return(as.vector(res_all))
 }
 
-do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_2.RData",
+do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                            num_trees = 300, mtry = NULL, min_node_size = 5,
                            unorderd_factors = "ignore") {
   "CrossValidate the Foldwise-Approach when the Traindata has blockwise 
@@ -789,8 +804,6 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
       
       return(fold_RF)
     }
-    
-    org_Forest <- copy_forrest(Forest)
     
     # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
     #     missing blocks to TestSets w/ only one observed Block!
