@@ -5,38 +5,40 @@ supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
 ## Project description
-This project compares different approaches to deal with blockwise missingness in training- & testsets! <br>
-When having multiple training-sets for the same target variable usually all these training sets recored different feature variables. These Trainingsets usually consit of differnet blocks. A block is a set of features from a Topic (e.g. DNA, Clinical,...) and when combining datasets with different feature blocks the concatenation results in a dataframe with blockwise missing data. For each observation in the concatenated dataframe a feature block is either fully observed or not all. As a regular model fitting on these data is not possible either the method needs to be adjusted or the data processed! <br> 
+This project compares different approaches capable to deal with blockwise missingness in Multi-Omics data.  
+Blockwise missingness is a special type of missingness that appears frequently in the context of Multi-Omics data.  
+Data with blockwise missingness always consits of different **folds** and **blocks**.
+  - A block describes a set of covariatescontaining all features collected on the basis of a characteristic. Basically all covariates that are related in content (e.g. physical properties: height, weight, skin).  
+  - A fold represents a set of observations with the same observed blocks. Basically all observations with the same observed features - each fold is unique and every obserbation in the data belongs to exactly one of them.
+
+Blockwise Missingness can for example arise when concatenating multiple training-sets for the same target variable. And could have the following form:
+| ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
+|---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
+| 1   | 65.4    | 187     | 2.536   | Upper       |         | ...   |         | 1   |
+| 2   | 83.9    | 192     | 1.342   | Lower       |         | ...   |         | 0   |
+| 3   | 67.4    | 167     | 5.332   | Upper       |         | ...   |         | 1   |
+| 4   |         |         | 743     | Lower       | -0.42   | ...   | 1.43    | 1   |
+| 5   |         |         | 2.125   | Lower       | 0.52    | ...   | -1.37   | 0   |
+| 6   | 105.2   | 175     |         |             | -1.53   | ...   | 2.01    | 0   |
+| 7   | 71.5    | 173     |         |             | 0.93    | ...   | 0.53    | 0   |
+| 8   | 73.0    | 169     |         |             | 0.31    | ...   | -0.07   | 1   |
+
+Regular model fitting on these kind of data is for most methods not directly possible, so that either the method needs to be adjusted or the data processed! 
+As the testdata can also consist of block-wise missingness - e.g. all blocks are avaible | just 1 block avaible | Combination of 2 blocks avaible - the approaches must be able to deal with this aswell <br>
+
 Multiple Approaches will be compared:
--  Baseline Approach: Only use complete cases (regarding the testset) to fit a RF on *(e.g. testset constits of Clinical Block and 2 Omics Block -> only use train observations, that were fully observed in these 3 blocks)*. <br>
--  Baseline Approach: Only use complete cases from 1 single feature block to fit a RF on *(e.g. only observations, that were fully observed in the 'clin'-block)* <br>
--  Imputation Approach: Use the 'missForest' approach to impute the missing values, so that we can regualry fit a RF on it. <br>
--  Adaption Approach: Fit multiple RandomForests blockwise on the concatenated data <br>
--  Adaption Approach: Fit multiple RandomForests foldwise on the concatenated data <br>
+-  Baseline Approach 1: Only use complete cases (regarding the testset) to fit a RF on - if the testset consists of 'Weight', 'Height', 
+'g1',...,'g100' then only Observations with these observed features will be used for the trainig of the model!
+-  Baseline Approach 2: Only use complete cases from a single feature block to fit a RF on - if the testset consists of 'Weight', 'Height', 
+'g1',...,'g100' then fit a model, that uses all observations with the features 'Weight' & 'Height' and do predicitons on the test data only using these variables. Analog fit a model, that uses all observations with the features 'g1',...,'g100' and do predicitons on the test data only using these variables. 
+-  Imputation Approach: Use the 'missForest' approach to impute the missing values, so that we can regualry fit a RF on it - Remove all features that are not part of the testst and then Impute the missing values in the train set and fit a regular RF on the imputed DF.
+-  Adaption Approach: Fit multiple RandomForests blockwise on the concatenated data - fit a RF on each feature block of the data and aggregatre the predicitons of these when prediciton on testdata  
+-  Adaption Approach: Fit multiple RandomForests foldwise on the concatenated data. - fit a RF on each fold of the data and aggregate the predicitons of these when prediciton on testdata 
 
-Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself!
+***Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself!***
 
-**Example**
-Different hospitals do research regarding the same response *(e.g. different BreastCancer)*, but these different hospitals do not necessarily collect the same feature for this - e.g. Hospital_1 collects clinical & RNA data whereas Hospital_2 collects  clinical & CNV data, etc.. <br>
-``` 
-- Hospital_1: Clinical + RNA Data
-- Hospital_2: Clinical + CopyNumberVariation Data
-- Hospital_3: CopyNumberVariation + Mutation Data
-```
-The data from the different hospitals can be seen as different folds - where none of the folds have the exact same feature space. In these cases it could be benefical to have approaches, that can learn with all the avaible features at once. So that we fit a RandomForest on the data, eventhough not all features were observed for all observations:
-```
-RandomForest(formula = Cancertype ~ Clinical + RNA + CopyNumberVariation + Mutation, 
-             data    = rbind(Hospital_1, Hospital_2, Hospital_3)) 
-```
 <br>
-- The two baseline approaches try to process the data in a way that the data only consits of complete cases. For this variables and/ or observations can be removed from the original concatenated data. On the resulting dataframe a regular RF can be trained with.
-- The imputation approach imputes the missing values in the concatenated data, so that the resulting dataframe has no missing values anymore. On this imputed dataframe a regular RF can be trained.
-- I the first RF-adaption (blockwise-adaption) a RF is fit on each feature block of the concatenated trainingdata seperatly. For the fitting of the blockwise-RFs it only uses complete cases from each block. When doing predicitons on a testset it creates predicitons based on each block in the testset & aggregates these to a final prediciton - e.g. TestSet consits of two blocks. Block-Wise RF creates a prediciton for each block, and then aggregates the seperate predicitons to a final one!
-- In the second RF-adaption (foldwise-adaption) a RF is fit on each fold of the the concatenated trainingdata seperatly. So a RF is fit on each fold [fold is set of observations with the same features] - e.g. fit a RF to all data from Hospital_1, fit a RF to all data from  Hospital_2, etc.. For the predicitons on testdata, we need to aggregate the predicitons from the different foldwise fitted RFs. If the testset is missing any feature, that is used as splitvariable in any of the foldwise fitted RFs, the RFs have to be pruned (details see MS-Thesis). 
-
-As the testdata can also consist of block-wise missingness - e.g. all blocks avaible; just 1 block avaible; Combination of 2 blocks avaibale - the approaches must be able to deal with this aswell <br>
-For Details regarding the methods, the data, the metrics and the results,  please have a look at the **MS-Thesis**
-
+-------------------- STOPPED HERE
 ## Code
 Short describtion of the scripts in './code'!
 ``` 
