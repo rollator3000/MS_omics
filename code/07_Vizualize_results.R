@@ -773,7 +773,6 @@ data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
 files <- list.files(data_path)
-files <- "BLCA.RData"
 
 # 1-2 Loop over all the files and extract the results
 DF_all <- data.frame()
@@ -783,7 +782,7 @@ for (curr_file in files) {
   file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  curr_df   <- extract_metrics_FW(file_curr, metric = "F1", train_sit = 1)
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 1)
   DF_all    <- rbind(DF_all, curr_df)
 }
 
