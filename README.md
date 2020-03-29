@@ -4,7 +4,7 @@ This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
 supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***  
 
-Block-wise missingness is a common problem in the context of Multi-Omics Data. To this problem there are no standard approaches yet, neither compariosons studies. This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy. According to Norbert Krautenbacher a reliable approach is urgently needed!
+Block-wise missingness is a common problem in the context of Multi-Omics Data. To this problem there are no standard approaches yet, neither compariosons studies. This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy. Norbert Krautenbacher has already stated that reliable analysis strategies for multi-omics data with block-wise missingness are urgently needed!
 
 ---
 
@@ -13,7 +13,8 @@ This project compares different approaches capable to deal with block-wise missi
 Block-wise missingness is a special type of missingness that appears frequently in the context of Multi-Omics data.  
 Data with blockwise missingness always consits of different **folds** and **blocks**.
   - A **block** describes a set of covariates containing all features collected on the basis of a characteristic.  
-    Basically all covariates that are related in content (e.g. physical properties: Height & Weight | educational properties: Income & Education').  
+    Basically all covariates that are related in content  
+    (e.g. physical properties: Height & Weight | educational properties: Income & Education').  
   - A **fold** represents a set of observations with the same observed blocks.  
     Basically all observations with the same observed features.  
     Each fold is unique and every obserbation belongs to exactly one of them.
@@ -55,16 +56,15 @@ Regular model fitting on data with block-wise missingness is for most statistica
    - For predicition on testset, remove all features from the (imputed) trainset that are not part of the testst
    - On this pruned (imputed) trainset fit a RF and generate predicitions for testset
 -  **Block-Wise Approach:** Fit a seperate RF on each feature block and create a final prediciton by combining the different block-wise predicitons
-   - On each feature block of the data fit a seperate RF -1 RF on the Physical properties, 1 RF on the Educational properties, ...
+   - On each feature block of the data, fit a seperate RF *- 1 RF on the Physical properties, 1 RF on the Educational properties, ...*
    - To predict on a TestSet, each block-wise RF generates a seperate prediciton that are combined for a final prediciton 
 -  **Fold-Wise Approach:** Fit a seperate RF on each fold and create a final prediciton by combining the different fold-wise predicitons
-   - On each fold of the data fit a seperate RF -1 RF on Fold1, 1 RF on Fold2, ...
-   - To predict on a TestSet, each fold-wise RF generates a seperate prediciton - for these predicitons it might be that the single decision trees the RF consists of need to pruned - that are combined for a final prediciton 
-   - Pruning: If a decision tree uses a split variable that is not avaible in the testset, cut the decision tree and use the node before that split as new terminal node
+   - On each fold of the data fit a seperate RF *- 1 RF on Fold1, 1 RF on Fold2, ...*
+   - To predict on a TestSet, each fold-wise RF generates a seperate prediciton *- for these predicitons it might be that the single decision trees the RF consists of need to pruned -* that are combined for a final prediciton 
+   - **Pruning:** If a decision tree uses a split variable that is not avaible in the testset, cut the decision tree and use the node before that split as new terminal node
 
 
-***! ! ! Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself! ! !***
-
+### ! ! ! Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself! ! !
 
 ---
 
@@ -118,7 +118,7 @@ Short describtion of the scripts in './code'!
 
 - 11_DecisionTreeExample:
     Generate an example for a decision tree for the thesis 
-
+´´´
 
 ---
 
@@ -215,4 +215,4 @@ to create the TestTrainSplits used for CV!
                   ├── Norbert_final_subsets <- Results of the blockwise adaption approach 
                   │
                   └── Roman_final_subsets   <- Results of the foldwise adaption approach 
--------- 
+´´´
