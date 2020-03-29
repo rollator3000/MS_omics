@@ -4,14 +4,19 @@ This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
 supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
 
-## Project description
-This project compares different approaches capable to deal with blockwise missingness in Multi-Omics data.  
-Blockwise missingness is a special type of missingness that appears frequently in the context of Multi-Omics data.  
-Data with blockwise missingness always consits of different **folds** and **blocks**.
-  - A block describes a set of covariatescontaining all features collected on the basis of a characteristic. Basically all covariates that are related in content (e.g. physical properties: height, weight, skin).  
-  - A fold represents a set of observations with the same observed blocks. Basically all observations with the same observed features - each fold is unique and every obserbation in the data belongs to exactly one of them.
+---
 
-Blockwise Missingness can for example arise when concatenating multiple training-sets for the same target variable. And could have the following form:
+## Project description
+This project compares different approaches capable to deal with block-wise missingness in Multi-Omics data.  
+Block-wise missingness is a special type of missingness that appears frequently in the context of Multi-Omics data.  
+Data with blockwise missingness always consits of different **folds** and **blocks**.
+  - A **block** describes a set of covariates containing all features collected on the basis of a characteristic.  
+    Basically all covariates that are related in content (e.g. physical properties: Height & Weight | educational properties: Income & Education').  
+  - A **fold** represents a set of observations with the same observed blocks.  
+    Basically all observations with the same observed features.  
+    Each fold is unique and every obserbation belongs to exactly one of them.
+
+#### A dataset with blockwise missingness could habe the following form:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
 |---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
 | 1   | 65.4    | 187     | 2.536   | Upper       |         | ...   |         | 1   |
@@ -23,19 +28,41 @@ Blockwise Missingness can for example arise when concatenating multiple training
 | 7   | 71.5    | 173     |         |             | 0.93    | ...   | 0.53    | 0   |
 | 8   | 73.0    | 169     |         |             | 0.31    | ...   | -0.07   | 1   |
 
-Regular model fitting on these kind of data is for most methods not directly possible, so that either the method needs to be adjusted or the data processed! 
-As the testdata can also consist of block-wise missingness - e.g. all blocks are avaible | just 1 block avaible | Combination of 2 blocks avaible - the approaches must be able to deal with this aswell <br>
+  - Consits of three blocks:
+     - Physical properties:   Weight, Height
+     - Education properties:  Income, Education
+     - Biological properties: g1, ..., g100
+  - Consists of three folds:
+     - Fold1: All observations with observed Physical & Education properties
+     - Fold2: All observations with observed Education & Biological properties
+     - Fold3: All observations with observed Physical & Biological properties
 
-Multiple Approaches will be compared:
--  Baseline Approach 1: Only use complete cases (regarding the testset) to fit a RF on - if the testset consists of 'Weight', 'Height', 
-'g1',...,'g100' then only Observations with these observed features will be used for the trainig of the model!
--  Baseline Approach 2: Only use complete cases from a single feature block to fit a RF on - if the testset consists of 'Weight', 'Height', 
-'g1',...,'g100' then fit a model, that uses all observations with the features 'Weight' & 'Height' and do predicitons on the test data only using these variables. Analog fit a model, that uses all observations with the features 'g1',...,'g100' and do predicitons on the test data only using these variables. 
--  Imputation Approach: Use the 'missForest' approach to impute the missing values, so that we can regualry fit a RF on it - Remove all features that are not part of the testst and then Impute the missing values in the train set and fit a regular RF on the imputed DF.
--  Adaption Approach: Fit multiple RandomForests blockwise on the concatenated data - fit a RF on each feature block of the data and aggregatre the predicitons of these when prediciton on testdata  
--  Adaption Approach: Fit multiple RandomForests foldwise on the concatenated data. - fit a RF on each fold of the data and aggregate the predicitons of these when prediciton on testdata 
+In the context of Multi-Omics Data block-wise missingness is a common problem, where reliable analysis strategies are urgently needed!  
+Block-wise Missingness can for example arise when concatenating multiple clinical studies for the same target variable. Eventhough all different datasets do have the same target variable they still can differ in the collected features, such that the concatination of these results in a DF with block-wise missingness!  
 
-***Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself!***
+Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! As the testdata can also consist of block-wise missingness - e.g. 1 block avaible; Combination of 2 blocks avaible; ... - the approaches must be able to deal with block-wise missing data in the test data as well <br>
+
+#### Approaches:
+-  **Baseline Approach 1:** Only use complete cases (regarding the testset) to fit a RF
+   - if the testset consists of 'Weight', 'Height' & 'g1',...,'g100' then only Observations with these observed features will be used for the trainig of the model!
+-  **Baseline Approach 2:** Only use the features from a single feature block to fit a RF
+   - if the testset consists of 'Weight', 'Height' & 'g1',...,'g100' then fit a model on all observations with the features 'Weight' & 'Height' **OR** on all observations with the features 'g1',...,'g100'. 
+   - For predicitons only use the features the model has been trained with and discard all other variables in test!
+   - If a observation misses a feature the RF has been trained with predictions are not possible
+-  **Imputation Approach:** Use the 'missForest' approach to impute the missing values
+   - Impute the missing data in the TrainingSet with the missForest Approach 
+   - For predicition on testset, remove all features from the (imputed) trainset that are not part of the testst
+   - On this pruned (imputed) trainset fit a RF and generate predicitions for testset
+-  **Block-Wise Approach:** Fit a seperate RF on each feature block and create a final prediciton by combining the different block-wise predicitons
+   - On each feature block of the data fit a seperate RF -1 RF on the Physical properties, 1 RF on the Education properties, ...
+   - To predict on a TestSet, each block-wise RF generates a seperate prediciton that are combined for a final prediciton 
+-  **Fold-Wise Approach:** Fit a seperate RF on each fold and create a final prediciton by combining the different fold-wise predicitons
+   - On each fold of the data fit a seperate RF -1 RF on Fold1, 1 RF on Fold2, ...
+   - To predict on a TestSet, each fold-wise RF generates a seperate prediciton - for these predicitons it might be that the single decision trees the RF consists of need to pruned - that are combined for a final prediciton 
+   - Pruning: If a decision tree uses a split variable that is not avaible in the testset, cut the decision tree and use the node before that split as new terminal node
+
+
+***! ! ! Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself! ! !***
 
 <br>
 -------------------- STOPPED HERE
