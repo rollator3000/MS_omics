@@ -118,7 +118,7 @@ Short describtion of the scripts in './code'!
 
 - 11_DecisionTreeExample:
     Generate an example for a decision tree for the thesis 
-´´´
+``` 
 
 ---
 
@@ -215,4 +215,4 @@ to create the TestTrainSplits used for CV!
                   ├── Norbert_final_subsets <- Results of the blockwise adaption approach 
                   │
                   └── Roman_final_subsets   <- Results of the foldwise adaption approach 
-´´´
+``` 
