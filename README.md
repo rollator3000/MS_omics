@@ -133,7 +133,6 @@ to create the TestTrainSplits used for CV!
 
 ## Project Organization
 ```
-------------
     ├── LICENSE
     ├── .git               <- Folder for VersionControl [created by GIT]
     ├── README.md          <- Top-level 'README' for developers working with
