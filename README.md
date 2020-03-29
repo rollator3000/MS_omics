@@ -2,7 +2,9 @@
 This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
 ***A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values*** <br> 
 supervised by: <br>
-***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***
+***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***  
+
+Block-wise missingness is a common problem in the context of Multi-Omics Data. To this problem there are no standard approaches yet, neither compariosons studies. This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy. According to Norbert Krautenbacher a reliable approach is urgently needed!
 
 ---
 
@@ -19,9 +21,9 @@ Data with blockwise missingness always consits of different **folds** and **bloc
 #### A dataset with blockwise missingness could habe the following form:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
 |---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
-| 1   | 65.4    | 187     | 2.536   | Upper       |         | ...   |         | 1   |
-| 2   | 83.9    | 192     | 1.342   | Lower       |         | ...   |         | 0   |
-| 3   | 67.4    | 167     | 5.332   | Upper       |         | ...   |         | 1   |
+| 1   | 65.4    | 187     | 2.536   | Upper       |         |       |         | 1   |
+| 2   | 83.9    | 192     | 1.342   | Lower       |         |       |         | 0   |
+| 3   | 67.4    | 167     | 5.332   | Upper       |         |       |         | 1   |
 | 4   |         |         | 743     | Lower       | -0.42   | ...   | 1.43    | 1   |
 | 5   |         |         | 2.125   | Lower       | 0.52    | ...   | -1.37   | 0   |
 | 6   | 105.2   | 175     |         |             | -1.53   | ...   | 2.01    | 0   |
@@ -30,15 +32,14 @@ Data with blockwise missingness always consits of different **folds** and **bloc
 
   - Consits of three blocks:
      - Physical properties:   Weight, Height
-     - Education properties:  Income, Education
+     - Educational properties:  Income, Education
      - Biological properties: g1, ..., g100
   - Consists of three folds:
-     - Fold1: All observations with observed Physical & Education properties
-     - Fold2: All observations with observed Education & Biological properties
+     - Fold1: All observations with observed Physical & Educational properties
+     - Fold2: All observations with observed Educational & Biological properties
      - Fold3: All observations with observed Physical & Biological properties
-
-In the context of Multi-Omics Data block-wise missingness is a common problem, where reliable analysis strategies are urgently needed!  
-Block-wise Missingness can for example arise when concatenating multiple clinical studies for the same target variable. Eventhough all different datasets do have the same target variable they still can differ in the collected features, such that the concatination of these results in a DF with block-wise missingness!  
+  
+Block-wise Missingness can for example arise when concatenating multiple clinical studies for the same target variable. Eventhough all different datasets do have the same target variable they still can differ in the collected feature-blocks, such that the concatination of these results in a DF with block-wise missingness!  
 
 Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! As the testdata can also consist of block-wise missingness - e.g. 1 block avaible; Combination of 2 blocks avaible; ... - the approaches must be able to deal with block-wise missing data in the test data as well <br>
 
@@ -54,7 +55,7 @@ Regular model fitting on data with block-wise missingness is for most statistica
    - For predicition on testset, remove all features from the (imputed) trainset that are not part of the testst
    - On this pruned (imputed) trainset fit a RF and generate predicitions for testset
 -  **Block-Wise Approach:** Fit a seperate RF on each feature block and create a final prediciton by combining the different block-wise predicitons
-   - On each feature block of the data fit a seperate RF -1 RF on the Physical properties, 1 RF on the Education properties, ...
+   - On each feature block of the data fit a seperate RF -1 RF on the Physical properties, 1 RF on the Educational properties, ...
    - To predict on a TestSet, each block-wise RF generates a seperate prediciton that are combined for a final prediciton 
 -  **Fold-Wise Approach:** Fit a seperate RF on each fold and create a final prediciton by combining the different fold-wise predicitons
    - On each fold of the data fit a seperate RF -1 RF on Fold1, 1 RF on Fold2, ...
@@ -64,19 +65,20 @@ Regular model fitting on data with block-wise missingness is for most statistica
 
 ***! ! ! Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself! ! !***
 
-<br>
--------------------- STOPPED HERE
+
+---
+
 ## Code
 Short describtion of the scripts in './code'!
 ``` 
 - 01_data_overview: 
-    Get a overview of the different DFs.
-    Get the DFs we can use for our work, and get some 
-    additional Information!
+    Get a overview of the different DFs.  
+    Get theDFs we can use for our work, and 
+    get some additional Information!
 
 - 02_explorative_performance:
-    Check how good the predicitons of a RF are, when it 
-    is trained on single blocks, on all blocks joint, 
+    Check the performance of a RF when trained on 
+    on single blocks, on all blocks joint, 
     single subsetted blocks, all subsetted blocks joint....
 
 - 03_create_needed_DFs:
@@ -87,37 +89,50 @@ Short describtion of the scripts in './code'!
            - each single omics block! 
 
 - 04_simpleRF_adaption:
-    Implementation of the RF-Adjustment + additional functions 
-    needed for evaluation, creating trees, ....
+    Implementation of the foldwise RF Approach + 
+    additional functions for evaluation, creating trees, ....
 
 - 05_RF_Adaption_CV:
-    Code to CrossValidate the adjusted RF-Algorithm from Dr. 
-    Hornung (foldwise) for different Training Settings & all  
-    possible combinations of blockwise missingness in the TestSet
+    Code to CrossValidate the foldwise RF Approach for 
+    different Training Settings & all possible combinations of
+     blockwise missingness in the TestSet
 
 - 06_RF_Krautenbacher_CV:
-    Code to CrossValidate the adjusted RF-Algorithm from Dr. 
-    Krautenbacher (blockwise) for different Training Settings &
-    all possible combinations of blockwise missingness in the TestSet
+    Code to CrossValidate the blockwise RF Approach
+    for different Training Settings & all possible combinations 
+    of blockwise missingness in the TestSet
 
 - 07_Vizualize_results:
-    Code to plot the results of the different approaches!
+    Vizualize the Results from the CV & the explorative performances
 
 - 08_Imputatiojn_CV:
-    Code to CrossValidate the (missforest-) imputation approach! 
+    Code to CrossValidate the MissForest-imputation approach! 
 
 - 09_create_data_w_blockwise_missingness_for_CV:
     Script to create the final subsets of the original data,
     split the data to test and train & inducde the blockwise
     missingness into the trainsets of the splitted DFs!
-```
+
+- 10_CompleteCases_CV:
+    Code to CrossValidate the complete cases Approach
+
+- 11_DecisionTreeExample:
+    Generate an example for a decision tree for the thesis 
+
+
+---
 
 ## Data
-The original data is not part of this Repo, only the subsetted data!
+The original data is not part of this Repo, only the subsetted data!  
 If interested in the original data, please contact me on github or send 
-an E-Mail to 'f.ludwigs@yahoo.de'.
+an E-Mail to 'f.ludwigs@yahoo.de'.  
+The subsetted DFs are part of the repository and can be used in code/09 
+to create the TestTrainSplits used for CV!
+
+--- 
 
 ## Project Organization
+```
 ------------
     ├── LICENSE
     ├── .git               <- Folder for VersionControl [created by GIT]
@@ -125,17 +140,15 @@ an E-Mail to 'f.ludwigs@yahoo.de'.
     │                         this repository
     │
     ├── code               <- All the R-Code needed to run this repository! 
-    │   │                     For an overview of the code in here see:
+    │   │                     For an overview of the code see:
     │   │                     'Code' section in README
     │   │     
     │   └── no_main        <- All the code, that was used as template/ 
     │                         inspiration for final scripts in './code'
     │  
     ├── data               <- All data used in this project!
-    │   │   
-    │   ├── raw            <- The original, immutable data dump - empty!
     │   │
-    │   ├── external       <- External Data from not public sources
+    │   ├── external       <- External Data from not public sources!
     │   │   │  
     │   │   └─ Dr_Hornung  <- Clinical preprocessed & fully observed Omics-Data 
     │   │                     from Dr. Hornung - used it in 'BlockForest' 
@@ -143,9 +156,9 @@ an E-Mail to 'f.ludwigs@yahoo.de'.
     │   │    
     │   ├── processed      <- Processed Data that can be directly used!
     │   │    │
-    │   │    └─RH_subsetted_12345 <- Data from Dr. Hornung where the single 
-    │   │        │                   blocks were subsetted already! Seed 
-    │   │        │                   used for this was the '12345'   
+    │   │    └─ RH_subsetted_12345 <- Data from Dr. Hornung where the single 
+    │   │        │                    blocks were subsetted already! Seed 
+    │   │        │                    used for this was the '12345'   
     │   │        │
     │   │        └─ missingness_WXYZ <- TestTrainSplits of the subsetted data
     │   │                               with the seed 'WXYZ', where each DF is       
@@ -154,17 +167,24 @@ an E-Mail to 'f.ludwigs@yahoo.de'.
     │   │
     │   └─ interim         <- internal data - e.g. temporarily saved data
     │         │
-    │         └─ example_data <- files and DFs used to implement the foldwise RF
-    │                            was used for investigation etc.
+    │         └─ example_data <- files and DFs used to implement the foldwise RF -
+    │                            - only used for investigation & implementation
     │ 
     ├── sources            <- Folder, that holds all sources, used in/ for
     │   │                     this project!
-    │   │   
-    │   ├── online         <- Online sources from the internet 
+    │   │ 
+    │   ├── GENERAL        <- General Sources - not related to Block-Wise Missingness 
+    │   │
+    │   ├── INTRO          <- Sources needed for the introduction
+    │   │
+    │   ├── MULTI_OMICS_METHODS <- Sources related to Block-Wise missingness 
+    │   │                          in Multi-Omics data
+    │   │
+    │   ├── Online Sources  <- Online sources from the internet 
     │   │                     - could not be downloaded!
     │   │                     - downloaded whole page with 'Google Chrome'
     │   │
-    │   └── PDF            <- All sources that could be saved/ dowloaded as PDF
+    │   └── revieved_MS      <- reviewed versions of the MS thesis
     │
     └── docs               <- Documents used within this repository! 
         │                     Explainatory/ Describtive material, Notes etc.
@@ -175,21 +195,24 @@ an E-Mail to 'f.ludwigs@yahoo.de'.
         │ 
         └─ CV_Res          <- Results of different CVs/ explorative subsetting 
             │
-            └── gender    <- All results where gender was the response for the data
-                  │          for the data from Dr_Hornung! 
+            └── gender    <- All results with 'gender' as response for the data
+                  │          from Dr_Hornung! Each folder contains subfolders 
+                  │          'setting1' - 'setting4' according to missingness patter
+                  │          in the train data
+                  │  
                   │
-                  ├── explorative  <- results from the explorative subsetting
-                  │                   done to find out which blocks predict how
-                  │                   strong!
-                  │                    - Joint / Single Blocks as feature space!
+                  ├── explorative     <- results from the explorative subsetting
+                  │                      - find out which blocks predict how strong!
+                  │                      - Joint & Single Blocks!
                   │
-                  ├── final_subsets <- RF Performance on the final subsetted DFs
-                  │                    [want to use them to CV new approaches]
-                  │                     - Joint / Single Blocks as feature space!
+                  ├── final_subsets   <- RF Performance on the final subsetted DFs
+                  │                            - Joint / Single Blocks as feature space
+                  |
+                  ├── complete_cases  <- Results of the complete cases approach
                   │
-                  ├── Norbert_final_subsets <- Results w/ the approach from Norberts
-                  │                            RF Adjustment - BlockWise Fitting
+                  ├── missForest      <- Resuls of the imputation approach w/ missForest
                   │
-                  └── Roman_final_subsets   <- Results w/ the approach from Romans
-                                               RF Adjustment - <FoldWise Fitting 
+                  ├── Norbert_final_subsets <- Results of the blockwise adaption approach 
+                  │
+                  └── Roman_final_subsets   <- Results of the foldwise adaption approach 
 -------- 
