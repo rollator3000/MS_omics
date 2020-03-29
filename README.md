@@ -19,7 +19,7 @@ Data with blockwise missingness always consits of different **folds** and **bloc
     Basically all observations with the same observed features.  
     Each fold is unique and every obserbation belongs to exactly one of them.
 
-#### A dataset with blockwise missingness could habe the following form:  
+#### A dataset with blockwise missingness could have the following form:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
 |---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
 | 1   | 65.4    | 187     | 2.536   | Upper       |         |       |         | 1   |
