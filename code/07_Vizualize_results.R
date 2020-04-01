@@ -768,11 +768,12 @@ plot_df <- melt(DF, id.vars = c("Data", "Block"),
 
 # Analyse Results of Romans Approach on the fixed DFs                       ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting1"
+data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting2"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
 files <- list.files(data_path)
+files <- files[grepl("NEW", files)]
 
 # 1-2 Loop over all the files and extract the results
 DF_all <- data.frame()
@@ -799,7 +800,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
              col = "red", lty = 2) 
 
 # Analyse Results of Norberts Approach on the fixed DFs                     ----
-data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting1"
+data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting2"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
