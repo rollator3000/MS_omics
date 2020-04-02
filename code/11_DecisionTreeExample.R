@@ -21,46 +21,46 @@ a1 <- fancyRpartPlot(fit)
 
 # Plot how the Decision Tree partionates the feature space!
 a2 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) + 
-  geom_point(size = 5) +
+  geom_point(size = 8) +
   theme_bw() + 
-  theme(text = element_text(size = 22),
-        plot.title = element_text(size = 24),
+  theme(text = element_text(size = 25),
+        plot.title = element_text(size = 30),
         legend.position = "none") +
-  annotate("text", x = 88, y = 180, label = "Node1", size = 8, col = "seagreen") +
+  annotate("text", x = 88, y = 180, label = "N1", size = 15, col = "seagreen") +
   scale_x_continuous(limits = c(63, 106), expand = c(0, 0)) +
-  ggtitle("Raw Data - all observations in Node1")
+  ggtitle("Raw Data - All obs. in the root node N1")
 
 a3 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) + 
-  geom_point(size = 5) +
+  geom_point(size = 8) +
   theme_bw() + 
-  theme(text = element_text(size = 22),
-        plot.title = element_text(size = 24),
+  theme(text = element_text(size = 25),
+        plot.title = element_text(size = 30),
         axis.title.y = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "none") +
   geom_vline(xintercept = 69, col = "red", lwd = 1.7) +
   scale_x_continuous(limits = c(63, 106), expand = c(0, 0)) +
-  annotate("text", x = 88, y = 180, label = "Node2", size = 8, col = "seagreen") +
-  annotate("text", x = 66, y = 180, label = "Node3", size = 8, col = "seagreen") +
-  ggtitle("Splitting Node1 into Node2 & Node3") + 
+  annotate("text", x = 88, y = 180, label = "N2", size = 15, col = "seagreen") +
+  annotate("text", x = 66, y = 180, label = "N3", size = 15, col = "seagreen") +
+  ggtitle("Splitting N1 into child nodes N2 & N3") + 
   ylab("")
 
 a4 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) + 
-  geom_point(size = 5) +
+  geom_point(size = 8) +
   theme_bw() + 
-  theme(text = element_text(size = 22),
-        plot.title = element_text(size = 24),
+  theme(text = element_text(size = 25),
+        plot.title = element_text(size = 30),
         axis.title.y = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank()) +
   geom_vline(xintercept = 69, col = "red", , lwd = 1.7)  +
-  geom_segment(aes(x = 69, xend = 107, y = 171, yend = 171), col = "red", lwd =1.7) + 
+  geom_segment(aes(x = 69, xend = 107, y = 171, yend = 171), col = "red", lwd = 1.7) + 
   scale_x_continuous(limits = c(62, 107), expand = c(0, 0),) +
-  annotate("text", x = 88, y = 180, label = "Node4", size = 8, col = "seagreen") +
-  annotate("text", x = 80, y = 169, label = "Node5", size = 8, col = "seagreen") +
-  annotate("text", x = 65.5, y = 180, label = "Node3", size = 8, col = "seagreen") +
-  ggtitle("Splitting Node 2 into Node4 & Node5")
+  annotate("text", x = 88, y = 180, label = "N4", size = 15, col = "seagreen") +
+  annotate("text", x = 80, y = 169, label = "N5", size = 15, col = "seagreen") +
+  annotate("text", x = 65.5, y = 180, label = "N3", size = 15, col = "seagreen") +
+  ggtitle("Splitting N2 into child nodes N3 & N4")
 
-grid.arrange(a2, a3, a4, nrow = 1, top = textGrob("Single segmentation steps of a decision tree", 
-                                                  gp = gpar(fontsize = 27, font = 3)))
+grid.arrange(a2, a3, a4, nrow = 1, top = textGrob("Single segmentation steps of a decision tree\n", 
+                                                  gp = gpar(fontsize = 48)))
