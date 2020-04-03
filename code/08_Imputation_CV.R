@@ -14,7 +14,7 @@ library(doParallel)
 
 # Set Cores for parallel computaion!
 detectCores()
-registerDoParallel(cores = 3)
+registerDoParallel(cores = 5)
 
 load_CV_data          <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -836,8 +836,8 @@ if (length(cols_to_recode) > 1) {
 # [2] Impute the data with the missForet Approach  ---------------------------
 # 2-1 Impute the data
 needed_time_1 <- system.time(
-data_imputed <- missForest(data, verbose = TRUE, parallelize = 'forests',
-                           maxiter = maxiter, ntree = ntree_imp)
+  data_imputed <- missForest(data, verbose = TRUE, parallelize = 'forests',
+                             maxiter = maxiter, ntree = ntree_imp)
 )
 data_imputed <- data_imputed$ximp
 
@@ -884,5 +884,3 @@ needed_time_2 <- system.time(
                              maxiter = maxiter, ntree = ntree_imp)
 )
 data_imputed <- data_imputed$ximp
-
-
