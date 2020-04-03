@@ -783,7 +783,7 @@ for (curr_file in files) {
   file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 1)
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 2)
   DF_all    <- rbind(DF_all, curr_df)
 }
 
