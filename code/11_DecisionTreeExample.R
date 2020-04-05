@@ -17,23 +17,23 @@ example$Y <- as.factor(example$Y)
 # Fit a Tree and look at the results
 fit <- rpart(Y ~ ., data = example, method = 'class', 
              control = rpart.control(minbucket = 1))
-a1 <- fancyRpartPlot(fit)	
+a1 <- fancyRpartPlot(fit, cex = 1.7)	
 
 # Plot how the Decision Tree partionates the feature space!
 a2 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) + 
   geom_point(size = 8) +
   theme_bw() + 
-  theme(text = element_text(size = 25),
+  theme(text = element_text(size = 28),
         plot.title = element_text(size = 30),
         legend.position = "none") +
   annotate("text", x = 88, y = 180, label = "N1", size = 15, col = "seagreen") +
   scale_x_continuous(limits = c(63, 106), expand = c(0, 0)) +
-  ggtitle("Raw Data - All obs. in the root node N1")
+  ggtitle("All obs. in the root node N1")
 
 a3 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) + 
   geom_point(size = 8) +
   theme_bw() + 
-  theme(text = element_text(size = 25),
+  theme(text = element_text(size = 28),
         plot.title = element_text(size = 30),
         axis.title.y = element_blank(),
         axis.text.y = element_blank(),
@@ -49,7 +49,7 @@ a3 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) +
 a4 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) + 
   geom_point(size = 8) +
   theme_bw() + 
-  theme(text = element_text(size = 25),
+  theme(text = element_text(size = 28),
         plot.title = element_text(size = 30),
         axis.title.y = element_blank(),
         axis.text.y = element_blank(),
@@ -62,5 +62,4 @@ a4 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) +
   annotate("text", x = 65.5, y = 180, label = "N3", size = 15, col = "seagreen") +
   ggtitle("Splitting N2 into child nodes N3 & N4")
 
-grid.arrange(a2, a3, a4, nrow = 1, top = textGrob("Single segmentation steps of a decision tree\n", 
-                                                  gp = gpar(fontsize = 48)))
+grid.arrange(a2, a3, a4, nrow = 1)
