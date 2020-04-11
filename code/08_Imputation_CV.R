@@ -119,7 +119,9 @@ mcc_metric        <- function(conf_matrix) {
   # [2] Return  ----------------------------------------------------------------
   return(mcc_final)
 }
-impute_train_data <- function(path, ntree_imp = 50, maxiter = 2) {
+
+impute_train_data <- function(path, ntree_imp = 50, maxiter = 2, 
+                              para = "forests") {
   " Impute the missing values in the trainsets of the test-train splits 'path'
     points to! Impute the missing values with the missForest approach!
     Then save the imputed DF, so we do not need to impute it the whole time and 
@@ -137,6 +139,12 @@ impute_train_data <- function(path, ntree_imp = 50, maxiter = 2) {
     - ntree_imp (int)  : Amount of trees we use for the missForest imputation
     - maxiter (int)    : Max Number of iterations to be performed - as long 
                          as the stopping criterion is not fullfilled yet!
+    - para (str)      :  Should 'missForest' be run parallel? If 'variables' the
+                         data is split into pieces of the size equal to the
+                         number of cores registered in the parallel backend. 
+                         If 'forests' the total number of trees in each random
+                         forests is split in the same way. 
+                          > 'no'; 'forests' or 'variables'
                          
   Return:
     - data_all (list)  : Same structure of the loaded Test-Train Splits, but the 
@@ -148,6 +156,9 @@ impute_train_data <- function(path, ntree_imp = 50, maxiter = 2) {
   assert_string(path, fixed = ".RData")
   assert_int(maxiter, lower = 1)
   assert_int(ntree_imp, lower = 10)
+  if (!(para %in% c('no', 'forests', 'variables'))) {
+    stop("'para' must be: 'no'; 'forests'; or 'variables'")
+  }
   
   # 0-2 Load data and extract the data-splits itself! 
   curr_data <- load_CV_data(path = path)
@@ -156,7 +167,7 @@ impute_train_data <- function(path, ntree_imp = 50, maxiter = 2) {
   # [1] Run the impuation for each of the 5 Test-Train Splits  -----------------
   for (curr_ind in 1:length(data_all)) {
     
-    print(paste("Imputation", curr_ind, "/5"))
+    print(paste("Imputation", curr_ind, "/", length(data_all)))
     
     # 1-1 Extract the current train data!
     curr_train <- data_all[[curr_ind ]]$train
@@ -183,7 +194,7 @@ impute_train_data <- function(path, ntree_imp = 50, maxiter = 2) {
     
     # 1-4 Start the Imputation!
     data_imputed <- missForest(curr_train, verbose = TRUE, 
-                               parallelize = 'forests', maxiter = maxiter, 
+                               parallelize = para, maxiter = maxiter, 
                                ntree = ntree_imp)
     data_imputed <- data_imputed$ximp
     
@@ -213,7 +224,7 @@ impute_train_data <- function(path, ntree_imp = 50, maxiter = 2) {
 
 
 
-
+# Not ready yet - TBD
 do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   "Evaluate the Imputation Approach! MissForest was used to impute the missing 
    Values in the training data. Evaluate the Approach on 'test'. 
@@ -830,8 +841,6 @@ do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/miss
   return(list("res_all"  = res_all, 
               "settings" = settings))
 } 
-
-
 # MAIN --------------------------------------------------------------------
 # [1] Impute the missing values in Train for all of the DFs
 # 1-1 Names of the usable DFs
