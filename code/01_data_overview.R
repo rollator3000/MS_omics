@@ -254,6 +254,26 @@ for (df_curr in DFs_w_gender) {
   print("-------------------------------------------------------")
 }
 
+# 2-3 Get the amount of features in the clinical block for all DFs!
+clin_feas <- c()
+for (df_curr in DFs_w_gender) { 
+  
+  # '-1' in the end, as the 'gender' variable is used as response!
+  clin_feas <- c(clin_feas, get(paste0(df_curr, "_Res"))$clin$dimensions[2] - 1)
+}
+
+summary(clin_feas)
+
+# 2-4 Get the amount of observations for all DFs!
+amount_obs <- c()
+for (df_curr in DFs_w_gender) { 
+  
+  # '-1' in the end, as the 'gender' variable is used as response!
+  amount_obs <- c(amount_obs, get(paste0(df_curr, "_Res"))$clin$dimensions[1])
+}
+
+summary(amount_obs)
+
 # [3] Distribution of the amount of features in each block over all DFs     ----
 #     Based on the results from [1] the amount of features can be extracted 
 #     easily. Get the average amount of features for every feature-block over
@@ -335,4 +355,4 @@ for (df in DFs_w_gender) {
 # Get thy types of all DFs and all blocks:
 sapply(names(res_all), FUN = function(x) unlist(res_all[[x]]))
 # --> only containing numeric variables!
-#     This was already done by Dr. Roman Hornung for the 'missForest' article!
+#     This was already done by Dr. Roman Hornung for the 'missForest' 
