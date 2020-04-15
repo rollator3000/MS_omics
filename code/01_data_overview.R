@@ -1,8 +1,8 @@
-"Script to get a basic overview over the raw data used in this thesis!
- Data is already preprocessed by Dr. Hornung & was already used the 
- 'block-forest' paper - where Dr. Hornung took part! "
-
-# Set the WD, load Packages and define Functions
+" Get a basic overview over the raw TCGA data used in this thesis!
+  Data is already preprocessed by Dr. Hornung, such that there are no single
+  missing values & was used exactly like this in the 'block-forest' article! 
+"
+# [0] Set the WD, load Packages and define Functions:
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 
 get_cols_w_NAs     <- function(df) {
@@ -16,7 +16,6 @@ get_cols_w_NAs     <- function(df) {
   Return:
     for each column a boolean, whether it cotains NA Values
   "
-  
   results <- apply(df, 2, function(x) any(is.na(x)))
   
   if (length(which(results)) <= 0) {
@@ -36,7 +35,6 @@ get_rows_w_NAs     <- function(df) {
   Return:
     Proportion of rows, w/ at least 1 missing Value
   "
-  
   results <- apply(df, 1, function(x) any(is.na(x)))
   
   if (length(which(results)) <= 0) {
@@ -48,10 +46,10 @@ get_rows_w_NAs     <- function(df) {
 }
 get_single_df_info <- function(df) {
   "
-  Function to get basic describtive information on the passed data.frame!
+  Function to get basic describtive information on the passed data.frame (df)!
   Which features contain missing data, which observations contain missing data,
-  what dimension does the data have, what features does it contain and whi types
-  are they?
+  what dimension does the data have, what features does it contain and of what
+  type are they?
   
   Args:
     - df (data.frame) :  Object of class data.frame  with n rows & p columns we 
@@ -93,17 +91,16 @@ get_single_df_info <- function(df) {
 load_rda_get_infos <- function(rda_path) {
   "
   Function to load a '.Rda' datafile! 
-  This can contain single or multiple objects, we will print the names of all
-  projects connected with the '.Rda' file! For each 'data.frame' we will call 
-  'get_df_info' to get the basic properties and will collect the properties for
-  each data.frame/ matrix in a list! 
-  The list only has named list elements according to the data.frame/ matrix!
+  This can contain single or multiple objects, it prints the names of all
+  projects connected with the '.Rda' file! 
+  For each 'data.frame' we will call 'get_df_info()' to get the basic properties
+  and will collect the properties for each data.frame/ matrix in a list! 
+  The list has only named elements according to the data.frame/ matrix!
   For none data.frame/ matrix objects we only return the type of the object and
   that we could not do a analysis!
   
   Args:
-    - rda_path (string) : path [on top of WD] to a '.Rda' file, that can contain
-                          different objects!
+    - rda_path (string) : path to a '.Rda' file, that can contain different objects!
   
   Return:
     - list filled with as many named entrances (named by the data.frame/ matrix),
@@ -146,7 +143,11 @@ load_rda_get_infos <- function(rda_path) {
   return(all_res)
 }
 
-# Datainspection -- needed fpr further analysis --> always run this         ----
+# [1] Datainspection -- needed for further analysis                         ----
+#     Always run the code as the resulting objects [e.g. 'BLCA_Res', ...] are 
+#     needed for the further analysis in this script then!
+#     --> Each resulting object contains the dimensions and types of features 
+#         for the different feature-blocks of the datasets!
 # ----- BLCA DF
 BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/BLCA.Rda")
 BLCA_Res
@@ -211,10 +212,13 @@ STAD_Res
 UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/UCEC.Rda")
 UCEC_Res
 
-# Check DFs for 'gender' as clinical variable & get the distribution        ----
-# ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
+# [2] Check DFs for 'gender' as clinical variable                           ----
+#     Based on the results in [1] it can be checked for each of the 21 DFs, 
+#     whether these have 'gender' variable within their 'clinical' feature-block
+#     For the DFs w/ a gender variable in the 'clinical' feature-block extract 
+#     the distribution of the gender variable!
 
-# Check whether 'sex' or 'gender' is avaible in the clinical feas of the datasets!
+# 2-1 Get the DFs with 'gender' in the clinical feature-block
 BLCA_Res$clin  # --> has gender as clin Variable! --> 3 clinical feas remaining
 COAD_Res$clin  # --> has gender as clin Variable! --> 4 clinical feas remaining
 ESCA_Res$clin  # --> has gender as clin Variable! --> 3 clinical feas remaining
@@ -238,11 +242,11 @@ OV_Res$clin    # --> doesnt have gender in clin variables!
 PRAD_Res$clin  # --> doesnt have gender in clin variables!
 UCEC_Res$clin  # --> has gender as clin Variable, but with 1 level only!
 
-#   Save the names from the DFs that contain 'gender' in 'clin'-block!
+# Save the names from the DFs that contain 'gender' in 'clin'-block!
 DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                   "LGG", "LUAD", "LUSC", "PAAD", "READ", "SARC", "SKCM", "STAD")
 
-#   Check the distribution for all DFs w/ gender!
+# 2-2 Get the distribution for all DFs w/ a gender varibale in 'clinical'!
 for (df_curr in DFs_w_gender) {
   load(paste0("./data/external/Dr_Hornung/", df_curr, ".Rda"))
   print(paste0("Distribution of 'gender' for DF: '", df_curr, "'"))
@@ -250,17 +254,20 @@ for (df_curr in DFs_w_gender) {
   print("-------------------------------------------------------")
 }
 
-# Get the distribution of the amount of features in each block over all dfs ----
-# ! Run the first part, where all 'DF_Res' are created ["Datainspection" Block] !
+# [3] Distribution of the amount of features in each block over all DFs     ----
+#     Based on the results from [1] the amount of features can be extracted 
+#     easily. Get the average amount of features for every feature-block over
+#     all DFs
 
-# Define DFs and Blocks that we want to inspect!
+# 3-1 Define DFs and Blocks that we want to inspect!
 DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                   "LGG", "LUAD", "LUSC", "PAAD", "READ", "SARC", "SKCM", "STAD")
-blocks <- c("cnv", "mirna", "mutation", "rna")
+fea_blocks   <- c("cnv", "mirna", "mutation", "rna")
 
-# Loop over blocks in all different DFs, extract dimension for each and print 
-# summary of the dimensionality of block over all DFs_w_gender
-for (i in blocks) {
+# 3-2 Loop over the possible feature-blocks in all different DFs, extract 
+#     the dimension for each DF and print the summary of the dimensionality of
+#     the current block over all 'DFs_w_gender'
+for (i in fea_blocks) {
   feas <- c()
   for (df_curr in DFs_w_gender) { 
     feas <- c(feas, get(paste0(df_curr, "_Res"))[[i]]$dimensions[2])
@@ -270,9 +277,10 @@ for (i in blocks) {
 }
 
 
-# Do the same, but subsett the blocks before [same dim in CV later then!]
-# Loop over blocks in all different DFs, subsett the blocks and extract the 
-# dimension for each and print summary of the dimensionality of block over all DFs_w_gender
+# 3-3 Get the amount of features as in 3-2 with only difference that the blocks
+#     are subsetted - same dim in CV later then!
+#     Loop over blocks in all different DFs, subsett the blocks and extract the 
+#     dimension for each! Print summary then!
 blocks <- c("cnv", "mirna", "mutation", "rna")
 for (i in blocks) {
   feas <- c()
@@ -302,15 +310,15 @@ for (df in DFs_w_gender) {
   
   writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
   
-  # [0] empty list w/ name of the current DF
+  # 1 Empty list w/ name of the current DF
   assign(df, list())
   curr_res_list <- eval(as.symbol(df))
   
-  # [1] Load 'df' & only keep names of the feature blocks!
+  # 2 Load 'df' & only keep names of the feature blocks!
   omics_blocks <- load(paste0(data_path, df, ".Rda"))
   omics_blocks <- omics_blocks[-which(omics_blocks %in% c("targetvar"))]
   
-  # [2] Loop over all the blocks/subDFs
+  # 3 Loop over all the blocks/subDFs
   for (block in omics_blocks) {
     
     writeLines(paste0("Block: --------------------------------------\n", block))
@@ -320,9 +328,11 @@ for (df in DFs_w_gender) {
     curr_res_list[[length(curr_res_list) + 1]] <- table(types)
   }
   
+  # 4 add to the list with all results
   res_all[[df]] <- curr_res_list
 }
 
 # Get thy types of all DFs and all blocks:
 sapply(names(res_all), FUN = function(x) unlist(res_all[[x]]))
-lapply(names(res_all), FUN = function(x) unlist(res_all[[x]]))
+# --> only containing numeric variables!
+#     This was already done by Dr. Roman Hornung for the 'missForest' article!
