@@ -4,8 +4,7 @@ This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
 supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***  
 
-Block-wise missingness is a common problem in the context of Multi-Omics Data. To this problem there are no standard approaches yet, neither compariosons studies. This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy. Norbert Krautenbacher has already stated that reliable analysis strategies for multi-omics data with block-wise missingness are urgently needed!
-
+Block-wise missingness is a common problem in the context of Multi-Omics Data. To this problem there are - to my knowledge - no standard approaches, nor compariosons studies yet. In 2018 Norbert Krautenbacher has already stated that a reliable analysis strategy for multi-omics data with block-wise missingness are urgently needed! This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy.
 ---
 
 ## Project description
