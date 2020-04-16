@@ -1,8 +1,7 @@
 data/external
 data/interim
 data/raw
-data/processed/RH_subsetted_12345/missingness_1312
-data/processed/RH_subsetted_12345/missingness_1234
+data/processed/RH_subsetted_12345/
 sources/Online Sources
 .Rhistory
 .RData
