@@ -3,8 +3,9 @@ This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
 ***A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values*** <br> 
 supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***  
-
+<br> 
 Block-wise missingness is a common problem in the context of Multi-Omics Data. To this problem there are - to my knowledge - no standard approaches, nor compariosons studies yet. In 2018 Norbert Krautenbacher has already stated that a reliable analysis strategy for multi-omics data with block-wise missingness are urgently needed! This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy.
+
 ---
 
 ## Project description
@@ -18,7 +19,7 @@ Data with blockwise missingness always consits of different **folds** and **bloc
     Basically all observations with the same observed features.  
     Each fold is unique and every obserbation belongs to exactly one of them.
 
-#### A dataset with blockwise missingness could have the following form:  
+### A dataset with blockwise missingness could have the following form:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
 |---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
 | 1   | 65.4    | 187     | 2.536   | Upper       |         |       |         | 1   |
@@ -43,7 +44,7 @@ Block-wise Missingness can for example arise when concatenating multiple clinica
 
 Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! As the testdata can also consist of block-wise missingness - e.g. 1 block avaible; Combination of 2 blocks avaible; ... - the approaches must be able to deal with block-wise missing data in the test data as well <br>
 
-#### Approaches:
+### Approaches:
 -  **Baseline Approach 1:** Only use complete cases (regarding the testset) to fit a RF
    - if the testset consists of 'Weight', 'Height' & 'g1',...,'g100' then only Observations with these observed features will be used for the trainig of the model!
 -  **Baseline Approach 2:** Only use the features from a single feature block to fit a RF
