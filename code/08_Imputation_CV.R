@@ -13,7 +13,7 @@ library(doParallel)
 
 # Set Cores for parallel computaion!
 detectCores()
-registerDoParallel(cores = 2)
+registerDoParallel(cores = 4)
 
 load_CV_data      <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -221,7 +221,6 @@ impute_train_data <- function(path, ntree_imp = 50, maxiter = 2,
   #     anymore missing data!
   return(data_all)
 }
-
 
 
 # Not ready yet - TBD
@@ -863,7 +862,15 @@ for (curr_data in DFs_w_gender) {
   
   # paste the single path elements and start imputation
   curr_path    <- paste0(path, curr_data, "_", setting, ".RData")
-  imputed_data <- impute_train_data(path = curr_path, ntree_imp = 50, maxiter = 2)
+  
+  # start the imputation and take the time
+  start_time <- Sys.time()
+  imputed_data <- impute_train_data(path = curr_path, ntree_imp = 25, maxiter = 1,
+                                    para = "forests")
+  end_time <- Sys.time()
+  
+  # print the needed time
+  print(paste("Needed Time:", end_time - start_time))
   
   # paste the path to save, print it & save the imputed data!
   path_to_save <- paste0(save_path, curr_data, "_IMP_", setting, ".RData")
