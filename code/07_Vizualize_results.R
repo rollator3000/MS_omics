@@ -252,7 +252,6 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   return(DF_final)
 }
 
-
 # Used to extract Results from Romans Approach 
 # - as these have a slightly different structure due to 
 #   performance realted changes
@@ -619,7 +618,11 @@ data_path <- "./docs/CV_Res/gender/explorative_subsets"
 # [1] Load all explorative singleblock Results
 # 1-1 get all files in the folder, that are singleblock performances
 files <- list.files(data_path)
+
+# 1-1-1 Only keep the explorative 'single-blocks' and only the ones with 
+#       seed = 12345
 files <- files[grepl("single", files)]
+files <- files[grepl("12345", files) & !grepl("123456", files)]
 
 # 1-2 Load the data and store it into a single DF!
 DF_all <- data.frame()
@@ -634,23 +637,55 @@ num_cols <- c("OOB_Acc", "Test_Acc", "Test_F1", "Fraction")
 DF_all[,num_cols] <- sapply(num_cols, function(x) as.numeric(DF_all[,x]))
 
 # 1-4 Reshape the layout of data for the plot! 
-plot_df <- melt(DF_all, id.vars = c("Block", "Fraction", "subset_seed"), 
-                measure.vars = c("Test_Acc", "Test_F1", "Block"))
-plot_df <- plot_df[plot_df$variable %in% c("Test_Acc", "Test_F1"),]
-plot_df$value <- as.numeric(plot_df$value)
+plot_df <- melt(DF_all, id.vars = c("Block", "Fraction", "subset_seed", "Data"), 
+                measure.vars = c("Test_Acc", "Test_F1"))
 
-# 1-5 Plot the performance 
-#     Split by the fraction we've used to subset the single blocks!
-ggplot(data = plot_df, aes(x = Block, y = value, fill = variable)) + 
-  geom_boxplot() + 
-  facet_grid(subset_seed ~ Fraction) +
+# 1-4-1 Remove the clincal block as it is not subsetted
+plot_df       <- plot_df[-which(plot_df$Block == "clin"),]
+
+# 1-4-2 Convert 'Fraction' to a factor variable and code it in '%'
+plot_df$Fraction <- paste0(plot_df$Fraction * 100, "%")
+plot_df$Fraction <- factor(plot_df$Fraction, 
+                           levels = c("2.5%", "5%", "10%", "15%", "25%", 
+                                      "50%", "75%", "100%"))
+
+# 1-4-3 Adjust the names of the single Blocks, such that the spelling is the 
+#       same as in the thesis
+plot_df$Block[grep("cnv", plot_df$Block)]      <- "CNV"
+plot_df$Block[grep("mirna", plot_df$Block)]    <- "miRNA"
+plot_df$Block[grep("mutation", plot_df$Block)] <- "Mutation"
+plot_df$Block[grep("rna", plot_df$Block)]      <- "RNA"
+
+
+# 1-5 Plot the performance with the accuracy and the f1-score measure split by
+#     the fraction we've used to subset the single blocks!
+# 1-5-1 Accuracy
+plot_acc <- plot_df[plot_df$variable %in% c("Test_Acc"),]
+
+ggplot(data = plot_acc, aes(x = Fraction, y = value)) + 
+  geom_boxplot(fill = "palegreen3") + 
+  facet_grid(. ~ Block) +
   theme_bw() +
-  ggtitle("Single Block Performance on all 14 DFs [w/ 5 fold CV]",
-          subtitle = "split by the amount of features we kept") +
-  xlab("Blocks used as Feature Space") +
-  ylab("F1 Score // Accuracy") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 17))
+  ggtitle("Single Block Performance of a random forest over all 14 TCGA data sets",
+          subtitle = "Split by the different feature-blocks - Evaluated with 5-fold CV") +
+  xlab("Subset of used features") +
+  ylab("Accuracy") +
+  theme(axis.text.x = element_text(angle = 45 , hjust = 1),
+        text = element_text(size = 28))
+
+# 1-5-2 F-1-Score
+plot_f1  <- plot_df[plot_df$variable %in% c("Test_F1"),]
+
+ggplot(data = plot_f1, aes(x = Fraction, y = value)) + 
+  geom_boxplot(fill = "palegreen3") + 
+  facet_grid(. ~ Block) +
+  theme_bw() +
+  ggtitle("Single Block Performance of a random forest over all 14 TCGA data sets",
+          subtitle = "Split by the different feature-blocks - Evaluated with 5-fold CV") +
+  xlab("Subset of used features") +
+  ylab("F-1-Score") +
+  theme(axis.text.x = element_text(angle = 45 , hjust = 1),
+        text = element_text(size = 28))
 
 # Analyse the explorative joint block block Results                         ----
 # [0] Define needed Variables
