@@ -120,7 +120,6 @@ mcc_metric        <- function(conf_matrix) {
   return(mcc_final)
 }
 
-
 impute_train_data <- function(path, ntree_imp = 25, maxiter = 1, 
                               para = "forests") {
   " Impute the missing values in the trainsets of the test-train splits 'path'
@@ -469,25 +468,25 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     
     # 2-4-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
-    miss1_A[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss1_A[[i]] <- do_evaluation_imputed(train = train, 
                                           test = test[,-which(colnames(test) %in% curr_data$block_names$A)], 
                                           num_trees = num_trees, 
                                           min_node_size = min_node_size, 
                                           mtry = mtry)
     
-    miss1_B[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss1_B[[i]] <- do_evaluation_imputed(train = train, 
                                           test = test[,-which(colnames(test) %in% curr_data$block_names$B)], 
                                           num_trees = num_trees, 
                                           min_node_size = min_node_size, 
                                           mtry = mtry)
     
-    miss1_C[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss1_C[[i]] <- do_evaluation_imputed(train = train, 
                                           test = test[,-which(colnames(test) %in% curr_data$block_names$C)], 
                                           num_trees = num_trees, 
                                           min_node_size = min_node_size, 
                                           mtry = mtry)
     
-    miss1_D[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss1_D[[i]] <- do_evaluation_imputed(train = train, 
                                           test = test[,-which(colnames(test) %in% curr_data$block_names$D)], 
                                           num_trees = num_trees, 
                                           min_node_size = min_node_size, 
@@ -495,42 +494,42 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     
     # 2-4-3 TestSet with 2 missing blocks!
     print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
-    miss2_CD[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss2_CD[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                      curr_data$block_names$D))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_BD[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss2_BD[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                      curr_data$block_names$D))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_BC[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss2_BC[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                      curr_data$block_names$B))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_BC[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss2_BC[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                      curr_data$block_names$B))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_AC[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss2_AC[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
                                                                                      curr_data$block_names$A))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_BC[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss2_BC[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                      curr_data$block_names$C))], 
                                            num_trees = num_trees, 
@@ -539,7 +538,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     
     # 2-4-4 Testset with 3 missing blocks!
     print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
-    miss3_ABC[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss3_ABC[[i]] <- do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                       curr_data$block_names$C,
                                                                                       curr_data$block_names$A))], 
@@ -547,7 +546,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
     
-    miss3_ACD[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss3_ACD[[i]] <- do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$D,
                                                                                       curr_data$block_names$C,
                                                                                       curr_data$block_names$A))], 
@@ -555,7 +554,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
     
-    miss3_ABD[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss3_ABD[[i]] <- do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                       curr_data$block_names$D,
                                                                                       curr_data$block_names$A))], 
@@ -563,7 +562,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
     
-    miss3_BCD[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss3_BCD[[i]] <- do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                       curr_data$block_names$C,
                                                                                       curr_data$block_names$D))], 
@@ -573,7 +572,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     
     # 2-4-5 Evaluation on single Block Testdata
     print("Evaluation TestSet w/ only 1 observed Block -----------------------")
-    single_A[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    single_A[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                      curr_data$block_names$C,
                                                                                      curr_data$block_names$D,
@@ -582,7 +581,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    single_B[[i]] <-  do_evaluation_imputed(train = train_imputed, 
+    single_B[[i]] <-  do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                       curr_data$block_names$C,
                                                                                       curr_data$block_names$D,
@@ -591,7 +590,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
     
-    single_C[[i]] <-  do_evaluation_imputed(train = train_imputed, 
+    single_C[[i]] <-  do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                       curr_data$block_names$A,
                                                                                       curr_data$block_names$D,
@@ -600,7 +599,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
     
-    single_D[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    single_D[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                      curr_data$block_names$C,
                                                                                      curr_data$block_names$A,
@@ -609,7 +608,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    single_CL[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    single_CL[[i]] <- do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                       curr_data$block_names$C,
                                                                                       curr_data$block_names$D,
