@@ -318,7 +318,7 @@ for (i in blocks) {
   print(summary(feas))
 }
 
-# Get the type of the features used in all blocks!                          ----
+# [4] Get the type of the features used in all blocks!                      ----
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
