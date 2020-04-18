@@ -108,7 +108,7 @@ for (df in DFs_w_gender) {
                      df, "_subset.RData"))
 }
 
-# [2] Get Test& OOB Performance on the subsetted DFs - JOINT BLOCKS         ----
+# [2] Get Test& OOB Performance on the subsetted DFs - JOINT BLOCKS          ----
 # 2-1 Define file and foldernames!
 DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                          "LGG", "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
@@ -281,3 +281,32 @@ for (df in DFs_w_gender_subset) {
 # 3-5 Save the resuls
 write.csv2(eval_res, row.names = FALSE, 
            "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed_12345.csv")
+# [4] Get the amount of features in the reduced feature-blocks              ----
+# 4-1 Define DFs we want to inspect!
+DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
+                  "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
+
+# 4-2 Loop over the possible feature-blocks in all different DFs, extract 
+#     the dimension for each DF and print the summary of the dimensionality of
+#     the current block over all 'DFs_w_gender'
+clin_ <- c(); cnv_ <- c(); mirna_ <- c(); mutation_ <- c(); rna_ <- c()
+
+for (df_ in DFs_w_gender) {
+  
+  # load 'df_' and its corresponding blocks
+  df <- load(paste0("./data/processed/RH_subsetted_12345/", df_, "_subset.RData"))
+  
+  # Bind the amount of features to the corresponding vectors
+  clin_     <- c(clin_, ncol(clin))
+  cnv_      <- c(cnv_, ncol(cnv))
+  mirna_    <- c(mirna_, ncol(mirna))
+  mutation_ <- c(mutation_, ncol(mutation))
+  rna_      <- c(rna_, ncol(rna))
+}
+
+# 4-3 Print the summaries for each
+print(summary(clin_)) #  -1 as the response still inside!
+print(summary(cnv_))
+print(summary(mirna_))
+print(summary(mutation_))
+print(summary(rna_))
