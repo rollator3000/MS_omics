@@ -281,7 +281,7 @@ for (df in DFs_w_gender_subset) {
 # 3-5 Save the resuls
 write.csv2(eval_res, row.names = FALSE, 
            "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed_12345.csv")
-# [4] Get the amount of features in the reduced feature-blocks              ----
+# [4] Get the amount of features in the reduced feature-blocks               ----
 # 4-1 Define DFs we want to inspect!
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
