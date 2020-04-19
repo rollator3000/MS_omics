@@ -399,7 +399,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                                            be block 'A' & 'C'] 
                 .
                 .
-            - single_D: CV-Results for each fold on the testdata w/ minra block 
+            - single_D: CV-Results for each fold on the testdata w/ mirna block 
                         only! [or in scenario2, what was sampled to be block 'D']
                          
         * 'settings' [settings used to do the CV - all arguments!]
