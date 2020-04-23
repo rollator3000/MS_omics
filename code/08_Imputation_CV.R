@@ -228,8 +228,6 @@ impute_train_data <- function(path, ntree_imp = 25, maxiter = 1,
   return(curr_data)
 }
 
-
-
 # Not ready yet - TBD
 do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   "Evaluate the Imputation Approach! MissForest was used to impute the missing 
