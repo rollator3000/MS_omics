@@ -343,8 +343,8 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
 }
 do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
                                   num_trees = 100, min_node_size = 10, mtry = NULL) {
-  "Evalute the Approach where teh block-wise missingness in the DFs is removed by
-   missforest [or any other] impuation method!
+  "Evalute the Approach where the block-wise missingness in the DFs is removed by
+   missforest impuation method!
    
    'path' must lead to a list with 2 entrances: 'data' & 'block_names'
    - 'data' is a list filled with 'k' test-train-splits
@@ -362,7 +362,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
    Then for each testsituation (fully observed testset,.., single block testset) 
    we prune the imputed data, so that only features remain that are also in the 
    test set. On this data a RF is fitted and the performance is measured in the 
-   testset & rated with Accuracy, Precision, Specifity, F1-Socre,...
+   testset & rated with Accuracy, Precision, Recall, F1-Socre,...
    
    Args:
     - path (str) : path to the test-train splits, whereby the train parts were 
