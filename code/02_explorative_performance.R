@@ -1,12 +1,13 @@
 " Investigate how good the predicitive peroformance of a RF is on a single 
-  block / joint Blocks for different amount of subsetted features!
+  block/ joint Blocks for different amount of subsetted features!
+  This is nexessary to find out which feature-blocks need to trimmed!
 
   For each of these Scenarios, we create a DF, that tracks:
-    -the dataframe  
-    -the block  
-    -Dim of Traindata  
-    -OOB & TestSet Accuracy + Test F1 Score! 
-    -Time in minutes
+    - the dataframe  
+    - the block  
+    - dim of traindata  
+    - OOB & TestSet Accuracy + Test F1 Score! 
+    - time in minutes
 "
 # Set Working Directory and load the needed packages!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
@@ -27,7 +28,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
   For each block [except for clin] we subset the feature space by only keeping a
   'fraction' of the original feature space & get the performance, so that we can
   find out which subset to use in our final study!
-  For this we do 5 fold CV to each single block and save the results, obtained
+  For this we do 5-fold-CV to each single block and save the results, obtained
   when fitting a standard rfsrc model to it w/ 250 trees!
   
   Args:
@@ -43,23 +44,22 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
     data.frame with: 'Data'      - data used
                      'Block'     - current block that was used to fit RF
                      'train_dim' - dimension of the data used to fit the RF
-                     'OOB_Acc'   - Metrics obtained from OOB / CV Testset
-                     'Test_Acc'  -               - ' - 
-                     'Test_F1'   -               - ' -
-                     'Fold'      - which fold of the 5 fold CV
+                     'OOB_Acc'   - Metric obtained from OOB 
+                     'Test_Acc'  - Metric obtained from CV-Testset
+                     'Test_F1'   - Metric obtained from CV-Testset
+                     'Fold'      - which fold of the 5 folds were used as hold-out
                      'Time'      - how long did it take to fit a RF on the block
                      'Fraction'  - fraction used to subset the single blocks!
                      'subset_seed' -  seed used to create subset!
     will be saved to 'docs/CV/gender/explorative_subsets/' the name of the file
     itself is a mixture of seed and fraction!
-    
   "
-  # [0] Check Arguments
+  # [0] Check Arguments  -------------------------------------------------------
   assert_vector(DFs_w_gender, min.len = 1, unique = TRUE)
   assert_int(seed_to_subset)
   assert_double(fraction, lower = 0, upper = 1)
   
-  # [1] Empty DF - for all results of the Evaluation:
+  # [1] Empty DF - for all results of the Evaluation:  -------------------------
   eval_res <- data.frame("Data"      = character(), "Block"    = numeric(), 
                          "train_dim" = numeric(),   "OOB_Acc"  = numeric(),   
                          "Test_Acc"  = numeric(),   "Test_F1"  = numeric(), 
@@ -70,7 +70,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
   data_path    <- "./data/external/Dr_Hornung/"
   
-  # [2] Loop over all DFs w/ gender in their clinical variables!
+  # [2] Loop over all DFs w/ gender in their clinical variables!  --------------
   for (df in DFs_w_gender) {
     
     writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
@@ -199,16 +199,16 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
       data.frame with: 'Data'      - data used
                        'Block'     - current block that was used to fit RF
                        'train_dim' - dimension of the data used to fit the RF
-                       'OOB_Acc'   - Metrics obtained from OOB / CV Testset
-                       'Test_Acc'  -               - ' - 
-                       'Test_F1'   -               - ' -
-                       'Fold'      - which fold of the 5 fold CV  
+                       'OOB_Acc'   - Metric obtained from OOB
+                       'Test_Acc'  - Metric obtained from test-set
+                       'Test_F1'   - Metric obtained from test-set
+                       'Fold'      - which fold was used as hold-iout fold   
                        'Time'      - how long did it take to fit a RF on the block
                        'Fraction'  - fraction used to subset the single blocks!
       will be saved to 'docs/CV/gender/explorative_subsets/' the name of the file
       itself is a mixture of seed and fraction!
   "
-  # [0] Check Arguments
+  # [0] Check Arguments  -------------------------------------------------------
   assert_vector(DFs_w_gender, min.len = 1, unique = TRUE)
   assert_int(seed_to_subset)
   assert_double(fraction_cnv, lower = 0, upper = 1)
@@ -216,7 +216,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
   assert_double(fraction_mirna, lower = 0, upper = 1)
   assert_double(fraction_mutation, lower = 0, upper = 1)
   
-  # [1] Empty DF - for all results of the Evaluation:
+  # [1] Empty DF - for all results of the Evaluation:  -------------------------
   eval_res <- data.frame("Data"    = character(), "train_dim" = numeric(),
                          "OOB_Acc" = numeric(),   "Test_Acc"  = numeric(),
                          "Test_F1" = numeric(),   "Fold"      = numeric(),
@@ -227,7 +227,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
   data_path    <- "./data/external/Dr_Hornung/"
   
-  # [2] Loop over all DFs w/ gender in their clinical variables!
+  # [2] Loop over all DFs w/ gender in their clinical variables!  --------------
   for (df in DFs_w_gender) {
     
     writeLines(paste0("Load Dataframe: ----------------------------------\n", df))
@@ -378,6 +378,7 @@ eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
 eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
                           seed_to_subset = seed_to_subset,
                           fraction = 0.5)
+
 # Single 25% subsetted Omics-Blocks as features to RF
 eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
                           seed_to_subset = seed_to_subset,
@@ -404,6 +405,8 @@ eval_single_block_subsets(DFs_w_gender = DFs_w_gender,
                           fraction = 0.025)
 
 # Get Performances w/ joint subsetted blocks as feature spaces               ----
+seed_to_subset = 12345
+
 for (rna_sub in c(0.75, 0.5, 0.25, 0.15, 1)) {
   for (cnv_sub in c(0.005, 0.025, 0.0125, 1)) {
     for (mut_sub in c(1, 0.5, 0.1)) {
