@@ -1,22 +1,21 @@
 " Script to create DFs needed in the following Scripts!
-  
-  [1] Create an artififcal dataset w/ factors, characters & numeric features 
-      - this was/ is needed for the adaption of the 'simpleRF' Package!
-      
-  [2] Create Subsets of the original datasets!
-      --> After exploration of the different subsets in '02_...R', we create a 
-          final subset we will use for the comparison study!
-          For this we will subset each omics block:
-            - 0.025 for cnv omics block!
-            - 0.1   for mutationn omcis block!
-            - 0.15  for rna omics block!
-            - 0.5   for mirna omics block!
+
+  [1] Create Subsets of the original TCGA datasets!
+      --> After exploration of the different subsets in 
+          '02_explorative_performance.R', we create a final subset we will use 
+          for the comparison study!
+            For this we will subset each omics block:
+              - 0.025 for cnv omics block!
+              - 0.1   for mutationn omcis block!
+              - 0.15  for rna omics block!
+              - 0.5   for mirna omics block!
     
-  [3] & [4] 
-     Get Performance on the subsetted DFs, when a regular DF is fit 
-     on 'Joint-' / 'Single-' Blocks!
-        - [3] = JointBlock Performance
-        - [4] = SingleBlock Performance
+  [2] & [3] Get Performance on the subsetted DFs, when a regular DF is fit on 
+            'Joint-' / 'Single-' Blocks!
+          - [2] = JointBlock Performance
+          - [3] = SingleBlock Performance
+        
+  [4] Get the dimensions of the subsetted data sets!
 "
 # Load Packages & define Functions!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis")
@@ -25,7 +24,7 @@ library(randomForestSRC)
 library(mlbench)
 library(caret)
 
-# [1] Subset the single Blocks in the original DFs                           ----
+# [1] Subset the single Blocks in the original TCGA DFs                     ----
 # 1-1 Define needed Variables
 # 1-2-1 Names of the usable dataframes (gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
