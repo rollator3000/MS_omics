@@ -221,7 +221,7 @@ impute_train_data <- function(path, ntree_imp = 25, maxiter = 1,
     name_save <- strsplit(path, split = "1234/")[[1]][2]
     save_path <- "data/processed/RH_subsetted_12345/missingness_1234_imputed/"
     save_path <- paste0(save_path, curr_ind, "_", name_save)
-    save(data_imputed, file = "")
+    save(data_imputed, file = save_path)
   }
   
   # [2] Return the Test-Train Splits  ------------------------------------------
