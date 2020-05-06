@@ -1,4 +1,4 @@
-" Script to crossValidate the adaption of N. Krautenbachers's RF Alogrithm!
+" Script to crossValidate the adaption of N. Krautenbachers's block-wise RF Algorithm!
  
   This approach learns a seperate RF on each of the feature blocks in the train-
   set. For predicitions on testdata it only uses the RFs that use avaible features
@@ -870,7 +870,6 @@ do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
-
 
 # Run Main                                                                  ----
 "Run the CV for all DFs from the missForest paper ------------------------------"

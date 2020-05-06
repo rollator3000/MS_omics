@@ -2,25 +2,26 @@
 
  For each fold [set of observations w/ the same observed features], a seperate RF
  is trained [--> one seperate RF for each fold then]. For predicitons with these 
- foldwise-fitted-RFs it might be, that the foldwise grown trees need to be adjusted
+ foldwise-fitted RFs it might be, that the foldwise grown trees need to be adjusted
  - depending on the observed features in testdata! Foldwise fitted trees need to be
  pruned, when they use a split variable, that is not avaible in the testset!
  ----- Pruning ----- 
   1. Select a foldwise fitted RandomForest.
-  2. For each tree the RF consists of it is checked whether any of these trees uses
-     a variable for splitting that is not avaible in the testdata.
-  3. Each tree that uses a splitvariable not existent in the testset needs to be 
-     pruned [cut off tree, before it splits w/ this variable]
+  2. For each tree the RF consists of it is checked whether any of these trees 
+     uses a variable for splitting that is not avaible in the testdata.
+  3. Each tree that uses a splitvariable that does not existent in the testset 
+     needs to be pruned [cut off tree, before it splits w/ this variable]
   4. If a tree was pruned:
         - at its first split it can not be used for predicitons anymore!
         - anywhere else than the first split variable,  it can still be used for 
-          predictions! Pass a test-obs. down the tree until it reaches a terminal-/
-          pruned-node. 
-          --> Prediciton equals disribution of the response in terminal-/ pruned-node!
+          predictions! Pass a test-obs. down the tree until it reaches a 
+          terminal-node [a node has been pruned is terminal node then!]
+          --> Prediciton equals disribution of the response in terminal-node!
 
-For a final prediction by a RF the predicitons from the different foldwise-fitted-RFs 
-are averaged. To get the predicition from a single foldwise-fitted-RF, get the predicition
-from every single tree [if not pruned at 1st splitvariable] and average these! 
+For a final prediction by a RF the predicitons from the different foldwise-fitted
+RFs are (weightd) averaged. To get the predicition from a single foldwise-fitted
+RF, get the predicition from every single tree [if not pruned at 1st splitvariable]
+and average these! 
 
 !!! Attention with running this code on Windows !!!
   - Paralelization leads to errors on Windows! 
@@ -29,7 +30,7 @@ from every single tree [if not pruned at 1st splitvariable] and average these!
                           - run 'registerDoParallel(cores = 1)'
 "
 # Load Functions, Classes & Librarys!
-source("./code/04_simpleRF_adaption.R")
+source("./code/GENERAL_simpleRF_adaption.R")
 library(pROC)
 library(assertthat)
 library(checkmate)
