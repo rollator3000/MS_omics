@@ -234,6 +234,112 @@ impute_train_data <- function(path, ntree_imp = 25, maxiter = 1,
   return(curr_data)
 }
 
+impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1, 
+                                       para = "forests", start_fold = 1) {
+  " Impute the missing values in the trainsets of the test-train splits 'path'
+    points to! Impute the missing values with the missForest approach!
+    Then save the imputed DF, so we do not need to impute it the whole time and 
+    can evaluate different approaches withit!
+    
+    Look into the 'train-data' of each split and get the variables we need to 
+    impute! Then apply the missForest approach to impute these missing values!
+     >> recode numeric columns to factors, if the numeric column has less than 5
+        unique numeric values --> converted back to numeric before returning! <<
+   
+  Args:
+    - path (str)       : Path to a list of Test-Train Splits, whereby the Train-
+                         Set has block-wise missing values - must be '.RData'!
+                         The data we load is checked within 'load_CV_data()'
+    - ntree_imp (int)  : Amount of trees we use for the missForest imputation
+    - maxiter (int)    : Max Number of iterations to be performed - as long 
+                         as the stopping criterion is not fullfilled yet!
+    - para (str)       : Should 'missForest' be run parallel? If 'variables' the
+                         data is split into pieces of the size equal to the
+                         number of cores registered in the parallel backend. 
+                         If 'forests' the total number of trees in each random
+                         forests is split in the same way. 
+                          > 'no'; 'forests' or 'variables'
+    - start_fold (int) : Which fold to start the imputation - all lower are 
+                         ignored! 
+  Return:                Save the imputed data of all folds in 
+                         'data/processed/RH_subsetted_12345/missingness_1234_imputed/'
+                         fold_data_imputed.R
+  "
+  # [0] Check Inputs & load the data  ------------------------------------------
+  # 0-1 Check for meaningful arguments
+  assert_string(path, fixed = ".RData")
+  assert_int(maxiter, lower = 1)
+  assert_int(ntree_imp, lower = 10)
+  if (!(para %in% c('no', 'forests', 'variables'))) {
+    stop("'para' must be: 'no'; 'forests'; or 'variables'")
+  }
+  assert_int(start_fold, lower = 1, upper = 5)
+  
+  # 0-2 Load data and extract the data-splits itself! 
+  curr_data <- load_CV_data(path = path)
+  data_all  <- curr_data$data
+  
+  # [1] Run the impuation for each of the 5 Test-Train Splits  -----------------
+  for (curr_ind in start_fold:length(data_all)) {
+    
+    print(paste("Imputation", curr_ind, "/", length(data_all)))
+    
+    # 1-1 Extract the current train data!
+    curr_train <- data_all[[curr_ind]]$train
+    
+    # 1-2 Remove the response from the train data, as this shall not be used 
+    #     for the imputation
+    curr_resp      <- curr_train[,1]
+    curr_resp_name <- colnames(curr_train)[1]
+    curr_train[,1] <- NULL
+    
+    # 1-3 Recode numeic variables to factor if the numeric < 5 unique values!
+    # 1-3-1 Count amount of factor levels in each variable
+    unique_values_cols <- sapply(1:ncol(curr_train), 
+                                 function(x) length(unique(curr_train[,x])))
+    
+    # 1-3-2 Get the cols with less than 5 unique values!
+    cols_to_recode <- which(unique_values_cols < 5)
+    
+    # 1-3-3 Convert numeric variables to factor variables
+    #       - if there even is a col to recode!
+    if (length(cols_to_recode) > 1) {
+      curr_train[cols_to_recode] <- lapply(curr_train[cols_to_recode], 
+                                           function(x) as.factor(x))
+    }
+    
+    # 1-4 Start the Imputation!
+    data_imputed <- missForest(curr_train, verbose = TRUE, 
+                               parallelize = para, maxiter = maxiter, 
+                               ntree = ntree_imp)
+    data_imputed <- data_imputed$ximp
+    
+    # 1-5 Check that the imputed data has no more missing values!
+    if (any(sapply(1:nrow(data_imputed), function(x) sum(is.na(x)) > 1))) {
+      stop("Imputed DF still has missing datapoints!")
+    }
+    
+    # 1-6 Recode the variables back to numeric if we coded them to factors in 1-3
+    if (length(cols_to_recode) > 1) {
+      data_imputed[cols_to_recode] <- lapply(data_imputed[cols_to_recode], as.numeric)
+    }
+    
+    # 1-7 Add the response again into the first column and assign correct name!
+    data_imputed              <- cbind(curr_resp, data_imputed)
+    colnames(data_imputed)[1] <- curr_resp_name
+    
+    # 1-8 Replace the train data with block-wise missingness with the imputed
+    #     Training data
+    data_all[[curr_ind]]$train <- data_imputed
+    
+    # 1-9 Save the prt that has been imputed!
+    name_save <- strsplit(path, split = "1234/")[[1]][2]
+    save_path <- "data/processed/RH_subsetted_12345/missingness_1234_imputed/"
+    save_path <- paste0(save_path, curr_ind, "_", name_save)
+    save(data_imputed, file = save_path)
+  }
+}
+
 # Not ready yet - TBD
 do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   "Evaluate the Imputation Approach! MissForest was used to impute the missing 
