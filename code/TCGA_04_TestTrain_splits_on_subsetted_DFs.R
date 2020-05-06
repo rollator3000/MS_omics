@@ -1,5 +1,6 @@
-"Script to split the data into k different Train & TestSets. To each of the 'k' 
- TrainSets we will induce block-wise missingness of a certain scenario - totally 4.
+"Script to split the subssetted TCGA data into k different Train & TestSets. 
+ To each of the 'k' TrainSets block-wise missingness of a certain scenario is 
+ induced - in total 4 different patterns for the missingness!
 "
 # Load Librarys & Define Funcitons!
 library(checkmate)
