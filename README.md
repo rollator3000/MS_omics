@@ -14,7 +14,7 @@ Block-wise missingness is a special type of missingness that appears frequently 
 Data with blockwise missingness always consits of different **folds** and **blocks**.
   - A **block** describes a set of covariates containing all features collected on the basis of a characteristic.  
     Basically all covariates that are related in content  
-    (e.g. physical properties: Height & Weight | educational properties: Income & Education').  
+    (e.g. *physical properties*: Height & Weight | *educational properties*: Income & Education').  
   - A **fold** represents a set of observations with the same observed blocks.  
     Basically all observations with the same observed features.  
     Each fold is unique and every obserbation belongs to exactly one of them.
@@ -32,13 +32,13 @@ Data with blockwise missingness always consits of different **folds** and **bloc
 | 8   | 73.0    | 169     |         |             | 0.31    | ...   | -0.07   | 1   |
 
   - Consits of three blocks:
-     - Physical properties:   Weight, Height
-     - Educational properties:  Income, Education
-     - Biological properties: g1, ..., g100
+     - **Physical properties:**     Weight, Height
+     - **Educational properties:**  Income, Education
+     - **Biological properties:**   g1, ..., g100
   - Consists of three folds:
-     - Fold1: All observations with observed Physical & Educational properties
-     - Fold2: All observations with observed Educational & Biological properties
-     - Fold3: All observations with observed Physical & Biological properties
+     - **Fold1:** All observations with observed Physical & Educational properties
+     - **Fold2:** All observations with observed Educational & Biological properties
+     - **Fold3:** All observations with observed Physical & Biological properties
   
 Block-wise Missingness can for example arise when concatenating multiple clinical studies for the same target variable. Eventhough all different datasets do have the same target variable they still can differ in the collected feature-blocks, such that the concatination of these results in a DF with block-wise missingness!  
 
@@ -54,10 +54,11 @@ Regular model fitting on data with block-wise missingness is for most statistica
 -  **Imputation Approach:** Use the 'missForest' approach to impute the missing values
    - Impute the missing data in the TrainingSet with the missForest Approach 
    - For predicition on testset, remove all features from the (imputed) trainset that are not part of the testst
-   - On this pruned (imputed) trainset fit a RF and generate predicitions for testset
+   - On this pruned (imputed) trainset fit a RF and generate predicitions for the testset then
 -  **Block-Wise Approach:** Fit a seperate RF on each feature block and create a final prediciton by combining the different block-wise predicitons
    - On each feature block of the data, fit a seperate RF *- 1 RF on the Physical properties, 1 RF on the Educational properties, ...*
-   - To predict on a TestSet, each block-wise RF generates a seperate prediciton that are combined for a final prediciton 
+   - To predict on a TestSet, each block-wise RF is asked for a predicition - only the RFs can do so that were trained on a block that is available for the test-set
+   - Generate the seperate block-wise predicitons for a final prediciton - weighted/ unweighted
 -  **Fold-Wise Approach:** Fit a seperate RF on each fold and create a final prediciton by combining the different fold-wise predicitons
    - On each fold of the data fit a seperate RF *- 1 RF on Fold1, 1 RF on Fold2, ...*
    - To predict on a TestSet, each fold-wise RF generates a seperate prediciton *- for these predicitons it might be that the single decision trees the RF consists of need to pruned -* that are combined for a final prediciton 
@@ -65,6 +66,14 @@ Regular model fitting on data with block-wise missingness is for most statistica
 
 
 ### ! ! ! Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself! ! !
+
+---
+
+## Data
+### TCGA
+The original TCGA data is not part of this Repo. If interested in the original data, please contact me on github or send an E-Mail to 'f.ludwigs@yahoo.de'.  
+Only the subsetted TCGA data can be found in the repository under: "data/processed/RH_subsetted_12345"   
+With the script in 'code/09_create_data_w_blockwise_missingness_for_CV.R' the subsetted DFs are split to test- and train-set and the training set is induced with block-wise missingness! Based on this data the different approaches were tested.
 
 ---
 
@@ -121,15 +130,6 @@ Short describtion of the scripts in './code'!
 ``` 
 
 ---
-
-## Data
-The original data is not part of this Repo, only the subsetted data!  
-If interested in the original data, please contact me on github or send 
-an E-Mail to 'f.ludwigs@yahoo.de'.  
-The subsetted DFs are part of the repository and can be used in code/09 
-to create the TestTrainSplits used for CV!
-
---- 
 
 ## Project Organization
 ```
