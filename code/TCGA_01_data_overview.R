@@ -1,20 +1,19 @@
-" Get a basic overview over the raw TCGA data used in this thesis!
-  Data is already preprocessed by Dr. Hornung, such that there are no single
-  missing values & was used exactly like this in the 'block-forest' article! 
+" Get a basic overview over the raw TCGA data!
+  Data is already preprocessed by Dr. Hornung and has already been used exactly 
+  like this in the 'block-forest' article! 
 "
 # [0] Set the WD, load Packages and define Functions:
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 
 get_cols_w_NAs     <- function(df) {
-  "
-  Check whether the passed dataframe (df) contains any columns w/ missing values
+  " Check whether the passed dataframe (df) contains any columns w/ missing values
   
   Args:
-    - df (data.frame) : Object of class data.frame, with n rows and p columns, 
-                        we want to check for NAs in any of its p columns!
+    - df (data.frame) : DF with n rows and p columns, that shall be checked for 
+                        NAs in any of its p columns!
     
   Return:
-    for each column a boolean, whether it cotains NA Values
+    - Boolean for each column, whether it cotains any NAs
   "
   results <- apply(df, 2, function(x) any(is.na(x)))
   
@@ -25,15 +24,14 @@ get_cols_w_NAs     <- function(df) {
   }
 }
 get_rows_w_NAs     <- function(df) {
-  "
-  Check whether the passed dataframe (df) contains any rows w/ missing values
+  " Check whether the passed dataframe (df) contains any rows w/ missing values
   
   Args:
-    - df (data.frame) : Object of class data.frame, with n rows and p columns, 
-                        we want to check for NAs in any of its n rows!
+    - df (data.frame) : DF with n rows and p columns, that shall be checked for 
+                        NAs in any of its n rows!
     
   Return:
-    Proportion of rows, w/ at least 1 missing Value
+    - Proportion of rows, w/ at least 1 missing Value
   "
   results <- apply(df, 1, function(x) any(is.na(x)))
   
@@ -45,11 +43,10 @@ get_rows_w_NAs     <- function(df) {
   }
 }
 get_single_df_info <- function(df) {
-  "
-  Function to get basic describtive information on the passed data.frame (df)!
-  Which features contain missing data, which observations contain missing data,
-  what dimension does the data have, what features does it contain and of what
-  type are they?
+  " Function to get basic describtive information of the passed data.frame - df.
+    Which features contain missing data, which observations contain missing data,
+    what dimension does the data have, what features does it contain and of what
+    type are they?
   
   Args:
     - df (data.frame) :  Object of class data.frame  with n rows & p columns we 
@@ -89,15 +86,14 @@ get_single_df_info <- function(df) {
   return(result)
 }
 load_rda_get_infos <- function(rda_path) {
-  "
-  Function to load a '.Rda' datafile! 
-  This can contain single or multiple objects, it prints the names of all
-  projects connected with the '.Rda' file! 
-  For each 'data.frame' we will call 'get_df_info()' to get the basic properties
-  and will collect the properties for each data.frame/ matrix in a list! 
-  The list has only named elements according to the data.frame/ matrix!
-  For none data.frame/ matrix objects we only return the type of the object and
-  that we could not do a analysis!
+  " Function to load a '.Rda' datafile! 
+    This can contain single or multiple objects, it prints the names of all
+    projects connected with the '.Rda' file! 
+    For each 'data.frame' we will call 'get_df_info()' to get the basic 
+    properties and will collect the properties for each data.frame in a list! 
+    The list has only named elements according to the data.frame!
+    For none data.frame objects we only return the type of the object and
+    that we could not do a analysis!
   
   Args:
     - rda_path (string) : path to a '.Rda' file, that can contain different objects!
@@ -145,7 +141,7 @@ load_rda_get_infos <- function(rda_path) {
 
 # [1] Datainspection -- needed for further analysis                         ----
 #     Always run the code as the resulting objects [e.g. 'BLCA_Res', ...] are 
-#     needed for the further analysis in this script then!
+#     needed for the further analysis in this script then (section [2] & [3])!
 #     --> Each resulting object contains the dimensions and types of features 
 #         for the different feature-blocks of the datasets!
 # ----- BLCA DF
