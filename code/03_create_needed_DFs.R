@@ -1,4 +1,4 @@
-" Script to create DFs needed in the following Scripts!
+" Script to create the subsets of the TCGA DFs needed for the evaluation!
 
   [1] Create Subsets of the original TCGA datasets!
       --> After exploration of the different subsets in 
