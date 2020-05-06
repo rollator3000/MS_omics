@@ -1,4 +1,4 @@
-" Script to modify the script from 'simpleRF', to our use case!
+" Script to modify 'simpleRF' implementation for our use case!
   We want to add the method 'prune', which prunes a tree at splitpoints, that 
   are not avaible in the test_set we want to get predicitons by a Random Forest
   [collection of trees basically]!
@@ -861,8 +861,8 @@ simpleRF <- function(formula, data, num_trees = 50, mtry = NULL,
   }
   
   # This is not done yet! Works for Classificaion only!
-  
-  # else if (treetype == "Regression") { 
+  # --> Can be adjusted! Most of the work has already been done!
+    # else if (treetype == "Regression") { 
   #   # Create 'num_trees' trees!
   #   trees    <- replicate(num_trees, TreeRegression$new())
   #   
