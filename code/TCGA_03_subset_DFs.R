@@ -11,7 +11,7 @@
               - 0.5   for mirna omics block!
     
   [2] & [3] Get Performance on the subsetted DFs, when a regular DF is fit on 
-            'Joint-' / 'Single-' Blocks!
+            'Joint-' / 'Single-' Blocks!  >> rather explorative!
           - [2] = JointBlock Performance
           - [3] = SingleBlock Performance
         
@@ -24,7 +24,7 @@ library(randomForestSRC)
 library(mlbench)
 library(caret)
 
-# [1] Subset the single Blocks in the original TCGA DFs                     ----
+# [1] Subset the single Blocks in the original TCGA DFs                      ----
 # 1-1 Define needed Variables
 # 1-2-1 Names of the usable dataframes (gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
