@@ -56,7 +56,6 @@ for (curr_ind in 1:length(curr_data_1$data)) {
   observed_folds <- unique(observed_feas)
   print(paste0("Found ", length(observed_folds), " unique folds!"))
   
-  
   # 1-3-3 Fit a random forest model on each fold & get the variable importance
   importance_list <- list()
   importance_list <- foreach(j_ = 1:length(observed_folds)) %do% {
@@ -113,4 +112,56 @@ for (curr_ind in 1:length(curr_data_1$data)) {
   names(average_all_folds) <- var_import$Variable
   
   var_importance_all[[curr_ind]] <- average_all_folds
+}
+# [3] Block-wise approach                                                   ----
+# 1-1 Load an Dataset with block-wise missingness
+load("C:/Users/kuche_000/Desktop/MS_omics/data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData")
+
+# 1-2 Create an empty list to save the results
+var_importance_all <- list()
+
+# 1-3 Loop over all Test-Train splits in the data 
+for (curr_ind in 1:length(curr_data_1$data)) {
+  
+  # 1-3-1 Get the Train data & the names of the feature-blocks
+  train      <- curr_data_1$data[[curr_ind]]$train
+  block_vars <- curr_data_1$block_names
+  
+  # 1-4 Fit a RF on each feature-block
+  v_imp <- list()
+  
+  for (block_ in 1:length(block_vars)) {
+    
+    # 1-4-1 Get the Observations that have the features of 'block_'
+    observed <- sapply(seq_len(nrow(train)), function(j_) {
+      sum(is.na(train[j_, block_vars[[block_]]])) == 0
+    })
+    
+    # - Convert Boolean to indicies!
+    observed <- which(observed)
+    
+    # 1-4-2 Fit a RF on this fully observed (fold-)subdata!
+    # - Define formula
+    response    <- colnames(train)[1]
+    formula_all <- as.formula(paste(response, " ~ ."))
+    
+    # - Get all Obs. from the current block, its block features and the 
+    #   corresponding response in a seperate DF!
+    curr_fold_train_data <- train[observed, 
+                                  c(response, block_vars[[block_]])]
+    
+    # - Fit a Tree on the block data
+    blockwise_rf <- rfsrc(formula = formula_all, data = curr_fold_train_data, 
+                          ntree = num_trees, mtry = mtry, nodesize = min_node_size, 
+                          samptype = "swr", seed = 12345678, var.used = 'all.trees')
+    
+    # 1-4-3 Extract the importance of the variables!
+    importance <- vimp(blockwise_rf)$importance
+    importance <- as.data.frame(importance)
+    importance$Variable <- row.names(importance) 
+    
+    v_imp[[block_]] <- importance
+  }
+  
+  var_importance_all[[curr_ind]] <- v_imp
 }
