@@ -2,6 +2,7 @@ data/external
 data/interim
 data/raw
 data/processed/RH_subsetted_12345/
+data/processed/real_data
 sources/Online Sources
 .Rhistory
 .RData
