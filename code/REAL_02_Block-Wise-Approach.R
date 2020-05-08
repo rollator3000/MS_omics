@@ -408,4 +408,4 @@ for (i in 1:5) {
 }
 
 # 2-4 Save the results of the CV
-save(foldwise_res, file = "./docs/CV_Res/REAL/BlockWise_Approach.R")
+save(blockwise_res, file = "./docs/CV_Res/REAL/BlockWise_Approach.R")
