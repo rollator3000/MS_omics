@@ -461,7 +461,7 @@ mtry              = NULL
 min_node_size     = 5
 
 # 2-2 Create a list to save the metrics
-res_all <- list()
+foldwise_res <- list()
 
 # 2-3 Start the 5 fold CV
 for (i in 1:5) {
@@ -603,7 +603,7 @@ for (i in 1:5) {
     
   }
   
-  # 2-5-2 Compare the predicted classes with the true response
+  # 2-3-7-3 Compare the predicted classes with the true response
   no_weight  <- eval_predicitons(as.factor(predicted_no_weight), 
                                  as.factor(true_reponse))
   acc_weight <- eval_predicitons(as.factor(predicted_acc_weight), 
@@ -611,7 +611,11 @@ for (i in 1:5) {
   f1_weight  <- eval_predicitons(as.factor(predicted_f1_weight), 
                                  as.factor(true_reponse))
   
-  res_all[[i]] <- list("no_weight"  = no_weight,
-                       "acc_weight" = acc_weight,
-                       "f1_weight"  = f1_weight)
+  # 2-3-7-4 Add the results of the evaluation to the 'foldwise_res' list!
+  foldwise_res[[i]] <- list("no_weight"  = no_weight,
+                            "acc_weight" = acc_weight,
+                            "f1_weight"  = f1_weight)
 }
+
+# 2-4 Save the results of the CV
+save(foldwise_res, file = "./docs/CV_Res/REAL/FoldWise_Approach.R")
