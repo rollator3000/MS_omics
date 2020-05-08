@@ -14,18 +14,18 @@ detectCores()
 registerDoParallel(cores = 2)
 
 all_trees_grown_correctly <- function(trees) {
-  "Check, whether 'trees', were grown correctly & if not grow these trees again,
-  as long, as they are grown correctly! 
-  --> Growning not correctly: No 'childNodeIDs', no split variables etc...
+  " Check, whether 'trees', were grown correctly & if not grow these 
+    trees again, as long, as they are grown correctly! 
+        --> Growning not correctly: No 'childNodeIDs', no split variables etc...
   
   Args:
-  trees (list) : list filled with object of the class 'Tree'! 
-  For each object in there check, whether it was grown 
-  correctly (has childNodeIDs) - if not grown it again!
+   - trees (list) : list filled with object of the class 'Tree'! 
+                    For each object in there check, whether it was grown 
+                    correctly (has childNodeIDs) - if not grown it again!
   
   Return: 
-  list of trees, where all of these trees were grown correctly
-  --> each tree has at least one 'childNodeID'
+    - list of trees, where all of these trees were grown correctly
+        --> each tree has at least one 'childNodeID'
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 All Objects in 'trees' of class 'Tree'
@@ -63,16 +63,17 @@ all_trees_grown_correctly <- function(trees) {
   return(trees)
 }
 get_oob_weight_metric     <- function(trees) {
-  "Calculate OOB Metrirc ['F1' & 'Acc'] of a list of trees! 
-  For this we go  through all OOB Predictions and obtain aggregated predicitons
-  from all trees, that have the same observation as out-of-bag!
-  In case the metrics are 'NA' [not defined] they are repalced by 0 [worst value]
+  " Calculate OOB Metrirc ['F1' & 'Acc'] of a list of trees! 
+    For this we go  through all OOB Predictions and obtain aggregated 
+    predicitons from all trees, that have the same observation as out-of-bag!
+    In case the metrics are 'NA' [not defined] they are repalced by their worst
+    possible value
   
   Args: 
-  - trees (list)        : list filled w/ objects of class 'Tree'
+    - trees (list) : list filled w/ objects of class 'Tree'
   
   Return:
-  - Average oob-Acc & oob-F1 metric for 'trees'!
+    - Average oob-Acc & oob-F1 metric for 'trees'!
   "
   # [0] Check Input ------------------------------------------------------------
   # 0-1 Make sure 'trees' is a list filled with 'Trees'
@@ -148,16 +149,18 @@ get_oob_weight_metric     <- function(trees) {
 }
 get_predicition           <- function(Forest, testdata) {
   " Get the aggregated predicition from all trees for each of the observations
-  in testdata! Evaluate the aggregated predicitons & return metrics!
+    in testdata! Evaluate the aggregated predicitons & return metrics!
+    CAUTION: The observation in 'testdata' need the same observed features,
+             as the trees of the fold-wise forests need to pruned!
   
   Args:
-  - Forest (list)         : list filled with the objects of class 'Tree'
-  - testdata (data.frame) : Testdata we want to get predicitons for!
-  Must conatain the response we learned the
-  Forest on!
+    - Forest (list)         : list filled with the objects of class 'Tree'
+    - testdata (data.frame) : Testdata we want to get predicitons for!
+                              Must conatain the response we learned the
+                              Forest on!
   Return:
-  - list w/ metrics [accuracy, f1, mcc, roc, ...] 
-  > Metrics w/ NA are replaced by their worst possible value!
+    - list w/ metrics [accuracy, f1, mcc, roc, ...] 
+      > Metrics w/ NA are replaced by their worst possible value!
   "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-1 All Elements in Forest of class 'Tree'
@@ -187,7 +190,7 @@ get_predicition           <- function(Forest, testdata) {
   #     Get a prediction for every observation in TestData from all foldwise
   #     fitted RandomForests ['unique_folds' predicitons per testobs.] 
   tree_preds_all <- list()
-  tree_preds_all <- foreach(i = 1:length(Forest)) %do% { # par
+  tree_preds_all <- foreach(i = 1:length(Forest)) %do% {
     
     # save the predictions as 'treeX_pred'
     return(get_pruned_prediction(trees = Forest[[i]], 
@@ -315,21 +318,21 @@ get_predicition           <- function(Forest, testdata) {
   return(res_all)
 }
 mcc_metric                <- function(conf_matrix) {
-  "Calculate the MCC Metric [Matthews correlation coefficient]!
-  Works only for binary cases! 
-  If the Conf_Matrix has more than 2 classes it will return NA 
-  instead of the MCC!
+  " Calculate the MCC Metric [Matthews correlation coefficient]!
+    Works only for binary cases! 
+    If the Conf_Matrix has more than 2 classes it will return NA 
+    instead of the MCC!
   
-  Definition of the Metric:
-  MCC takes into account true and false positives and negatives and is 
-  generally regarded as a balanced measure which can be used even if the 
-  classes are of very different sizes.
+    Definition of the Metric:
+      MCC takes into account true and false positives and negatives and is 
+      generally regarded as a balanced measure which can be used even if the 
+      classes are of very different sizes.
   
   Args: 
-  - conf_matrix (confusionMatrix) : Confusion Matrix created with the 
-  'caret'-Package!
+    - conf_matrix (confusionMatrix) : Confusion Matrix created with the 
+                                      'caret'-Package!
   Return: 
-  - Matthews correlation coefficient (numeric): '1' is best & '-1' is worst
+    - Matthews correlation coefficient (numeric): '1' is best & '-1' is worst
   "
   # [0] Check Inputs -----------------------------------------------------------
   # 0-1 check amount of classes:
@@ -361,17 +364,17 @@ mcc_metric                <- function(conf_matrix) {
   return(mcc_final)
 }
 eval_predicitons          <- function(predicitons, reference) {
-  "Calculate the Metrics for a given list of prediciotns and a given list of 
-  true responses - response must be categorical!
+  " Calculate the Metrics for a given list of prediciotns and a given list of 
+    true responses - response must be categorical!
   
   Args:
-  - predicitons (vector) : Vector filled with integers - predicitons from 
-  a model! Must be of class factor! 
-  - reference   (vector) : Vector filled with integers - true responses!
-  Must be of class factor!
+    - predicitons (vector) : Vector filled with integers - predicitons from 
+                             a model! Must be of class factor! 
+    - reference   (vector) : Vector filled with integers - true responses!
+                             Must be of class factor!
   
   Return:
-  - list of metrics with F1, Accuracy, MMC, AUC, ...
+    - list of metrics with F1, Accuracy, MMC, AUC, ...
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-1 'predicitons' & 'reference' must be both of class factor!
@@ -431,31 +434,29 @@ eval_predicitons          <- function(predicitons, reference) {
   return(res)
 }
 
-# [1] Read in the data and some preprocessing  ----
-# 1-1 Read in the data with Block-Wise missingness 
+# [1] Read in the data and some preprocessing                               ----
+# 1-1 Read in the data with Block-Wise missingness & only keep the merged DF!
 load("./data/processed/real_data/data 05052020.RData")
+rm(df1, df1_mod, df2, df2_mod, df3, df3_mod, 
+   df4, df4_mod, df51, df51_mod, df53, df53_mod)
 
-# 1-2 load the corresponsing BlockInformation 
-#     > which Variables define a Block 
-block_information <- list(1:44, 45:60, 61:79, 80:108, 109:190, 191:274)
-
-# 1-3 Create DF with information to the outcomes
-#     > needed for CV 
-#     > '1-3' was completlty copied from Hagenberg!!
+# 1-2 Create DF with information to the outcomes for the CV
+#     Completlty copied from Hagenberg!
+#         > needed for CV 
 index_df <- data.frame(index = 1:521,
                        outcome = y$outcome,
                        group = 0)
 
-#     > weight the obs. such that there is a 50/50 mix of 0 & 1
+#         > weight the obs. such that there is a 50/50 mix of 0 & 1
 set.seed(8274)
 index_outcome_0 <- sample(rep(1:5, each = 53))
 index_outcome_1 <- sample(c(rep(1:5, each = 51), 1))
 index_df[index_df$outcome == 0, "group"] <- index_outcome_0
 index_df[index_df$outcome == 1, "group"] <- index_outcome_1
 
-# [2] Start the 5-fold CV - FOLD-WISE Approach  ----
+# [2] Start the 5-fold CV - FOLD-WISE Approach                              ----
 # 2-1 Set the arguments for the fold-wise RandomForest Models!
-num_trees         = 25
+num_trees         = 300
 mtry              = NULL
 min_node_size     = 5
 
@@ -465,10 +466,10 @@ res_all <- list()
 # 2-3 Start the 5 fold CV
 for (i in 1:5) {
   
-  # - Current Fold Status
+  # 2-3-1 Print Current Fold Status
   print(paste0("FOLD ", i, "/ 5 -------------------------------"))
   
-  # 2-3-1 Get the current Test- & Train-Set
+  # 2-3-2 Get the current Test- & Train-Set
   index_test  <- index_df[index_df$group == i, "index"]
   index_train <- index_df[index_df$group != i, "index"]
   train_x <- data_merged[index_train, ]
@@ -476,49 +477,50 @@ for (i in 1:5) {
   test_x <- data_merged[index_test, ]
   test_y <- index_df[index_test, "outcome"]
   
-  # - Paste the response to into the data frame
+  #      - Paste the response to into the data frame
   train_x$outcome_Y <- as.factor(train_y)
   test_x$outcome_Y  <- as.factor(test_y)
   
-  # 2-3-2 Get the Observations that belong to the same fold [same feature space]
-  #       Get for each obs. the index of the observed feas
+  # 2-3-3 Get the Observations that belong to the same fold [same feature space]
+  #       - Get for each obs. the index of the observed feas
   observed_feas <- foreach(x = seq_len(nrow(train_x)), .combine = 'c') %dopar% {
     paste0(which(!(is.na(train_x[x,]))), collapse = "_")
   }
   
-  # - Keep the unique observed feas [equals the different folds]
-  #   That we use to assign obs. to the differnt folds!
+  #       - Keep the unique observed feas [equals the different folds]
+  #         That we use to assign obs. to the differnt folds!
   observed_folds <- unique(observed_feas)
   print(paste0("Found ", length(observed_folds), " unique folds!"))
   
-  # 2-3 Train foldwise RFs for each fold seperatly! For this loop over all folds
-  #     [observed_folds contains all unique features observed for diff folds]!
-  #      --> Results in a Forest of length 'length(observed_folds)' & each 
-  #          entrance consits of 'num_trees' foldwise fitted trees!
+  # 2-3-4 Train foldwise RFs for each fold seperatly! For this loop over all 
+  #       folds [observed_folds contain all observed features for diff folds]!
+  #       --> Results in a Forest of length 'length(observed_folds)' 
+  #           & each entrance consits of 'num_trees' foldwise fitted trees!
   Forest <- list()
   Forest <- foreach(j_ = 1:length(observed_folds)) %do% {
     
+    # --1 Get the observed feas for the current fold
     fold_ = observed_folds[j_]
-    # 2-3-1 Get all Obs. with the feture space as in 'fold_'
+    
+    # --2 Get all Obs. with the feture space as in 'fold_'
     fold_obs_ <- which(observed_feas == fold_)
     
-    # 2-3-2 Get all the indeces of the columns that were observed with this fold!
+    # --3 Get all the indeces of the columns observed with this fold!
     obs_columns_ <- as.numeric(unlist(strsplit(fold_, split = "_")))
     
-    # 2-3-2 Get all Trainpoints from the obs. w/ same features + 
-    #       only keep observed features of these!
-    #       --> fully observed subdata!
+    # --4 Get all Trainpoints from the obs. w/ same features + 
+    #     only keep observed features of these! --> fully observed subdata!
     curr_fold_train_data <- train_x[fold_obs_, obs_columns_]
     
     if (length(unique(curr_fold_train_data$outcome_Y)) == 1) {
-      print("one fold only consited of a single response class --> could not grown a RF with it...")
+      print(paste("Growing on Fold", j_, "failed. TrainFold has steady response"))
       return(NULL)
     } 
     
-    # 2-3-3 Fit a RF on this fully observed (fold-)subdata!
+    # --5 Fit a RF on this fully observed (fold-)subdata!
     formula_all <- as.formula("outcome_Y ~ .")
     
-    # 2-3-3-1 Define the foldwise RF and fit it on the foldwise data
+    # --6 Define the foldwise RF and fit it on the foldwise data
     fold_RF <- simpleRF(formula           = formula_all, 
                         data              = curr_fold_train_data, 
                         num_trees         = num_trees, 
@@ -533,49 +535,83 @@ for (i in 1:5) {
       x
     })
     
-    # 2-3-4 Check that all trees were grown correctly
-    #         --> none w/o 'child_node_ID' after that!
+    # --7 Check that all trees were grown correctly
+    #     --> none w/o 'child_node_ID' after that!
     fold_RF <- all_trees_grown_correctly(fold_RF)
     
     print(paste("Growing on Fold", j_, "successful"))
     return(fold_RF)
   }
   
-  # 2-4 Remove the Forests without any entrance & check that length is > 1
+  # 2-3-5 Remove the Forests without any entrance & check that length is > 1
   Forest <- Forest[lengths(Forest) != 0]
   if (length(Forest) == 0) stop("Forest ist not existent")
   
-  # 2-5 Evaluate the fold-wise grown forest!
-  # 2-5-1 Get the predicted classes from the RF
-  preds_all_foldRFs <- list()
-  for (index in 1:nrow(test_x)) { 
-    test_x_curr = test_x[index,]
-    preds_all_foldRFs[[index]] <- get_predicition(Forest = Forest, testdata = test_x_curr)
+  # 2-3-6 Evaluate the fold-wise grown forest!
+  # 2-3-6-1 Get the test-observations that belong to the same fold, and get 
+  #         predicitions for all observations from the same fold!
+  #        [important, as the trees are prunde dpending on the observed feas in test]
+  observed_feas_test <- foreach(x = seq_len(nrow(test_x)), .combine = 'c') %dopar% {
+    paste0(which(!(is.na(test_x[x,]))), collapse = "_")
+  }
+  
+  # 2-3-6-2 Keep the unique observed test feas [equals the different folds]
+  observed_test_folds <- unique(observed_feas_test)
+  print(paste0("Found ", length(observed_test_folds), " unique test folds!"))
+  
+  # 2-3-7 Get the predicted classes from the RF for each test-fold!
+  # 2-3-7-1 Define Vectors to save predicitions & true classes
+  predicted_no_weight  <- c()
+  predicted_f1_weight  <- c()
+  predicted_acc_weight <- c()
+  true_reponse         <- c()
+  
+  # 2-3-7-2 Start Looping over the different test-folds
+  for (index in 1:length(observed_test_folds)) { 
+    
+    # --0 Print progress
+    print(paste("Evaluation:", index, "/", length(observed_test_folds), "----"))
+    
+    # --1 Get the current TestFold
+    fold_ = observed_test_folds[index]
+    
+    # --2 Get all Obs. with the feture space as in 'fold_'
+    fold_obs_ <- which(observed_feas_test == fold_)
+    
+    # --3 Get all the indeces of the columns that were observed with this fold!
+    obs_columns_ <- as.numeric(unlist(strsplit(fold_, split = "_")))
+  
+    # --4 Get the current fold - all observations and corresponding features
+    curr_fold_test_data <- test_x[fold_obs_, obs_columns_]
+
+    # --5 Get the predicitions [all weightings] on the current fold data []
+    curr_preds <- get_predicition(Forest = Forest, 
+                                  testdata = curr_fold_test_data)
+    
+    # --6 Exrtact the predicted classes for the different weighting techniques
+    predicted_no_weight <- c(predicted_no_weight, 
+                             curr_preds[grep("No", names(curr_preds))])
+    
+    predicted_f1_weight <- c(predicted_f1_weight,
+                             curr_preds[grep("F1", names(curr_preds))])
+    
+    predicted_acc_weight <- c(predicted_acc_weight,
+                              curr_preds[grep("Acc", names(curr_preds))])
+    # --7 Extract the true response
+    true_reponse <- c(true_reponse, 
+                      as.character(curr_fold_test_data$outcome_Y))
+    
   }
   
   # 2-5-2 Compare the predicted classes with the true response
-  # 2-5-2-1 Get the predictions with the different weighting techniques
-  preds_no_weight <- sapply(1:length(preds_all_foldRFs), 
-                            FUN = function(x) preds_all_foldRFs[[x]]["No_Weighting"])
-  preds_no_weight <- as.factor(preds_no_weight)
-  
-  preds_acc_weight <- sapply(1:length(preds_all_foldRFs), 
-                             FUN = function(x) preds_all_foldRFs[[x]]["Acc_Weighting"])
-  preds_acc_weight <- as.factor(preds_acc_weight)
-  
-  preds_f1_weight <- sapply(1:length(preds_all_foldRFs), 
-                            FUN = function(x) preds_all_foldRFs[[x]]["F1_Weighting"])
-  preds_f1_weight <- as.factor(preds_f1_weight)
-  
-  # 2-5-2-2 Get the metrics by comparing the predicted classes and the true ones!
-  no_weight  <- eval_predicitons(preds_no_weight, test_x$outcome_Y[1:10])
-  acc_weight <- eval_predicitons(preds_acc_weight, test_x$outcome_Y[1:10])
-  f1_weight  <- eval_predicitons(preds_f1_weight, test_x$outcome_Y[1:10])
+  no_weight  <- eval_predicitons(as.factor(predicted_no_weight), 
+                                 as.factor(true_reponse))
+  acc_weight <- eval_predicitons(as.factor(predicted_acc_weight), 
+                                 as.factor(true_reponse))
+  f1_weight  <- eval_predicitons(as.factor(predicted_f1_weight), 
+                                 as.factor(true_reponse))
   
   res_all[[i]] <- list("no_weight"  = no_weight,
                        "acc_weight" = acc_weight,
                        "f1_weight"  = f1_weight)
 }
-
-
-
