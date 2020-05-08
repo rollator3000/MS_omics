@@ -1,5 +1,5 @@
 "
-Script to analyse the real multi-omics data set.
+Script to analyse the real multi-omics data set with the fold-wise approach
 "
 # [0] Set WD, load packages & define functions
 setwd("C:/Users/kuche_000/Desktop/MS_omics/")
