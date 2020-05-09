@@ -156,7 +156,7 @@ missing_str <- read.csv("./data/processed/real_data/Block Structure.csv",
 missing_str$outcome <- NULL
 
 # [2] Start the 5-fold CV - IMPUTATION Approach                             ----
-# 2-1 Set the values for the imputation algorithm
+# 2-1 Set the values for the imputation algorithm & define list to save results
 ntree_imp = 25
 maxiter   = 1
 
