@@ -1038,7 +1038,7 @@ for (curr_data in DFs_w_gender) {
 '
 for (DF in DFs_w_gender) {
   
-  print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
+  print(paste0("----- Situation 4 for DF: ", DF, "-----"))
   
   # Create the path for the current DF
   curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
