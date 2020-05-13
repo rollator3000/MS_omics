@@ -110,11 +110,6 @@ load_CV_data      <- function(path) {
   # [2] Return the data  -------------------------------------------------------
   return(data_)
 }
-
-
-
-model = RF
-test_set = test
 evaluate_RF       <- function(model, test_set) {
   "
   Evaluate 'model' on the 'test_set'. 
@@ -146,6 +141,30 @@ evaluate_RF       <- function(model, test_set) {
   })
   
   # 1-2 Delete all features from 'test_set' that were not used in training the RF
+  # 1-2-1 check whether any variable the RF has been trained with is in test?!
+  # 1-2-1-1 If there is no overlap -> can not create predictions!
+  #         --> all metrics have worst value then!
+  if (!(any(model$xvar.names %in% colnames(test_set)))) {
+    
+    res <- list("Accuracy"    = 0,
+                "Kappa"       = 0,
+                "Sensitifity" = 0,
+                "Specificity" = 0,
+                "Precision"   = 0,
+                "Recall"      = 0,
+                "F1"          = 0,
+                "Balance_Acc" = 0,
+                "Pos_Pred_Value" =  0,
+                "Neg_Pred_Value" =  0,
+                "Prevalence"  = 0,      
+                "AUC1"        = 0,
+                "AUC2"        = 0,
+                "MCC"         = -1)
+    return(res)
+  }
+  
+  # 1-2-1-2 If there is a overlap reduce the test_set, so it only contains
+  #         Variables the model has been trained with
   test_set <- test_set[, c("gender", model$xvar.names)]
   
   # 1-3 Create predictions for all observations w/o missing features
@@ -155,25 +174,33 @@ evaluate_RF       <- function(model, test_set) {
   predicted[CC_test] <- as.character(predicitions$class)
   
   # [2] Evaluate the predicitions  ---------------------------------------------
+  predicted <- as.factor(predicted)
+  levels(predicted) <- c(0, 1)
+  
   # 2-1 Confusion-Matrix
   confmat <- caret::confusionMatrix(as.factor(predicted), 
                                     as.factor(test_set$gender))
   
   # 2-2 Are under the ROC Curve
-  roc1 <- pROC::auc(pROC::roc(as.numeric(predicted), 
-                              as.numeric(as.character(test_set$gender)),
-                              levels = levels(as.factor(as.character(test_set$gender))),
-                              direction = "<"))
+  if (length(unique(predicted)) == 1) {
+    roc1 <- 0
+    roc2 <- 0
+  } else {
+    roc1 <- pROC::auc(pROC::roc(as.numeric(as.character(predicted)), 
+                                as.numeric(as.character(test_set$gender)),
+                                levels = levels(as.factor(as.character(test_set$gender))),
+                                direction = "<"))
+    
+    roc2 <- pROC::auc(pROC::roc(as.numeric(as.character(predicted)), 
+                                as.numeric(as.character(test_set$gender)),
+                                levels = levels(as.factor(as.character(test_set$gender))),
+                                direction = ">"))
+  }
   
-  roc2 <- pROC::auc(pROC::roc(as.numeric(predicted), 
-                              as.numeric(as.character(test_set$gender)),
-                              levels = levels(as.factor(as.character(test_set$gender))),
-                              direction = ">"))
-  
-  # --5-3 MCC Matthews correlation coefficient [only for binary cases!]
+  # 2-3 MCC Matthews correlation coefficient [only for binary cases!]
   mcc <- mcc_metric(conf_matrix = confmat)
   
-  # --5-4 Collect all metrics in a list & replace the not defined values
+  # 2-4 Collect all metrics in a list & replace the not defined values
   res <- list("Accuracy"    = confmat$overall["Accuracy"],
               "Kappa"       = confmat$overall["Kappa"],
               "Sensitifity" = confmat$byClass["Sensitivity"],
@@ -200,46 +227,6 @@ evaluate_RF       <- function(model, test_set) {
   return(res)
 }
 
-
-  
-  # --3-1 
-  
-  # --3-2 Check if 'curr_train' has more than 2 obs. - else can not train RF
-  #       and therefore not predict on the observations --> preds are NAs
-  if (nrow(curr_train) >= 2) {
-    
-    # - define formula
-    curr_formula <- as.formula('gender ~ .')
-    
-    # - fit RF on 'curr_train'
-    RF <- rfsrc(formula = curr_formula, data = curr_train, 
-                ntree = num_trees, mtry = mtry, nodesize = min_node_size, 
-                samptype = "swr", seed = 12345678, var.used = 'all.trees')
-    
-    # - get predicitions on the testset - RF can only create preds for obs. 
-    #   w/o any NAs in a covariate the model has orginally been trained with!
-    #   --> only creates predicitons for CompleteCases! Observations with 
-    #       missing values do not recieve a predicition 
-    #       --> give them opposite label, so they are rated as wrongly classified
-    curr_test   <- test[,c('gender', curr_block_feas)]
-    CC_test     <- which(complete.cases(curr_test))
-    
-    predicitions       <- predict(RF, curr_test)
-    predicted[CC_test] <- as.character(predicitions$class)
-  }
-
-  "
-  Calculate metrics based on the predicted classes and true classes!
-  "
-
-
-
-path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData"
-weighted = TRUE
-weight_metric = NULL
-num_trees = 300
-mtry = NULL
-min_node_size = 5
 do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
                                   num_trees = 300, mtry = NULL, min_node_size = 5) {
   "CrossValidate the single-block Approach when the Traindata has blockwise 
@@ -328,21 +315,72 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
   if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
   
   # 1-2 Create empty lists to store results in!
-  # 1-2-1 Full TestSet
-  full        <- vector(mode = "list", 
-                        length = length(names(curr_data$block_names)))
-  names(full) <- names(curr_data$block_names)      
+  unique_fea_blocks <- length(names(curr_data$block_names))
   
+  # 1-2-1 Full TestSet
+  full        <- vector(mode = "list", length = unique_fea_blocks)
+  names(full) <- names(curr_data$block_names)
   
   # 1-2-2 TestSet with 1 missing omics-block
-  miss1_A <- list(); miss1_B <- list(); miss1_C <- list(); miss1_D <- list()
+  miss1_A        <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss1_A) <- names(curr_data$block_names)
+  
+  miss1_B        <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss1_B) <- names(curr_data$block_names)
+  
+  miss1_C        <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss1_C) <- names(curr_data$block_names)
+  
+  miss1_D        <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss1_D) <- names(curr_data$block_names)
+  
   # 1-2-3 TestSet with 2 missing omics-blocks
-  miss2_CD <- list(); miss2_BD <- list(); miss2_BC <- list(); miss2_AD <- list()
-  miss2_AC <- list(); miss2_AB <- list()
+  miss2_CD <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss2_CD) <- names(curr_data$block_names)
+  
+  miss2_BD <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss2_BD) <- names(curr_data$block_names)
+  
+  miss2_BC <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss2_BC) <- names(curr_data$block_names)
+  
+  miss2_AD <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss2_AD) <- names(curr_data$block_names)
+  
+  miss2_AC <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss2_AC) <- names(curr_data$block_names)
+  
+  miss2_AB <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss2_AB) <- names(curr_data$block_names)
+  
   # 1-2-4 TestSet with 3 missing omics-blocks
-  miss3_ABC <- list(); miss3_ABD <- list(); miss3_ACD <- list(); miss3_BCD <- list()
+  miss3_ABC <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss3_ABC) <- names(curr_data$block_names)
+  
+  miss3_ABD <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss3_ABD) <- names(curr_data$block_names)
+  
+  miss3_ACD <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss3_ACD) <- names(curr_data$block_names)
+  
+  miss3_BCD <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss3_BCD) <- names(curr_data$block_names)
+  
   # 1-2-5 Single BlockTestSet [4 missing blocks!]
-  single_A <- list(); single_B <- list(); single_CL <- list(); single_C <- list(); single_D <- list()
+  single_A <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_A) <- names(curr_data$block_names)
+  
+  single_B <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_B) <- names(curr_data$block_names)
+  
+  single_C <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_C) <- names(curr_data$block_names)
+  
+  single_D <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_D) <- names(curr_data$block_names)
+  
+  single_CL <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_CL) <- names(curr_data$block_names)
   
   # 1-3 Get the amount of test-train splits in data 
   k_splits <- length(curr_data$data)
@@ -382,105 +420,110 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
                   samptype = "swr", seed = 12345678, var.used = 'all.trees')
       
       # --4 Evaluate the Model on the different Test.Sets
+      # --4-1 FullTestSet
+      print("Evaluation on full TestSet --------------------------------------")
+      full[[curr_block]][[i]] <- evaluate_RF(model = RF, test_set = test)
       
+      # --4-1 One Missing FeatureBlock in Test
+      print("Evaluation TestSet w/ 2 missing Blocks --------------------------")
+      miss1_A[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                test_set = test[,-which(colnames(test) %in% curr_data$block_names$A)])
       
-     
+      miss1_B[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                test_set = test[,-which(colnames(test) %in% curr_data$block_names$B)])
       
+      miss1_C[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                test_set = test[,-which(colnames(test) %in% curr_data$block_names$C)])
       
+      miss1_D[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                test_set = test[,-which(colnames(test) %in% curr_data$block_names$D)])
+      
+      # --4-2 Two Missing FeatureBlock in Test
+      print("Evaluation TestSet w/ 2 missing Blocks --------------------------")
+      miss2_CD[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                               curr_data$block_names$D))])
+      
+      miss2_BD[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                               curr_data$block_names$D))])
+      
+      miss2_BC[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                               curr_data$block_names$B))])
+      
+      miss2_AD[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                               curr_data$block_names$D))])
+      
+      miss2_AC[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                               curr_data$block_names$A))])
+      
+      miss2_AB[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                               curr_data$block_names$B))])
+      
+      # --4-3 Three Missing FeatureBlock in Test
+      print("Evaluation TestSet w/ 3 missing Blocks --------------------------")
+      miss3_ABC[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                  test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                                curr_data$block_names$A,
+                                                                                                curr_data$block_names$B))])
+      
+      miss3_ABD[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                  test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$D,
+                                                                                                curr_data$block_names$A,
+                                                                                                curr_data$block_names$B))])
+      
+      miss3_ACD[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                  test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                                curr_data$block_names$A,
+                                                                                                curr_data$block_names$D))])
+      
+      miss3_BCD[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                  test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                                curr_data$block_names$B,
+                                                                                                curr_data$block_names$D))])
+      
+      # --4-4 Single FeatureBlock in Test
+      print("Evaluation TestSet w/ only 1 observed Block -----------------------")
+      single_A[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                               curr_data$block_names$D,
+                                                                                               curr_data$block_names$B,
+                                                                                               curr_data$block_names$clin_block))])
+      
+      single_B[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                               curr_data$block_names$D,
+                                                                                               curr_data$block_names$A,
+                                                                                               curr_data$block_names$clin_block))])
+      
+      single_C[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                               curr_data$block_names$D,
+                                                                                               curr_data$block_names$B,
+                                                                                               curr_data$block_names$clin_block))])
+      
+      single_D[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                               curr_data$block_names$A,
+                                                                                               curr_data$block_names$B,
+                                                                                               curr_data$block_names$clin_block))])
+      
+      single_CL[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                  test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+                                                                                                curr_data$block_names$A,
+                                                                                                curr_data$block_names$B,
+                                                                                                curr_data$block_names$D))])
     }
-    
-    
-    # 2-5 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
-    #     missing blocks to TestSets w/ only one observed Block!
-    # 2-5-1 Full TestSet!
-    print("Evaluation full TestSet -------------------------------------------")
-    full[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                     testdata = test) 
-    
-    # 2-5-2 TestSet with 1 missing block!
-    print("Evaluation TestSet w/ 1 missing omics block------------------------")
-    miss1_A[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$A)])
-    
-    miss1_B[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$B)])
-    
-    miss1_C[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$C)])
-    
-    miss1_D[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                        testdata = test[,-which(colnames(test) %in% curr_data$block_names$D)])
-    
-    # 2-5-3 TestSet with 2 missing blocks!
-    print("Evaluation TestSet w/ 2 missing omics blocks-----------------------")
-    miss2_CD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                       curr_data$block_names$D))])
-    miss2_BD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
-                                                                                       curr_data$block_names$D))])
-    miss2_BC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                       curr_data$block_names$B))])
-    miss2_AD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
-                                                                                       curr_data$block_names$D))])
-    miss2_AC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                       curr_data$block_names$A))])
-    miss2_AB[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
-                                                                                       curr_data$block_names$B))])
-    # 2-5-4 Testset with 3 missing blocks!
-    print("Evaluation TestSet w/ 3 missing omics blocks-----------------------")
-    miss3_ABC[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                        curr_data$block_names$A,
-                                                                                        curr_data$block_names$B))])
-    miss3_ACD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                        curr_data$block_names$A,
-                                                                                        curr_data$block_names$D))])
-    miss3_ABD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$D,
-                                                                                        curr_data$block_names$A,
-                                                                                        curr_data$block_names$B))])
-    miss3_BCD[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                        curr_data$block_names$D,
-                                                                                        curr_data$block_names$B))])
-    # 2-5-5 Evaluation on single Block Testdata
-    print("Evaluation TestSet w/ only 1 observed Block -----------------------")
-    single_A[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                       curr_data$block_names$D,
-                                                                                       curr_data$block_names$B,
-                                                                                       curr_data$block_names$clin_block))])
-    single_B[[i]] <-  do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                        curr_data$block_names$D,
-                                                                                        curr_data$block_names$A,
-                                                                                        curr_data$block_names$clin_block))])
-    single_C[[i]] <-  do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                          testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
-                                                                                        curr_data$block_names$D,
-                                                                                        curr_data$block_names$B,
-                                                                                        curr_data$block_names$clin_block))])
-    single_D[[i]] <- do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                         testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                       curr_data$block_names$A,
-                                                                                       curr_data$block_names$B,
-                                                                                       curr_data$block_names$clin_block))])
-    single_CL[[i]] <-  do_evaluation_rfsrc(Forest = Forest, weights = weights,
-                                           testdata = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
-                                                                                         curr_data$block_names$D,
-                                                                                         curr_data$block_names$B,
-                                                                                         curr_data$block_names$A))])
   }
-  # 2-6 Stop the time and take the difference!
+  
+  # 1-5 Stop the time and take the difference!
   time_for_CV <- Sys.time() - start_time
   
-  # [3] Return the results & settings of parameters used to do CV! -------------
+  # [2] Return the results & settings of parameters used to do CV! -------------
   # 3-1 Collect all CV Results in a list!
   res_all <- list("full" = full,
                   "miss1_A" = miss1_A, "miss1_B" = miss1_B,
@@ -497,9 +540,7 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
   # 3-2 Collect the Settings, used to do the CV!
   settings <- list("data_path"     = path,
                    "num_folds"     = k_splits,
-                   "response"      = response,
-                   "weighted"      = weighted,
-                   "weight_metric" = weight_metric,
+                   "response"      = "gender",
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
@@ -508,4 +549,50 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
   # 3-3 Return both lists!
   return(list("res_all"  = res_all, 
               "settings" = settings))
+}
+
+# MAIN                                                                      ----
+DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
+                  "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
+
+# ----- Situation 1
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
+  
+  
+  sit1 <- do_CV_NK_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                            min_node_size = 5)
+  save(sit1, file = paste0("./docs/CV_Res/TCGA/SingleBlock_Approach/setting1/", DF, ".RData"))
+}
+
+# ----- Situation 2
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
+  
+  
+  sit2 <- do_CV_NK_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                            min_node_size = 5)
+  save(sit2, file = paste0("./docs/CV_Res/TCGA/SingleBlock_Approach/setting2/", DF, ".RData"))
+}
+
+# ----- Situation 3
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
+  
+  
+  sit3 <- do_CV_NK_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                            min_node_size = 5)
+  save(sit3, file = paste0("./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/", DF, ".RData"))
 }
