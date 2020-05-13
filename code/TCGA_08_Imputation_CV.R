@@ -340,7 +340,7 @@ impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1,
   }
 }
 
-# Not ready yet - TBD
+
 do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   "Evaluate the Imputation Approach! MissForest was used to impute the missing 
    Values in the training data. Evaluate the Approach on 'test'. 
@@ -454,7 +454,7 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   return(as.vector(res))
 }
 do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
-                                  num_trees = 100, min_node_size = 10, mtry = NULL) {
+                                  num_trees = 300, min_node_size = 5, mtry = NULL) {
   "Evalute the Approach where the block-wise missingness in the DFs is removed by
    missforest impuation method!
    
@@ -574,7 +574,7 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
     full[[i]] <- do_evaluation_imputed(train = train, test = test, 
                                        num_trees = num_trees, 
                                        min_node_size = min_node_size, 
-                                       mtry = mtry)  
+                                       mtry = mtry)
     
     # 2-4-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
@@ -759,8 +759,12 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
+
+
+
+# TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO  
 do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
-                                  num_trees = 100, min_node_size = 10, mtry = NULL,
+                                  num_trees = 300, min_node_size = 10, mtry = NULL,
                                   n_tree_impute = 100, maxiter_impute = 10) {
   "Evalute the Approach where we impute the block-wise missing values with the 
    missForest Approach - for the cases with 3 blocks! [Scenario4]
@@ -944,7 +948,7 @@ do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/miss
   return(list("res_all"  = res_all, 
               "settings" = settings))
 } 
-# MAIN --------------------------------------------------------------------
+# MAIN -------------------------------------------------------------------------
 # [1] Impute the missing values in Train for all of the DFs
 # 1-1 Names of the usable DFs
 DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
@@ -983,4 +987,12 @@ for (curr_data in DFs_w_gender) {
 }
 
 # [2] Evaluate approaches on the imputed data
-# TBD!!!
+#     Loop over all imputed datasets in 'DFs_w_gender'
+for (curr_data in DFs_w_gender) {
+  
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234_imputed/", 
+                      curr_data, "_IMP_1.RData")
+  
+  res <- do_CV_missforrest_5(path = curr_path, num_trees = 300, 
+                             min_node_size = 5, mtry = NULL)
+}
