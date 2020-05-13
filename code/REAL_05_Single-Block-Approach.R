@@ -53,7 +53,6 @@ mcc_metric        <- function(conf_matrix) {
   return(mcc_final)
 }
 
-
 # [1] Read in the data and some preprocessing                               ----
 # 1-1 Read in the data with Block-Wise missingness & only keep the merged DF!
 load("./data/processed/real_data/data 05052020.RData")
@@ -86,7 +85,7 @@ single_block_res        <- vector(mode = "list",
                                   length = length(colnames(missing_str)))
 names(single_block_res) <- colnames(missing_str)      
 
-num_trees         = 25
+num_trees         = 300
 mtry              = NULL
 min_node_size     = 5
 
@@ -120,8 +119,13 @@ for (i in 1:5) {
     curr_train <- curr_train[complete.cases(curr_train),]
     
     # --3 Get predicitons by training a RF on 'curr_train
-    # --3-1 Define a Vector for the predicted classes
-    predicted <- c(rep(NA, times = nrow(test_x)))
+    # --3-1 Define a Vector to save the predicted classes - fill it with the 
+    #       opposite of the true class! Needed later, when predicition on the 
+    #       test-set, not all test-obs. can be predicted - these are rated as
+    #       wrongly classified for the calculation of the metrics!
+    predicted <- sapply(test_x$outcome_Y, FUN = function(x) {
+      base::ifelse(test = x == 1, yes = 0, no = 1)
+    })
     
     # --3-2 Check if 'curr_train' has more than 2 obs. - else can not train RF
     #       and therefore not predict on the observations --> preds are NAs
@@ -137,9 +141,11 @@ for (i in 1:5) {
       
       # - get predicitions on the testset - RF can only create preds for obs. 
       #   w/o any NAs in a covariate the model has orginally been trained with!
-      curr_test <- test_x[,c('outcome_Y', used_feas)]
-      CC_test   <- which(complete.cases(curr_test))
-      curr_test <- curr_test[CC_test,]
+      #   --> only creates predicitons for CompleteCases! Observations with 
+      #       missing values do not recieve a predicition 
+      #       --> give them opposite label, so they are rated as wrongly classified
+      curr_test   <- test_x[,c('outcome_Y', used_feas)]
+      CC_test     <- which(complete.cases(curr_test))
       
       predicitions       <- predict(RF, curr_test)
       predicted[CC_test] <- as.character(predicitions$class)
@@ -152,13 +158,13 @@ for (i in 1:5) {
     
     # --5-2 Are under the ROC Curve
     roc1 <- pROC::auc(pROC::roc(as.numeric(predicted), 
-                                as.numeric(test_x$outcome_Y),
-                                levels = levels(as.factor(as.numeric(test_x$outcome_Y))),
+                                as.numeric(as.character(test_x$outcome_Y)),
+                                levels = levels(as.factor(as.character(test_x$outcome_Y))),
                                 direction = "<"))
     
     roc2 <- pROC::auc(pROC::roc(as.numeric(predicted), 
-                                as.numeric(test_x$outcome_Y),
-                                levels = levels(as.factor(as.numeric(test_x$outcome_Y))),
+                                as.numeric(as.character(test_x$outcome_Y)),
+                                levels = levels(as.factor(as.character(test_x$outcome_Y))),
                                 direction = ">"))
     
     # --5-3 MCC Matthews correlation coefficient [only for binary cases!]
