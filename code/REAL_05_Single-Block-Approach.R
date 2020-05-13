@@ -124,7 +124,7 @@ for (i in 1:5) {
     #       test-set, not all test-obs. can be predicted - these are rated as
     #       wrongly classified for the calculation of the metrics!
     predicted <- sapply(test_x$outcome_Y, FUN = function(x) {
-      base::ifelse(test = x == 1, yes = 0, no = 1)
+      base::ifelse(x == 1, yes = 0, no = 1)
     })
     
     # --3-2 Check if 'curr_train' has more than 2 obs. - else can not train RF
