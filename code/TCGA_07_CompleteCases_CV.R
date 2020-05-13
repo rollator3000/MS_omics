@@ -745,7 +745,7 @@ for (DF in DFs_w_gender) {
   print("Setting - 1/1")
   sit1_1 <- do_CV_CC_5(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit1_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting1/", DF, ".RData"))
+  save(sit1_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting1/", DF, ".RData"))
   
 }
 
@@ -760,7 +760,7 @@ for (DF in DFs_w_gender) {
   print("Setting - 1/1")
   sit2_1 <- do_CV_CC_5(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit2_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting2/", DF, ".RData"))
+  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting2/", DF, ".RData"))
   
 }
 
@@ -775,7 +775,7 @@ for (DF in DFs_w_gender) {
   print("Setting - 1/1")
   sit3_1 <- do_CV_CC_5(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit3_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting3/", DF, ".RData"))
+  save(sit3_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting3/", DF, ".RData"))
   
 }
 
@@ -790,6 +790,6 @@ for (DF in DFs_w_gender) {
   print("Setting - 1/1")
   sit2_1 <- do_CV_CC_3(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit2_1, file = paste0("./docs/CV_Res/gender/complete_cases/setting4/", DF, ".RData"))
+  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting4/", DF, ".RData"))
   
 }

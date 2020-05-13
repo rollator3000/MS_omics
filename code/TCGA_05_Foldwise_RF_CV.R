@@ -1184,7 +1184,7 @@ for (DF in DFs_w_gender) {
   
   sit1 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit1, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting1/", DF, ".RData"))
+  save(sit1, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting1/", DF, ".RData"))
 }
 
 # ----- Situation 2
@@ -1197,7 +1197,7 @@ for (DF in DFs_w_gender) {
   
   sit2 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit2, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting2/", DF, ".RData"))
+  save(sit2, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting2/", DF, ".RData"))
 }
 
 # ----- Situation 3
@@ -1210,7 +1210,7 @@ for (DF in DFs_w_gender) {
   
   sit3 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit3, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting3/", DF, ".RData"))
+  save(sit3, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting3/", DF, ".RData"))
 }
 
 # ----- Situation 4
@@ -1223,5 +1223,5 @@ for (DF in DFs_w_gender) {
   
   sit4 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit4, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting4/", DF, ".RData"))
+  save(sit4, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting4/", DF, ".RData"))
 }
