@@ -119,9 +119,7 @@ mcc_metric        <- function(conf_matrix) {
   # [2] Return  ----------------------------------------------------------------
   return(mcc_final)
 }
-
-impute_train_data <- function(path, ntree_imp = 25, maxiter = 1, 
-                              para = "forests") {
+impute_train_data <- function(path, ntree_imp = 25, maxiter = 1, para = "forests") {
   " Impute the missing values in the trainsets of the test-train splits 'path'
     points to! Impute the missing values with the missForest approach!
     Then save the imputed DF, so we do not need to impute it the whole time and 
@@ -233,7 +231,6 @@ impute_train_data <- function(path, ntree_imp = 25, maxiter = 1,
   curr_data$data <- data_all
   return(curr_data)
 }
-
 impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1, 
                                        para = "forests", start_fold = 1) {
   " Impute the missing values in the trainsets of the test-train splits 'path'
@@ -339,9 +336,7 @@ impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1,
     save(data_imputed, file = save_path)
   }
 }
-
-
-do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
+do_evaluation_imputed       <- function(train, test, num_trees, min_node_size, mtry) {
   "Evaluate the Imputation Approach! MissForest was used to impute the missing 
    Values in the training data. Evaluate the Approach on 'test'. 
    For this we supply the features -only the ones avaible in 'test'- from 'train'
@@ -453,8 +448,8 @@ do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   
   return(as.vector(res))
 }
-do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
-                                  num_trees = 300, min_node_size = 5, mtry = NULL) {
+do_CV_missforrest_5         <- function(path = "data/processed/RH_subsetted_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
+                                        num_trees = 300, min_node_size = 5, mtry = NULL) {
   "Evalute the Approach where the block-wise missingness in the DFs is removed by
    missforest impuation method!
    
@@ -751,16 +746,12 @@ do_CV_missforrest_5   <- function(path = "data/processed/RH_subsetted_12345/miss
                    "num_trees"     = num_trees,
                    "mtry"          = mtry, 
                    "min_node_size" = min_node_size,
-                   "n_tree_impute" = n_tree_impute, 
-                   "maxiter_impute" = maxiter_impute,
                    "time_for_CV"   = time_for_CV)
   
   # 3-3 Return both lists!
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
-
-
 
 # TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO  
 do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
@@ -988,11 +979,72 @@ for (curr_data in DFs_w_gender) {
 
 # [2] Evaluate approaches on the imputed data
 #     Loop over all imputed datasets in 'DFs_w_gender'
+DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
+                  "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
+
+# ----- Situation 1
 for (curr_data in DFs_w_gender) {
   
+  print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
+  
+  # --1 Define current path
   curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234_imputed/", 
                       curr_data, "_IMP_1.RData")
   
-  res <- do_CV_missforrest_5(path = curr_path, num_trees = 300, 
+  # --2 Do the CV
+  sit1 <- do_CV_missforrest_5(path = curr_path, num_trees = 300, 
                              min_node_size = 5, mtry = NULL)
+  
+  # --3 Save the results of the CV
+  save(sit1, file = paste0("./docs/CV_Res/TCGA/Imputation_Approach/setting1/", curr_data, ".RData"))
 }
+
+
+# ----- Situation 2
+for (curr_data in DFs_w_gender) {
+  
+  print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
+  
+  # --1 Define current path
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234_imputed/", 
+                      curr_data, "_IMP_2.RData")
+  
+  # --2 Do the CV
+  sit2 <- do_CV_missforrest_5(path = curr_path, num_trees = 300, 
+                              min_node_size = 5, mtry = NULL)
+  
+  # --3 Save the results of the CV
+  save(sit2, file = paste0("./docs/CV_Res/TCGA/Imputation_Approach/setting2/", curr_data, ".RData"))
+}
+
+# ----- Situation 3
+for (curr_data in DFs_w_gender) {
+  
+  print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
+  
+  # --1 Define current path
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234_imputed/", 
+                      curr_data, "_IMP_2.RData")
+  
+  # --2 Do the CV
+  sit3 <- do_CV_missforrest_5(path = curr_path, num_trees = 300, 
+                              min_node_size = 5, mtry = NULL)
+  
+  # --3 Save the results of the CV
+  save(sit3, file = paste0("./docs/CV_Res/TCGA/Imputation_Approach/setting3/", curr_data, ".RData"))
+}
+
+# ----- Situation 4 TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO 
+'
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
+  
+  sit4 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                         min_node_size = 5, unorderd_factors = "ignore")
+  save(sit4, file = paste0("./docs/CV_Res/gender/Roman_final_subsets/setting4/", DF, ".RData"))
+}
+'
