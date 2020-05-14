@@ -145,67 +145,67 @@ load_rda_get_infos <- function(rda_path) {
 #     --> Each resulting object contains the dimensions and types of features 
 #         for the different feature-blocks of the datasets!
 # ----- BLCA DF
-BLCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/BLCA.Rda")
+BLCA_Res <- load_rda_get_infos("./data/external/TCGA/BLCA.Rda")
 BLCA_Res
 # ----- BRCA DF
-BRCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/BRCA.Rda")
+BRCA_Res <- load_rda_get_infos("./data/external/TCGA/BRCA.Rda")
 BRCA_Res
 # ----- CESC DF
-CESC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/CESC.Rda")
+CESC_Res <- load_rda_get_infos("./data/external/TCGA/CESC.Rda")
 CESC_Res
 # ----- COAD DF
-COAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/COAD.Rda")
+COAD_Res <- load_rda_get_infos("./data/external/TCGA/COAD.Rda")
 COAD_Res
 # ----- ESCA DF
-ESCA_Res <- load_rda_get_infos("./data/external/Dr_Hornung/ESCA.Rda")
+ESCA_Res <- load_rda_get_infos("./data/external/TCGA/ESCA.Rda")
 ESCA_Res
 # ----- GBM DF
-GBM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/GBM.Rda")
+GBM_Res <- load_rda_get_infos("./data/external/TCGA/GBM.Rda")
 GBM_Res
 # ----- HNSC DF
-HNSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/HNSC.Rda")
+HNSC_Res <- load_rda_get_infos("./data/external/TCGA/HNSC.Rda")
 HNSC_Res
 # ----- KIRC DF
-KIRC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/KIRC.Rda")
+KIRC_Res <- load_rda_get_infos("./data/external/TCGA/KIRC.Rda")
 KIRC_Res
 # ----- KIRP DF
-KIRP_Res <- load_rda_get_infos("./data/external/Dr_Hornung/KIRP.Rda")
+KIRP_Res <- load_rda_get_infos("./data/external/TCGA/KIRP.Rda")
 KIRP_Res
 # ----- LGG DF
-LGG_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LGG.Rda")
+LGG_Res <- load_rda_get_infos("./data/external/TCGA/LGG.Rda")
 LGG_Res
 # ----- LIHC DF
-LIHC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LIHC.Rda")
+LIHC_Res <- load_rda_get_infos("./data/external/TCGA/LIHC.Rda")
 LIHC_Res
 # ----- LUAD DF
-LUAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LUAD.Rda")
+LUAD_Res <- load_rda_get_infos("./data/external/TCGA/LUAD.Rda")
 LUAD_Res
 # ----- LUSC DF
-LUSC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/LUSC.Rda")
+LUSC_Res <- load_rda_get_infos("./data/external/TCGA/LUSC.Rda")
 LUSC_Res
 # ----- OV DF
-OV_Res <- load_rda_get_infos("./data/external/Dr_Hornung/OV.Rda")
+OV_Res <- load_rda_get_infos("./data/external/TCGA/OV.Rda")
 OV_Res
 # ----- PAAD DF
-PAAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/PAAD.Rda")
+PAAD_Res <- load_rda_get_infos("./data/external/TCGA/PAAD.Rda")
 PAAD_Res
 # ----- PRAD DF
-PRAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/PRAD.Rda")
+PRAD_Res <- load_rda_get_infos("./data/external/TCGA/PRAD.Rda")
 PRAD_Res
 # ----- READ DF
-READ_Res <- load_rda_get_infos("./data/external/Dr_Hornung/READ.Rda")
+READ_Res <- load_rda_get_infos("./data/external/TCGA/READ.Rda")
 READ_Res
 # ----- SARC DF
-SARC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/SARC.Rda")
+SARC_Res <- load_rda_get_infos("./data/external/TCGA/SARC.Rda")
 SARC_Res
 # ----- SKCM DF
-SKCM_Res <- load_rda_get_infos("./data/external/Dr_Hornung/SKCM.Rda")
+SKCM_Res <- load_rda_get_infos("./data/external/TCGA/SKCM.Rda")
 SKCM_Res
 # ----- STAD DF
-STAD_Res <- load_rda_get_infos("./data/external/Dr_Hornung/STAD.Rda")
+STAD_Res <- load_rda_get_infos("./data/external/TCGA/STAD.Rda")
 STAD_Res
 # ----- UCEC DF
-UCEC_Res <- load_rda_get_infos("./data/external/Dr_Hornung/UCEC.Rda")
+UCEC_Res <- load_rda_get_infos("./data/external/TCGA/UCEC.Rda")
 UCEC_Res
 
 # [2] Check DFs for 'gender' as clinical variable                           ----
@@ -244,7 +244,7 @@ DFs_w_gender <- c("BLCA", "COAD", "GBM", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
 
 # 2-2 Get the distribution for all DFs w/ a gender varibale in 'clinical'!
 for (df_curr in DFs_w_gender) {
-  load(paste0("./data/external/Dr_Hornung/", df_curr, ".Rda"))
+  load(paste0("./data/external/TCGA/", df_curr, ".Rda"))
   print(paste0("Distribution of 'gender' for DF: '", df_curr, "'"))
   print(prop.table(table(factor(clin$gender))))
   print("-------------------------------------------------------")
@@ -318,7 +318,7 @@ for (i in blocks) {
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
-data_path    <- "./data/external/Dr_Hornung/"
+data_path    <- "./data/external/TCGA/"
 
 res_all <- list()
 
