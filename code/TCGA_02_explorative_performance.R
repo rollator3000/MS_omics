@@ -23,22 +23,22 @@ library(checkmate)
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
-data_path    <- "./data/external/Dr_Hornung/"
+data_path    <- "./data/external/TCGA/"
 
 eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
   "
   Function to evaluate single block performance for different DFs ['DFs_w_gender']. 
-  Each DF has 5 different blocks [clin, mirna, cnv, rna, mutation]! 
-  For each block [except for clin] we subset the feature space by only keeping a
-  'fraction' of the original feature space & get the performance, so that we can
-  find out which subset to use in our final study!
-  For this we do 5-fold-CV to each single block and save the results, obtained
+  Each DF has 5 different blocks [clin, mirna, cnv, rna & mutation]! 
+  For each block [except clin] subset the feature space by only keeping a
+  'fraction' of the original covariates & get the performance, to find out 
+  which subset to use in our final study!
+  For this: 5-fold-CV to each single block and save the results, obtained
   when fitting a standard rfsrc model to it w/ 250 trees!
   
   Args:
     DFs_w_gender (vector) : Vector filled with strings of DFs that have 'gender'
                             within their clinical block! These DF names have to 
-                            be in './data/external/Dr_Hornung/original_processed_data/'
+                            be in './data/external/TCGA/'
     seed_to_subset (int)  : Seed used, when subsetting the feature space, so it
                             is reproducible!
     fraction (double)     : How much of the original feature space shall be kept?
@@ -72,7 +72,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
                          stringsAsFactors = F)
   
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
-  data_path    <- "./data/external/Dr_Hornung/"
+  data_path    <- "./data/external/TCGA/"
   
   # [2] Loop over all DFs w/ gender in their clinical variables!  --------------
   for (df in DFs_w_gender) {
@@ -173,18 +173,18 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
                                      fraction_mutation, fraction_clin = 1) {
   "
   Function to evaluate joint block performance for different DFs ['DFs_w_gender']. 
-  Each DF has 5 different blocks [clin, mirna, cnv, rna, mutation]! 
-  For each block we can choose a subset we want to use from this block, then
-  we subset each block according to ['fraction_cnv', 'fraction_rna', ...].
-  Then we bind these subsetted blocks to a single big DF and use this whole DF
+  Each DF has 5 different blocks [clin, mirna, cnv, rna & mutation]! 
+  For each block choose a subset of features to use from this block, then
+  subset each block according to ['fraction_cnv', 'fraction_rna', ...].
+  Then bind the subsetted blocks to a single big DF and use this whole DF
   as input for the RF! 
-  With this data we do 5 fold CV to and save the results, obtained
+  With this data we do 5-fold-CV to and save the results, obtained
   when fitting a standard rfsrc model to it w/ 250 trees!
   
   Args:
     DFs_w_gender (vector) : Vector filled with strings of DFs that have 'gender'
                             within their clinical block! These DF names have to 
-                            be in './data/external/Dr_Hornung/original_processed_data/'
+                            be in './data/external/TCGA/'
     seed_to_subset (int)  : Seed used, when subsetting the feature space, so it
                             is reproducible!
     fraction_cnv (double) : How much of the original 'cnv' feature space shall 
@@ -229,7 +229,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
                          stringsAsFactors = F)
   
   # 1-1 Fixed Datapath, where we have all our raw Dataframes!
-  data_path    <- "./data/external/Dr_Hornung/"
+  data_path    <- "./data/external/TCGA/"
   
   # [2] Loop over all DFs w/ gender in their clinical variables!  --------------
   for (df in DFs_w_gender) {
@@ -514,7 +514,7 @@ ggplot(data = plot_f1, aes(x = Fraction, y = value)) +
   theme(axis.text.x = element_text(angle = 45 , hjust = 1),
         text = element_text(size = 28))
 
-# Analyse the explorative joint block block Results                         ----
+# Analyse the explorative joint block block Results                          ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/explorative_subsets"
 
