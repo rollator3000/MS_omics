@@ -103,7 +103,7 @@ for (df in DFs_w_gender) {
   
   # 1-6 Save the subsetted DF
   save(mirna, mutation, rna, cnv, clin, 
-       file = paste0("./data/processed/RH_subsetted_", subset_seed, "/", 
+       file = paste0("./data/processed/TCGA_subset_", subset_seed, "/", 
                      df, "_subset.RData"))
 }
 
@@ -111,8 +111,9 @@ for (df in DFs_w_gender) {
 # 2-1 Define file and foldernames!
 DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC",
                          "LGG", "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
+
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
-subset_folder       <- "./data/processed/RH_subsetted_12345/"
+subset_folder       <- "./data/processed/TCGA_subset_12345/"
 
 # 2-2 DF to save results of single block performances!
 eval_res <- data.frame("Data"     = character(), "fold"     = numeric(),
@@ -189,14 +190,14 @@ for (df in DFs_w_gender_subset) {
 
 # 2-4 Save the result
 write.csv2(eval_res, row.names = FALSE, 
-           "./docs/CV_Res/gender/performance_final_subsets/joint_blocks_DFseed_12345.csv")
+           "./docs/CV_Res/TCGA/final_subsets/joint_blocks_DFseed_12345.csv")
 
 # [3] Get Test& OOB Performance on the subsetted DFs - SINGLE BLOCKS         ----
 # 3-1 Define files and folder!
 DFs_w_gender        <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                           "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 DFs_w_gender_subset <- paste0(DFs_w_gender, "_subset.RData")
-subset_folder       <- "./data/processed/RH_subsetted_12345/"
+subset_folder       <- "./data/processed/TCGA_subset_12345/"
 
 # 3-2 Empty DF to store Results!
 eval_res <- data.frame("Data"     = character(), 
@@ -279,21 +280,93 @@ for (df in DFs_w_gender_subset) {
 
 # 3-5 Save the resuls
 write.csv2(eval_res, row.names = FALSE, 
-           "./docs/CV_Res/gender/performance_final_subsets/single_blocks_DFseed_12345.csv")
-# [4] Get the amount of features in the reduced feature-blocks               ----
-# 4-1 Define DFs we want to inspect!
+           "./docs/CV_Res/TCGA/final_subsets/single_blocks_DFseed_12345.csv")
+
+
+# [4] Plot Performance on the fixed subsettet DFs w/ joint blocks!          ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/final_subsets"
+
+# [1] Load all explorative singleblock Results
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+files <- files[grepl("joint", files)]
+
+# 1-2 Add the amount of subsets to each block:
+DF <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
+
+# 1-3 Convert numeric columns to numeric
+numeric_cols          <- c("OOB_Acc", "Test_Acc", "Test_F1")
+DF[,numeric_cols] <- sapply(numeric_cols, 
+                            function(x) as.numeric(DF[,x]))
+
+# 1-4 reshape DF_all for the plot!
+plot_df <- melt(DF, id.vars = c("Data", "fold"), measure.vars = c("Test_Acc", "Test_F1"))
+
+# [2] Do the plots
+# 2-1 Split by the different Seeds!
+ggplot(data = plot_df, aes(x = Data, y = value, fill = variable)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ggtitle("Joint Block Performance on the 14 fixed DF w/ 5 fold CV",
+          subtitle = "50% mirna, 10% mutation, 15% rna & 1.25% cnv") +
+  xlab("Dataset") +
+  ylab("Metric [Acc & F1]") +
+  ylim(0, 1) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 15))
+
+# [5] Analyse the fix subsettet DFs w/ single blocks!                       ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/performance_final_subsets"
+
+# [1] Load all explorative singleblock Results
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+files <- files[grepl("single", files)]
+
+# 1-2 Add the amount of subsets to each block:
+DF <- read.csv2(paste0(data_path, "/", files[1]), stringsAsFactors = F)
+
+# 1-3 Convert the columns to the right format
+num_cols <- c("OOB_Acc", "Test_Acc", "Test_F1")
+DF[,num_cols] <- sapply(num_cols, 
+                        function(x) as.numeric(DF[,x]))
+
+# 1-4 Make the name of the single DFs nicer
+DF$Data <- sapply(DF$Data, function(x) strsplit(x, split = "_subset")[[1]][1])
+
+# 1-4 reshape the layout of data for the plot! 
+plot_df <- melt(DF, id.vars = c("Data", "Block"), 
+                measure.vars = c("Test_Acc", "Test_F1"))
+
+# [2] Do the plot
+ggplot(data = plot_df, aes(x = Data, y = value, fill = variable)) + 
+  geom_boxplot() + 
+  facet_grid(. ~ Block) +
+  theme_bw() +
+  ggtitle("Single Block Performance on the 14 fixed DFs w/ 5 fold CV",
+          subtitle = "Final-Subset: 10% mirna & mutation, 5% rna & 2.5% cnv \n--- split by the seeds used to subset the featurespace") +
+  xlab("Blocks used as Feature Space") +
+  ylab("Metric [Acc & F1]") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 15))
+
+
+# [6] Get the amount of features in the reduced feature-blocks               ----
+# 1 Define DFs we want to inspect!
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 
-# 4-2 Loop over the possible feature-blocks in all different DFs, extract 
-#     the dimension for each DF and print the summary of the dimensionality of
-#     the current block over all 'DFs_w_gender'
+# 2 Loop over the possible feature-blocks in all different DFs, extract 
+#   the dimension for each DF and print the summary of the dimensionality of
+#   the current block over all 'DFs_w_gender'
 clin_ <- c(); cnv_ <- c(); mirna_ <- c(); mutation_ <- c(); rna_ <- c()
 
 for (df_ in DFs_w_gender) {
   
   # load 'df_' and its corresponding blocks
-  df <- load(paste0("./data/processed/RH_subsetted_12345/", df_, "_subset.RData"))
+  df <- load(paste0("./data/processed/TCGA_subset_12345/", df_, "_subset.RData"))
   
   # Bind the amount of features to the corresponding vectors
   clin_     <- c(clin_, ncol(clin))
@@ -303,7 +376,7 @@ for (df_ in DFs_w_gender) {
   rna_      <- c(rna_, ncol(rna))
 }
 
-# 4-3 Print the summaries for each
+# 3 Print the summaries for each
 print(summary(clin_)) #  -1 as the response still inside!
 print(summary(cnv_))
 print(summary(mirna_))
