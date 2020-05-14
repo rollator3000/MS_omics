@@ -12,9 +12,13 @@
 # Set Working Directory and load the needed packages!
 setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
 library(randomForest)
+library(randomForestSRC)
 library(caret)
 library(checkmate)
-library(randomForestSRC)
+library(ggplot2)
+require(gridExtra)
+library(reshape2)
+library(checkmate)
 
 # Names of the usable dataframes (w/ gender in 'clin'-block & 4 omics blocks!)
 DFs_w_gender <- c("BLCA", "COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", 
@@ -51,7 +55,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
                      'Time'      - how long did it take to fit a RF on the block
                      'Fraction'  - fraction used to subset the single blocks!
                      'subset_seed' -  seed used to create subset!
-    will be saved to 'docs/CV/gender/explorative_subsets/' the name of the file
+    will be saved to 'docs/CV/TCGA/explorative_subsets/' the name of the file
     itself is a mixture of seed and fraction!
   "
   # [0] Check Arguments  -------------------------------------------------------
@@ -160,7 +164,7 @@ eval_single_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction) {
   res_name <- paste0("RF_single_block_frac", fraction, "_seed", seed_to_subset)
   
   write.csv2(eval_res, 
-             paste0("./docs/cv_Res/gender/explorative_subsets/", res_name, ".csv"),
+             paste0("./docs/cv_Res/TCGA/explorative_subsets/", res_name, ".csv"),
              row.names = FALSE) 
 }
 
@@ -205,7 +209,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
                        'Fold'      - which fold was used as hold-iout fold   
                        'Time'      - how long did it take to fit a RF on the block
                        'Fraction'  - fraction used to subset the single blocks!
-      will be saved to 'docs/CV/gender/explorative_subsets/' the name of the file
+      will be saved to 'docs/CV/TCGA/explorative_subsets/' the name of the file
       itself is a mixture of seed and fraction!
   "
   # [0] Check Arguments  -------------------------------------------------------
@@ -357,7 +361,7 @@ eval_joint_block_subsets <- function(DFs_w_gender, seed_to_subset, fraction_cnv,
   res_name <- paste0("RF_joint_block_seed_", seed_to_subset,"__fraction_", fraction_all)
   
   write.csv2(eval_res, 
-             paste0("./docs/cv_Res/gender/explorative_subsets/", res_name, ".csv"),
+             paste0("./docs/cv_Res/TCGA/explorative_subsets/", res_name, ".csv"),
              row.names = FALSE) 
 }
 
@@ -436,3 +440,121 @@ for (rna_sub in c(0.75, 0.5, 0.25, 0.15, 1)) {
     }
   }
 }
+# Analyse the explorative singleblock single block Results                   ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/explorative_subsets"
+
+# [1] Load all explorative singleblock Results
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-1-1 Only keep the explorative 'single-blocks' 
+files <- files[grepl("single", files)]
+
+# 1-2 Load the data and store it into a single DF!
+DF_all <- data.frame()
+for (curr_file in files) {
+  DF_curr <-  read.csv2(paste0(data_path, "/", curr_file), stringsAsFactors = F)
+  DF_all  <- rbind(DF_all, DF_curr)
+}
+
+# 1-3 Convert features to right data type!
+str(DF_all)
+num_cols <- c("OOB_Acc", "Test_Acc", "Test_F1", "Fraction")
+DF_all[,num_cols] <- sapply(num_cols, function(x) as.numeric(DF_all[,x]))
+
+# 1-4 Reshape the layout of data for the plot! 
+plot_df <- melt(DF_all, id.vars = c("Block", "Fraction", "subset_seed", "Data"), 
+                measure.vars = c("Test_Acc", "Test_F1"))
+
+# 1-4-1 Remove the clincal block as it is not subsetted
+plot_df       <- plot_df[-which(plot_df$Block == "clin"),]
+
+# 1-4-2 Convert 'Fraction' to a factor variable and code it in '%'
+plot_df$Fraction <- paste0(plot_df$Fraction * 100, "%")
+plot_df$Fraction <- factor(plot_df$Fraction, 
+                           levels = c("2.5%", "5%", "10%", "15%", "25%", 
+                                      "50%", "75%", "100%"))
+
+# 1-4-3 Adjust the names of the single Blocks, such that the spelling is the 
+#       same as in the thesis
+plot_df$Block[grep("cnv", plot_df$Block)]      <- "CNV"
+plot_df$Block[grep("mirna", plot_df$Block)]    <- "miRNA"
+plot_df$Block[grep("mutation", plot_df$Block)] <- "Mutation"
+plot_df$Block[grep("rna", plot_df$Block)]      <- "RNA"
+
+
+# 1-5 Plot the performance with the accuracy and the f1-score measure split by
+#     the fraction we've used to subset the single blocks!
+# 1-5-1 Accuracy
+plot_acc <- plot_df[plot_df$variable %in% c("Test_Acc"),]
+
+ggplot(data = plot_acc, aes(x = Fraction, y = value)) + 
+  geom_boxplot(fill = "palegreen3") + 
+  facet_grid(. ~ Block) +
+  theme_bw() +
+  ggtitle("Single Block Performance of a random forest over all 14 TCGA data sets",
+          subtitle = "Split by the different feature-blocks - Evaluated with 5-fold CV") +
+  xlab("Subset of used features") +
+  ylab("Accuracy") +
+  theme(axis.text.x = element_text(angle = 45 , hjust = 1),
+        text = element_text(size = 28))
+
+# 1-5-2 F-1-Score
+plot_f1  <- plot_df[plot_df$variable %in% c("Test_F1"),]
+
+ggplot(data = plot_f1, aes(x = Fraction, y = value)) + 
+  geom_boxplot(fill = "palegreen3") + 
+  facet_grid(. ~ Block) +
+  theme_bw() +
+  ggtitle("Single Block Performance of a random forest over all 14 TCGA data sets",
+          subtitle = "Split by the different feature-blocks - Evaluated with 5-fold CV") +
+  xlab("Subset of used features") +
+  ylab("F-1-Score") +
+  theme(axis.text.x = element_text(angle = 45 , hjust = 1),
+        text = element_text(size = 28))
+
+# Analyse the explorative joint block block Results                         ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/explorative_subsets"
+
+# [1] Load all explorative singleblock Results
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+files <- files[grepl("joint", files)]
+
+# 1-2 Add the amount of subsets to each block:
+DF_all <- data.frame()
+for (curr_file in files) {
+  DF_curr <-  read.csv2(paste0(data_path, "/", curr_file), stringsAsFactors = F)
+  DF_all  <- rbind(DF_all, DF_curr)
+}
+
+# 1-4 reshape DF_all for the plot!
+plot_df <- melt(DF_all, id.vars = c("Data", "Fraction"), measure.vars = c("Test_Acc", "Test_F1", "Fold"))
+plot_df <- plot_df[plot_df$variable %in% c("Test_Acc", "Test_F1"),]
+plot_df$value <- as.numeric(plot_df$value)
+
+# 1-5 Add the fraction used of the single blocks as meta data!
+for (i in seq_len(nrow(plot_df))) {
+  plot_df$mirna_subset[i]    <- strsplit(strsplit(plot_df$Fraction[i], split = "mirna_")[[1]][2], split = "__")[[1]][1]
+  plot_df$mutation_subset[i] <- strsplit(plot_df$Fraction[i], split = "mutation_")[[1]][2]
+  plot_df$rna_subset[i]      <- strsplit(strsplit(plot_df$Fraction[i], split = "_rna_")[[1]][2], split = "_")[[1]][1]
+  plot_df$cnv_subset[i]      <- strsplit(strsplit(plot_df$Fraction[i], split = "_cnv_")[[1]][2], split = "_")[[1]][1]
+  plot_df$Fraction_new[i]    <- strsplit(plot_df$Fraction[i], split = "__mirna_")[[1]][2]
+  plot_df$Fraction_new[i]    <- paste0("mirna_", plot_df$Fraction_new[i])
+}
+
+plot_df$rna_subset_plot <- sapply(plot_df$rna_subset, function(x) paste0("rna_", x)) 
+plot_df$cnv_subset_plot <- sapply(plot_df$cnv_subset, function(x) paste0("cnv_", x)) 
+
+# [2] Do the plot, split by subsets 
+ggplot(data = plot_df, aes(x = Fraction_new , y = value, fill = variable)) +
+  geom_boxplot() + 
+  theme_bw() +
+  facet_grid(rna_subset_plot ~ cnv_subset_plot) +
+  ggtitle("EXPLORATIVE - Joint Block Performance on all 14 DFs - w/ seed 12345", 
+          subtitle = "Single Blocks were subsetted! y-axis RNA splits || x-axis CNV splits") +
+  xlab("subsets for mirna & mutation") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 17))
