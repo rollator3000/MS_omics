@@ -6,7 +6,7 @@ require(gridExtra)
 library(reshape2)
 library(checkmate)
 
-# Used for all Results except from 'Romans Approach'
+# Used for all Results except from 'FoldWise_Approach'
 extract_metrics <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
@@ -18,8 +18,7 @@ extract_metrics <- function(x, metric, train_sit) {
    Args:
     x (list)           : list filled with the metrics for every single 
                          Itteration in CV + the settings it was created from!
-                         Needs the names:
-                         ['res_all' & 'settings']
+                         Needs the names: 'res_all' & 'settings'
     metric (str)       : the metric we shall extraxt from the result list!
                          Needs to be in:
                          ['Accuracy', 'Sensitifity', 'Specificity', 'Precision', 
@@ -75,7 +74,7 @@ extract_metrics <- function(x, metric, train_sit) {
                          "Metric"         = character())
   
   # 1-3-1 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
-  #       & fill 'DF_final'
+  #       & fill 'DF_final' with the additional information
   for (j in seq_len(ncol(res_curr_train_set))) {
     
     # 1-3-1-1 Extract TrainSetting, folds, test_situation and the metrics
@@ -169,6 +168,7 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   # extract all used  metrics and check whether 'metric' exist!
   met_meas <- unique(
     unlist(sapply(names(x$res_all), function(j) {
+      print(j)
       names(x$res_all[[j]][[1]])
     })))
   
@@ -240,7 +240,7 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   DF_final$min_node_size      <- x_settings$min_node_size
   DF_final$weighted_ens       <- x_settings$weighted
   
-  if (is.null(x_settings[["weighted"]] || !x_settings[["weighted"]])) {
+  if (is.null(x_settings[["weighted"]]) || is.null(!x_settings[["weighted"]])) {
     DF_final$weight_metric <- NA
   } else {
     ifelse(!x_settings$weighted,
@@ -252,7 +252,7 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   return(DF_final)
 }
 
-# Used to extract Results from Romans Approach 
+# Used to extract Results from 'FoldWise_Approach'
 # - as these have a slightly different structure due to 
 #   performance realted changes
 extract_metrics_FW <- function(x, metric, train_sit) {
@@ -611,9 +611,9 @@ extract_avg_metrics_FW <- function(x, metric, train_sit) {
   return(DF_final)
 }
 
-# Analyse Results of Romans Approach on the fixed DFs                       ----
+# Analyse Results of the FoldWise_Approach                                  ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/Roman_final_subsets/setting4"
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting1"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
@@ -641,10 +641,10 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 15)) +
   geom_vline(xintercept = seq(from = 1.5, to = 19.5, by = 1),
-             col = "red", lty = 2) 
+             col = "red", lty = 2)
 
-# Analyse Results of Norberts Approach on the fixed DFs                     ----
-data_path <- "./docs/CV_Res/gender/Norbert_final_subsets/setting4"
+# Analyse Results of the BlockWise Approach on the fixed DFs                ----
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting1"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
@@ -708,7 +708,7 @@ DF_all <- rbind(f1_res, acc_res, no_res)
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("Norberts Method applied to a data subset",
+  ggtitle("CV Results - BlockWise Approach",
           subtitle = "split by the weighting used for the single folds!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -719,21 +719,52 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
 
 # Analyse Results of the complete case Approach on the fixed DFs            ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/gender/complete_cases/setting2/"
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances
 files <- list.files(data_path)
 
-# 1-2 Load the Results for all TrainSettings
-BLCA <- load(paste0(data_path, "/", files[1]))
-BLCA <- eval(as.symbol(BLCA))
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files[1:2]) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 2)
+  DF_all    <- rbind(DF_all, curr_df)
+}
 
-# 1-3 Extract the Metrics and TestSetting as desired:
-# BLCA
-res_blca <- extract_metrics(x = BLCA, metric = "F1", train_sit = 1)
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ggtitle("Complete Cases Approach applied to a data subset") +
+  xlab("TestSituations") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 15))
+# Analyse Results of the Imputation Approach on the fixed DFs               ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach/setting1/"
 
-ggplot(data = res_blca, aes(x = Testsituation, y = Metric)) +
+# [1] Load all Results w/ Romans Approach
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files[1:2]) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
+}
+
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
   geom_boxplot() + 
   theme_bw() +
   ggtitle("Complete Cases Approach applied to a data subset") +
