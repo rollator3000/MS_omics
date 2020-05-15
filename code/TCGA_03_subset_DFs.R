@@ -283,7 +283,7 @@ write.csv2(eval_res, row.names = FALSE,
            "./docs/CV_Res/TCGA/final_subsets/single_blocks_DFseed_12345.csv")
 
 
-# [4] Plot Performance on the fixed subsettet DFs w/ joint blocks!          ----
+# [4] Plot Performance on the fixed subsettet DFs w/ joint blocks!           ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/final_subsets"
 
@@ -316,7 +316,7 @@ ggplot(data = plot_df, aes(x = Data, y = value, fill = variable)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 15))
 
-# [5] Analyse the fix subsettet DFs w/ single blocks!                       ----
+# [5] Plot Performance on the fixed subsettet DFs w/ single blocks!          ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/final_subsets"
 

@@ -440,7 +440,7 @@ for (rna_sub in c(0.75, 0.5, 0.25, 0.15, 1)) {
     }
   }
 }
-# Analyse the explorative singleblock single block Results                   ----
+# PLOT the explorative singleblock single block Results                      ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/explorative_subsets"
 
@@ -514,7 +514,7 @@ ggplot(data = plot_f1, aes(x = Fraction, y = value)) +
   theme(axis.text.x = element_text(angle = 45 , hjust = 1),
         text = element_text(size = 28))
 
-# Analyse the explorative joint block block Results                          ----
+# PLOT the explorative joint block block Results                             ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/explorative_subsets"
 
