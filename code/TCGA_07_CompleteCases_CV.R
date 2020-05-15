@@ -243,7 +243,7 @@ do_evaluation_CC    <- function(train, test, num_trees, min_node_size, mtry,
   
   return(as.vector(res)) 
 }
-do_CV_CC_5 <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+do_CV_CC_5 <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_1.RData",
                        num_trees = 100, min_node_size = 5, mtry = NULL,
                        min_obs = 5) {
   "Evalute the Approach that uses only complete cases for the model fitting! 
@@ -548,7 +548,7 @@ do_CV_CC_5 <- function(path = "data/processed/RH_subsetted_12345/missingness_123
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
-do_CV_CC_3 <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+do_CV_CC_3 <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_4.RData",
                        num_trees = 100, min_node_size = 5, mtry = NULL,
                        min_obs = 5) {
   "Evalute the Approach that only uses complete cases for the model fitting! 
@@ -740,12 +740,12 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_1.RData")
   
   print("Setting - 1/1")
-  sit1_1 <- do_CV_CC_5(path = curr_path,
+  sit1 <- do_CV_CC_5(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit1_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting1/", DF, ".RData"))
+  save(sit1, file = paste0("./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/", DF, ".RData"))
   
 }
 
@@ -755,12 +755,12 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 2 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_2.RData")
   
   print("Setting - 1/1")
   sit2_1 <- do_CV_CC_5(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting2/", DF, ".RData"))
+  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/CompleteCase_Approach/setting2/", DF, ".RData"))
   
 }
 
@@ -770,12 +770,12 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 3 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_3.RData")
   
   print("Setting - 1/1")
   sit3_1 <- do_CV_CC_5(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit3_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting3/", DF, ".RData"))
+  save(sit3_1, file = paste0("./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/", DF, ".RData"))
   
 }
 
@@ -785,11 +785,11 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_4.RData")
   
   print("Setting - 1/1")
   sit2_1 <- do_CV_CC_3(path = curr_path,
                        num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
-  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/complete_cases/setting4/", DF, ".RData"))
+  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/CompleteCase_Approach/setting4/", DF, ".RData"))
   
 }

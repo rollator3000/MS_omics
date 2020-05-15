@@ -309,7 +309,7 @@ get_oob_weight_metric <- function(blockwise_RF) {
   return(oob_results)
 }
 
-do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+do_CV_NK_5_blocks     <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_1.RData",
                                   weighted = TRUE, weight_metric = NULL,
                                   num_trees = 300, mtry = NULL, 
                                   min_node_size = 5) {
@@ -632,7 +632,7 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/miss
               "settings" = settings))
 }
 
-do_CV_NK_3_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+do_CV_NK_3_blocks     <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_4.RData",
                                   weighted = TRUE, weight_metric = NULL,
                                   num_trees = as.integer(300), mtry = NULL, 
                                   min_node_size = 5) {
@@ -882,25 +882,25 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_1.RData")
   
   print("Setting - 1/3")
   sit1_1 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit1_1, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting1/", DF, ".RData"))
+  save(sit1_1, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting1/", DF, ".RData"))
   
   print("Setting - 2/3")
   sit1_2 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit1_2, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting1/", DF, "_f1.RData"))
+  save(sit1_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting1/", DF, "_f1.RData"))
   
   print("Setting - 3/3")
   sit1_3 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit1_3, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting1/", DF, "_acc.RData"))
+  save(sit1_3, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting1/", DF, "_acc.RData"))
 }
 
 # ----- Situation 2
@@ -909,25 +909,25 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 2 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_2.RData")
   
   print("Setting - 1/3")
   sit2_1 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting2/", DF, ".RData"))
+  save(sit2_1, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting2/", DF, ".RData"))
   
   print("Setting - 2/3")
   sit2_2 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit2_2, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting2/", DF, "_f1.RData"))
+  save(sit2_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting2/", DF, "_f1.RData"))
   
   print("Setting - 3/3")
   sit2_3 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit2_3, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting2/", DF, "_acc.RData"))
+  save(sit2_3, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting2/", DF, "_acc.RData"))
 }
 
 # ----- Situation 3
@@ -936,25 +936,25 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 3 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_3.RData")
   
   print("Setting - 1/3")
   sit3_1 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit3_1, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting3/", DF, ".RData"))
+  save(sit3_1, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting3/", DF, ".RData"))
   
   print("Setting - 2/3")
   sit3_2 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit3_2, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting3/", DF, "_f1.RData"))
+  save(sit3_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting3/", DF, "_f1.RData"))
   
   print("Setting - 3/3")
   sit3_3 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit3_3, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting3/", DF, "_acc.RData"))
+  save(sit3_3, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting3/", DF, "_acc.RData"))
 }
 
 # ----- Situation 4
@@ -963,23 +963,23 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_4.RData")
   
   print("Setting - 1/3")
   sit4_1 <- do_CV_NK_3_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit4_1, file =  paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting4/", DF, ".RData"))
+  save(sit4_1, file =  paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting4/", DF, ".RData"))
   
   print("Setting - 2/3")
   sit4_2 <- do_CV_NK_3_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit4_2, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting4/", DF, "_f1.RData"))
+  save(sit4_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting4/", DF, "_f1.RData"))
   
   print("Setting - 3/3")
   sit4_3 <- do_CV_NK_3_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
-  save(sit4_3, file = paste0("./docs/CV_Res/TCGA/Norbert_final_subsets/setting4/", DF, "_acc.RData"))
+  save(sit4_3, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting4/", DF, "_acc.RData"))
 }

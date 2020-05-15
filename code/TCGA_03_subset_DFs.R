@@ -318,7 +318,7 @@ ggplot(data = plot_df, aes(x = Data, y = value, fill = variable)) +
 
 # [5] Analyse the fix subsettet DFs w/ single blocks!                       ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/TCGA/performance_final_subsets"
+data_path <- "./docs/CV_Res/TCGA/final_subsets"
 
 # [1] Load all explorative singleblock Results
 # 1-1 get all files in the folder, that are singleblock performances

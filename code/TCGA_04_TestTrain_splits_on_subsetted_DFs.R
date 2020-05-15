@@ -1,12 +1,13 @@
 "Script to split the subssetted TCGA data into k different Train & TestSets. 
  To each of the 'k' TrainSets block-wise missingness of a certain scenario is 
- induced - in total 4 different patterns for the missingness!
+ induced - in total 4 different patterns for the missingness! The TestSet 
+ stays completly observed!
 "
 # Load Librarys & Define Funcitons!
 library(checkmate)
 library(caret)
 
-load_data_extract_block_names <- function(path = "data/processed/RH_subsetted_12345/LGG_subset.RData",
+load_data_extract_block_names <- function(path = "data/processed/TCGA_subset_12345/LGG_subset.RData",
                                           response = 'gender') {
   "Load the data - where omcis blocks have already been subsetted!
    Return single DF (where all blocks are joint together) & 
@@ -673,7 +674,7 @@ induce_blockmiss_4 <- function(data_and_names, seed) {
 # Run TestTrainSplitting - and induce blockwise missingness to TrainSets  ------
 DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
-data_path    <- "./data/processed/RH_subsetted_12345/"   # Path to the data
+data_path    <- "./data/processed/TCGA_subset_12345/"   # Path to the data
 response_    <- "gender"                                 # response from 'clin' block
 seed         <- 1234                                     # seed for reprducibility!
 

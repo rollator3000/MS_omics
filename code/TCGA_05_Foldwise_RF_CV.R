@@ -626,7 +626,7 @@ do_evaluation             <- function(Forest, testdata) {
   return(as.vector(res_all))
 }
 
-do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+do_CV_5_blocks <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_1.RData",
                            num_trees = 300, mtry = NULL, min_node_size = 5,
                            unorderd_factors = "ignore") {
   "CrossValidate the Foldwise-Approach when the Traindata has blockwise 
@@ -944,7 +944,7 @@ do_CV_5_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness
               "settings" = settings))
 }
 
-do_CV_2_blocks <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData", 
+do_CV_2_blocks <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_4.RData", 
                            num_trees = 300, mtry = NULL, min_node_size = 5,
                            unorderd_factors = "ignore") {
   "CrossValidate the Approach when the Traindata has blockwise missingness
@@ -1180,11 +1180,11 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_1.RData")
   
   sit1 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit1, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting1/", DF, ".RData"))
+  save(sit1, file = paste0("./docs/CV_Res/TCGA/FoldWise_Approach/setting1/", DF, ".RData"))
 }
 
 # ----- Situation 2
@@ -1193,11 +1193,11 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 2 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_2.RData")
   
   sit2 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit2, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting2/", DF, ".RData"))
+  save(sit2, file = paste0("./docs/CV_Res/TCGA/FoldWise_Approach/setting2/", DF, ".RData"))
 }
 
 # ----- Situation 3
@@ -1206,11 +1206,11 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 3 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_3.RData")
   
   sit3 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit3, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting3/", DF, ".RData"))
+  save(sit3, file = paste0("./docs/CV_Res/TCGA/FoldWise_Approach/setting3/", DF, ".RData"))
 }
 
 # ----- Situation 4
@@ -1219,9 +1219,9 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_4.RData")
   
   sit4 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
-  save(sit4, file = paste0("./docs/CV_Res/TCGA/Roman_final_subsets/setting4/", DF, ".RData"))
+  save(sit4, file = paste0("./docs/CV_Res/TCGA/FoldWise_Approach/setting4/", DF, ".RData"))
 }

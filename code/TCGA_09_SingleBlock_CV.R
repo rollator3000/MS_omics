@@ -227,7 +227,7 @@ evaluate_RF       <- function(model, test_set) {
   return(res)
 }
 
-do_CV_NK_5_blocks     <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_1.RData",
+do_CV_NK_5_blocks     <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_1.RData",
                                   num_trees = 300, mtry = NULL, min_node_size = 5) {
   "CrossValidate the single-block Approach when the Traindata has blockwise 
    missingness according to scenario 1, 2 or 3!
@@ -561,7 +561,7 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_1.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_1.RData")
   
   
   sit1 <- do_CV_NK_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
@@ -575,7 +575,7 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_2.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_2.RData")
   
   
   sit2 <- do_CV_NK_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
@@ -589,7 +589,7 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_3.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_3.RData")
   
   
   sit3 <- do_CV_NK_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 

@@ -448,7 +448,7 @@ do_evaluation_imputed       <- function(train, test, num_trees, min_node_size, m
   
   return(as.vector(res))
 }
-do_CV_missforrest_5         <- function(path = "data/processed/RH_subsetted_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
+do_CV_missforrest_5         <- function(path = "data/processed/TCGA_subset_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
                                         num_trees = 300, min_node_size = 5, mtry = NULL) {
   "Evalute the Approach where the block-wise missingness in the DFs is removed by
    missforest impuation method!
@@ -754,7 +754,7 @@ do_CV_missforrest_5         <- function(path = "data/processed/RH_subsetted_1234
 }
 
 # TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO  
-do_CV_missforrest_3   <- function(path = "data/processed/RH_subsetted_12345/missingness_1234/BLCA_4.RData",
+do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_4.RData",
                                   num_trees = 300, min_node_size = 10, mtry = NULL,
                                   n_tree_impute = 100, maxiter_impute = 10) {
   "Evalute the Approach where we impute the block-wise missing values with the 
@@ -946,10 +946,10 @@ DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 
 # 1-2 Path to the folder with the subsetted DFs 
-path         <- "data/processed/RH_subsetted_12345/missingness_1234/"
+path         <- "data/processed/TCGA_subset_12345/missingness_1234/"
 
 # 1-3 Path to the folder to save the imputed test-train-splits!
-save_path    <- "data/processed/RH_subsetted_12345/missingness_1234_imputed/"
+save_path    <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
 
 # 1-4 Which block-wise missingness setting [1, 2, 3 or 4]?
 setting      <- "1"
@@ -988,7 +988,7 @@ for (curr_data in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
   
   # --1 Define current path
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234_imputed/", 
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234_imputed/", 
                       curr_data, "_IMP_1.RData")
   
   # --2 Do the CV
@@ -1005,7 +1005,7 @@ for (curr_data in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
   
   # --1 Define current path
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234_imputed/", 
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234_imputed/", 
                       curr_data, "_IMP_2.RData")
   
   # --2 Do the CV
@@ -1022,7 +1022,7 @@ for (curr_data in DFs_w_gender) {
   print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
   
   # --1 Define current path
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234_imputed/", 
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234_imputed/", 
                       curr_data, "_IMP_2.RData")
   
   # --2 Do the CV
@@ -1040,7 +1040,7 @@ for (DF in DFs_w_gender) {
   print(paste0("----- Situation 4 for DF: ", DF, "-----"))
   
   # Create the path for the current DF
-  curr_path <- paste0("data/processed/RH_subsetted_12345/missingness_1234/", DF, "_4.RData")
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_4.RData")
   
   sit4 <- do_CV_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                          min_node_size = 5, unorderd_factors = "ignore")
