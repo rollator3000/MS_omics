@@ -744,9 +744,8 @@ for (DF in DFs_w_gender) {
   
   print("Setting - 1/1")
   sit1 <- do_CV_CC_5(path = curr_path,
-                       num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
+                     num_trees = 300, min_node_size = 5, mtry = NULL, min_obs = 5)
   save(sit1, file = paste0("./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/", DF, ".RData"))
-  
 }
 
 # ----- Situation 2
