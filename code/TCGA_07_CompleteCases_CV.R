@@ -20,7 +20,7 @@ library(randomForestSRC)
 library(doParallel)
 
 detectCores()
-registerDoParallel(cores = 2)
+registerDoParallel(cores = 1)
 
 load_CV_data        <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -730,7 +730,6 @@ do_CV_CC_3 <- function(path = "data/processed/TCGA_subset_12345/missingness_1234
 }
 
 # RunMain ----------------------------------------------------------------------
-"Run the CV for all DFs from the missForest paper ------------------------------"
 DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
 
