@@ -169,7 +169,8 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   met_meas <- unique(
     unlist(sapply(names(x$res_all), function(j) {
       print(j)
-      names(x$res_all[[j]][[1]])
+      try(expr = names(x$res_all[[j]][[1]]),
+          silent = TRUE)
     })))
   
   if (!(metric %in% met_meas)) {
@@ -635,7 +636,7 @@ for (curr_file in files) {
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("Romans Method applied to a data subset",
+  ggtitle("CV Results - Foldwise Approach",
           subtitle = "split by the weighting used for the single folds!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -665,7 +666,7 @@ for (file_ in f1_weighted) {
   file_curr <- eval(as.symbol(file_curr))
   
   # Extract the Metrics for the current file
-  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
   
   # Merge curr_df into the f1_res
   f1_res <- rbind(f1_res, curr_df)
@@ -708,7 +709,7 @@ DF_all <- rbind(f1_res, acc_res, no_res)
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("CV Results - BlockWise Approach",
+  ggtitle("CV Results - Blockwise Approach",
           subtitle = "split by the weighting used for the single folds!") +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -727,7 +728,7 @@ files <- list.files(data_path)
 
 # 1-2 Loop over all the files and extract the results
 DF_all <- data.frame()
-for (curr_file in files[1:2]) {
+for (curr_file in files) {
   
   # Load the result and assign it to 'file_curr'
   file_curr <- load(paste0(data_path, "/", curr_file))
@@ -738,7 +739,7 @@ for (curr_file in files[1:2]) {
 }
 
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
-  geom_boxplot() + 
+  geom_boxplot(fill = '#F8766D') + 
   theme_bw() +
   ggtitle("Complete Cases Approach applied to a data subset") +
   xlab("TestSituations") +
@@ -754,13 +755,13 @@ files <- list.files(data_path)
 
 # 1-2 Loop over all the files and extract the results
 DF_all <- data.frame()
-for (curr_file in files[1:2]) {
+for (curr_file in files) {
   
   # Load the result and assign it to 'file_curr'
   file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
   DF_all    <- rbind(DF_all, curr_df)
 }
 
