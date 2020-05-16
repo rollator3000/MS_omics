@@ -8,7 +8,7 @@ library(reshape2)
 library(checkmate)
 
 # Used for all Results except from 'FoldWise_Approach'
-extract_metrics <- function(x, metric, train_sit) {
+extract_metrics     <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
   to a DF, that we can use for plotting!
@@ -264,7 +264,7 @@ extract_avg_metrics <- function(x, metric, train_sit) {
 # Used to extract Results from 'FoldWise_Approach'
 # - as these have a slightly different structure due to 
 #   performance realted changes
-extract_metrics_FW <- function(x, metric, train_sit) {
+extract_metrics_FW     <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
   to a DF, that we can use for plotting!
