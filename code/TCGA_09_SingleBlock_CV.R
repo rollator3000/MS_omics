@@ -3,6 +3,7 @@ Script to analyse the TCGA multi-omics data set with the single-block approach
 "
 # [0] Set WD, load packages & define functions
 setwd("C:/Users/kuche_000/Desktop/MS_omics/")
+library(checkmate)
 library(assertthat)
 library(randomForestSRC)
 
