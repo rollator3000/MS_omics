@@ -1,6 +1,7 @@
 "
 Script to visualize the different Results from the TCGA CVs
 "
+# [0] Load Packages and define functions
 library(ggplot2)
 require(gridExtra)
 library(reshape2)
@@ -168,9 +169,9 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   # extract all used  metrics and check whether 'metric' exist!
   met_meas <- unique(
     unlist(sapply(names(x$res_all), function(j) {
-      print(j)
-      try(expr = names(x$res_all[[j]][[1]]),
-          silent = TRUE)
+      if (length(x$res_all[[j]]) != 0) {
+        names(x$res_all[[j]][[1]])
+      }
     })))
   
   if (!(metric %in% met_meas)) {
@@ -187,11 +188,18 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   
   # 1-2 Extract the metric from the wanted TrainSetting for all 20 TestSettings!
   #     ["full", "miss_1A", ...]
-  res_curr_train_set <- sapply(names(x_res), function(x) c(x_res[[x]][[1]][metric],
-                                                           x_res[[x]][[2]][metric],
-                                                           x_res[[x]][[3]][metric],
-                                                           x_res[[x]][[4]][metric],
-                                                           x_res[[x]][[5]][metric]))
+  res_curr_train_set <- sapply(names(x_res), function(x) {
+    if (length(x_res[[x]]) == 0) {
+      c(rep(NA, times = 5))
+    }
+    else {
+      c(x_res[[x]][[1]][metric],
+        x_res[[x]][[2]][metric],
+        x_res[[x]][[3]][metric],
+        x_res[[x]][[4]][metric],
+        x_res[[x]][[5]][metric])
+    }
+  })
   
   # 1-3 Convert the results to a usable DF
   res_curr_train_set <- as.data.frame(res_curr_train_set)
@@ -614,7 +622,7 @@ extract_avg_metrics_FW <- function(x, metric, train_sit) {
 
 # Analyse Results of the FoldWise_Approach                                  ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting1"
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting1"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
@@ -633,16 +641,31 @@ for (curr_file in files) {
 }
 
 # [2] Plot the Results
+# 2-1 Extract the needed Information from 'DF_all'
+# 2-1-1 The used metric for the comparison of the performance
+used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+
+# 2-1-2 Rename the Weight Metrics [--> clearer names]
+DF_all$weight_metric[DF_all$weight_metric == "F1"]  <- "F1-Score"
+DF_all$weight_metric[DF_all$weight_metric == "Acc"] <- "Accuracy"
+DF_all$weight_metric[DF_all$weight_metric == "No"]  <- "None"
+
+# 2-2 Do the plot
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("CV Results - Foldwise Approach",
-          subtitle = "split by the weighting used for the single folds!") +
-  xlab("TestSituations") +
+  ylab(used_metric_) +
+  xlab("Different Test-Situations") +
+  ggtitle("Foldwise Approach - CV Results",
+          subtitle = "split by the weighting of the foldwise predictions!") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15)) +
-  geom_vline(xintercept = seq(from = 1.5, to = 19.5, by = 1),
-             col = "red", lty = 2)
+        text = element_text(size = 18)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Weight Metric"))
 
 # Analyse Results of the BlockWise Approach on the fixed DFs                ----
 data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting1"
@@ -651,71 +674,45 @@ data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting1"
 # 1-1 List all files from the 'data_path'
 files <- list.files(data_path)
 
-# 1-2 Assign Files to the different approaches
-f1_weighted  <- files[c(grep("f1", files), grep("F1", files))]
-acc_weighted <- files[grep("acc", files)]
-no_weighted  <- files[!grepl("acc", files) & !grepl("f1", files)  & !grepl("F1", files)]
-
-# 1-3 Extract the results Load the Results for all TrainSettings
-# 1-3-1 F1-Weighting
-f1_res <- data.frame()
-for (file_ in f1_weighted) {
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
   
   # Load the result and assign it to 'file_curr'
-  file_curr <- load(paste0(data_path, "/", file_))
-  file_curr <- eval(as.symbol(file_curr))
-  
-  # Extract the Metrics for the current file
-  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
-  
-  # Merge curr_df into the f1_res
-  f1_res <- rbind(f1_res, curr_df)
-}
-
-# 1-3-2 Acc-Weighting
-acc_res <- data.frame()
-for (file_ in acc_weighted) {
-  
-  # Load the result and assign it to 'file_curr'
-  file_curr <- load(paste0(data_path, "/", file_))
+  file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
   # Extract the Metrics for the current file
   curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
   
-  # Merge curr_df into the f1_res
-  acc_res <- rbind(acc_res, curr_df)
+  # bind it to 'DF_all'
+  DF_all <- rbind(DF_all, curr_df)
 }
-
-# 1-3-3 No weighting
-no_res <- data.frame()
-for (file_ in no_weighted) {
-  
-  # Load the result and assign it to 'file_curr'
-  file_curr <- load(paste0(data_path, "/", file_))
-  file_curr <- eval(as.symbol(file_curr))
-  
-  # Extract the Metrics for the current file
-  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
-  
-  # Merge curr_df into the f1_res
-  no_res <- rbind(no_res, curr_df)
-}
-
-# 1-4 Bind all DFs to a single DF
-DF_all <- rbind(f1_res, acc_res, no_res)
 
 # [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+
+# 2-1-2 Rename the Weight Metrics [--> clearer names]
+DF_all$weight_metric[DF_all$weight_metric == "F1"]  <- "F1-Score"
+DF_all$weight_metric[DF_all$weight_metric == "Acc"] <- "Accuracy"
+DF_all$weight_metric[DF_all$weight_metric == "No"]  <- "None"
+
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
-  ggtitle("CV Results - Blockwise Approach",
-          subtitle = "split by the weighting used for the single folds!") +
+  ggtitle("Blockwise Approach - CV Results",
+          subtitle = "split by the weighting of the blockwise predictions!") +
+  ylab(used_metric_) +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15)) +
-  geom_vline(xintercept = seq(from = 1.5, to = 19.5, by = 1),
-             col = "red", lty = 2) 
+        text = element_text(size = 18)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Weight Metric"))
 
 
 # Analyse Results of the complete case Approach on the fixed DFs            ----
@@ -738,13 +735,24 @@ for (curr_file in files) {
   DF_all    <- rbind(DF_all, curr_df)
 }
 
+# [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+
+# 2-2 The plot itself
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
   geom_boxplot(fill = '#F8766D') + 
   theme_bw() +
-  ggtitle("Complete Cases Approach applied to a data subset") +
+  ggtitle("Complete Case Approach - CV Results") +
+  ylab(used_metric_) +
   xlab("TestSituations") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
+        text = element_text(size = 18)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005)
 # Analyse Results of the Imputation Approach on the fixed DFs               ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/Imputation_Approach/setting1/"
@@ -765,10 +773,21 @@ for (curr_file in files) {
   DF_all    <- rbind(DF_all, curr_df)
 }
 
+# [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+
+# 2-2 The plot itself
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
-  geom_boxplot() + 
+  geom_boxplot(fill = '#F8766D') + 
   theme_bw() +
-  ggtitle("Complete Cases Approach applied to a data subset") +
-  xlab("TestSituations") +
+  ggtitle("Imputation Approach - CV Results") +
+  ylab(used_metric_) +
+  xlab("TestSituations") + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 15))
+        text = element_text(size = 18)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005)
