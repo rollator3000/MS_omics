@@ -3,6 +3,7 @@ Script to analyse the real multi-omics data set with the single-block approach
 "
 # [0] Set WD, load packages & define functions
 setwd("C:/Users/kuche_000/Desktop/MS_omics/")
+library(checkmate)
 library(assertthat)
 library(randomForestSRC)
 
@@ -119,13 +120,8 @@ for (i in 1:5) {
     curr_train <- curr_train[complete.cases(curr_train),]
     
     # --3 Get predicitons by training a RF on 'curr_train
-    # --3-1 Define a Vector to save the predicted classes - fill it with the 
-    #       opposite of the true class! Needed later, when predicition on the 
-    #       test-set, not all test-obs. can be predicted - these are rated as
-    #       wrongly classified for the calculation of the metrics!
-    predicted <- sapply(test_x$outcome_Y, FUN = function(x) {
-      base::ifelse(x == 1, yes = 0, no = 1)
-    })
+    # --3-1 Define a Vector to save the predicted classes 
+    predicted <- c(rep(NA, length(test_x$outcome_Y)))
     
     # --3-2 Check if 'curr_train' has more than 2 obs. - else can not train RF
     #       and therefore not predict on the observations --> preds are NAs
@@ -149,6 +145,26 @@ for (i in 1:5) {
       
       predicitions       <- predict(RF, curr_test)
       predicted[CC_test] <- as.character(predicitions$class)
+      
+      # Replace the 'NAs' in 'predicted' by the class that is most commonly predicted
+      class_0_preds <- sum(predicted[CC_test] == 0)
+      class_1_preds <- sum(predicted[CC_test] == 1)
+      
+      if (class_0_preds >= class_1_preds) {
+        predicted[is.na(predicted)] <- 0
+      } else {
+        predicted[is.na(predicted)] <- 1
+      }
+    }
+    
+    # 3-3 If 'curr_train' has less than 2 obs., we can not train a RF & therefore
+    #     not create predicitions on the testset. 
+    #     Create random predicitons (based on the train data) then!
+    if  (nrow(curr_train) < 2) {
+      
+      # 3-3-1 Repalce predicitons by the class of the traindata 
+      #      [as we can not a RF with it]
+      predicted <- curr_train$outcome_Y
     }
     
     # --5 Calculate the metrics
