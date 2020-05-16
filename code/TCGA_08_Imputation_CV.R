@@ -620,8 +620,8 @@ do_CV_missforrest_5         <- function(path = "data/processed/TCGA_subset_12345
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    miss2_BC[[i]] <- do_evaluation_imputed(train = train, 
-                                           test = test[,-which(colnames(test) %in% c(curr_data$block_names$C,
+    miss2_AB[[i]] <- do_evaluation_imputed(train = train, 
+                                           test = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                      curr_data$block_names$B))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
