@@ -147,20 +147,20 @@ evaluate_RF       <- function(model, test_set) {
   #         --> all metrics have worst value then!
   if (!(any(model$xvar.names %in% colnames(test_set)))) {
     
-    res <- list("Accuracy"    = 0,
-                "Kappa"       = 0,
-                "Sensitifity" = 0,
-                "Specificity" = 0,
-                "Precision"   = 0,
-                "Recall"      = 0,
-                "F1"          = 0,
-                "Balance_Acc" = 0,
-                "Pos_Pred_Value" =  0,
-                "Neg_Pred_Value" =  0,
-                "Prevalence"  = 0,      
-                "AUC1"        = 0,
-                "AUC2"        = 0,
-                "MCC"         = -1)
+    res <- list("Accuracy"    = NA,
+                "Kappa"       = NA,
+                "Sensitifity" = NA,
+                "Specificity" = NA,
+                "Precision"   = NA,
+                "Recall"      = NA,
+                "F1"          = NA,
+                "Balance_Acc" = NA,
+                "Pos_Pred_Value" = NA,
+                "Neg_Pred_Value" = NA,
+                "Prevalence"  = NA,      
+                "AUC1"        = NA,
+                "AUC2"        = NA,
+                "MCC"         = NA)
     return(res)
   }
   
@@ -171,7 +171,7 @@ evaluate_RF       <- function(model, test_set) {
   # 1-3 Create predictions for all observations w/o missing features
   CC_test  <- which(complete.cases(test_set))
   
-  predicitions       <- predict(RF, test_set)
+  predicitions       <- predict(model, test_set)
   predicted[CC_test] <- as.character(predicitions$class)
   
   # [2] Evaluate the predicitions  ---------------------------------------------
@@ -426,7 +426,7 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/TCGA_subset_12345/missi
       full[[curr_block]][[i]] <- evaluate_RF(model = RF, test_set = test)
       
       # --4-1 One Missing FeatureBlock in Test
-      print("Evaluation TestSet w/ 2 missing Blocks --------------------------")
+      print("Evaluation TestSet w/ 1 missing Blocks --------------------------")
       miss1_A[[curr_block]][[i]] <- evaluate_RF(model = RF, 
                                                 test_set = test[,-which(colnames(test) %in% curr_data$block_names$A)])
       
