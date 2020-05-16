@@ -84,7 +84,7 @@ missing_str$outcome <- NULL
 # 2-1 Create a list to save the metrics and define values for the RF when fitted!
 single_block_res        <- vector(mode = "list", 
                                   length = length(colnames(missing_str)))
-names(single_block_res) <- colnames(missing_str)      
+names(single_block_res) <- colnames(missing_str)
 
 num_trees         = 300
 mtry              = NULL
@@ -109,6 +109,8 @@ for (i in 1:5) {
   # --3 Loop over all the feature-blocks in 'train_x' and evalute the predicitions
   #     of the single blockwise fitted models!
   for (curr_block in colnames(missing_str)) {
+    
+    print(paste("CurrBlock:", curr_block))
     
     # --1 Get all variables from 'train_x' that belong to the block
     pattern_  <- paste0(curr_block, "_")
@@ -150,6 +152,9 @@ for (i in 1:5) {
       class_0_preds <- sum(predicted[CC_test] == 0)
       class_1_preds <- sum(predicted[CC_test] == 1)
       
+      print(paste(sum(is.na(predicted)), "Observation from test had to be guessed",
+                  collapse = " "))
+      
       if (class_0_preds >= class_1_preds) {
         predicted[is.na(predicted)] <- 0
       } else {
@@ -161,6 +166,8 @@ for (i in 1:5) {
     #     not create predicitions on the testset. 
     #     Create random predicitons (based on the train data) then!
     if  (nrow(curr_train) < 2) {
+      
+      print('Guess All TestObs.')
       
       # 3-3-1 Repalce predicitons by the class of the traindata 
       #      [as we can not a RF with it]
@@ -214,4 +221,4 @@ for (i in 1:5) {
   }
 }
   
-  
+save(single_block_res, file = './docs/CV_Res/REAL/SingleBlockApproach.R')  
