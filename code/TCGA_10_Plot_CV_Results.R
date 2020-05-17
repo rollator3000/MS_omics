@@ -620,7 +620,7 @@ extract_avg_metrics_FW <- function(x, metric, train_sit) {
 }
 
 # Used for the 'SingleBlock' Approach
-extract_avg_metrics <- function(x, metric, train_sit) {
+extract_avg_metrics_SB <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
   to a DF, that we can use for plotting!
@@ -655,12 +655,7 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   assert_string(metric)
   
   # extract all used  metrics and check whether 'metric' exist!
-  met_meas <- unique(
-    unlist(sapply(, function(j) {
-      if (length(x$res_all[[j]]) != 0) {
-        names(x$res_all[[j]][[1]])
-      }
-    })))
+  met_meas <- unique(names(x$res_all[[1]]$clin_block[[1]]))
   
   if (!(metric %in% met_meas)) {
     stop("'metric' is not within these!")
@@ -675,52 +670,114 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   x_settings <- x$settings
   
   # 1-2 Extract the metric from the wanted TrainSetting for all 20 TestSettings!
-  #     ["full", "miss_1A", ...]
-  res_curr_train_set <- sapply(names(x_res), function(x) {
-    if (length(x_res[[x]]) == 0) {
-      c(rep(NA, times = 5))
-    }
-    else {
-      c(x_res[[x]][[1]][metric],
-        x_res[[x]][[2]][metric],
-        x_res[[x]][[3]][metric],
-        x_res[[x]][[4]][metric],
-        x_res[[x]][[5]][metric])
-    }
-  })
+  #     ["full", "miss_1A", ...] & for all different single-block learners!
+  # 1-2-1 Clinical RF - extract Results and average them then!
+  clin_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$clin_block[[1]][metric],
+        x_res[[x]]$clin_block[[2]][metric],
+        x_res[[x]]$clin_block[[3]][metric],
+        x_res[[x]]$clin_block[[4]][metric],
+        x_res[[x]]$clin_block[[5]][metric])
+    }))
   
-  # 1-3 Convert the results to a usable DF
-  res_curr_train_set <- as.data.frame(res_curr_train_set)
+  clin_res <- sapply(1:ncol(clin_res), 
+                     function(col_) mean(as.numeric(unlist(clin_res[,col_])), na.rm = T))
+  names(clin_res) <- names(x_res)
   
-  # 1-3-1 Average the values, so for each DF we only recieve the averge metric of
-  #       all folds!
-  res_curr_train_set_avg <- sapply(1:ncol(res_curr_train_set), 
-                                   function(x) mean(as.numeric(unlist(res_curr_train_set[,x])), na.rm = T))
+  # 1-2-2 Block 'A' - extract Results and average them then!
+  b_A_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$A[[1]][metric],
+        x_res[[x]]$A[[2]][metric],
+        x_res[[x]]$A[[3]][metric],
+        x_res[[x]]$A[[4]][metric],
+        x_res[[x]]$A[[5]][metric])
+    }))
   
-  # 1-3-2 Add the names of the testsituations
-  names(res_curr_train_set_avg) <- colnames(res_curr_train_set)
+  b_A_res <- sapply(1:ncol(b_A_res), 
+                    function(col_) mean(as.numeric(unlist(b_A_res[,col_])), na.rm = T))
+  names(b_A_res) <- names(x_res)
   
-  # 1-4 Create a DF holding all results and Metainfos!
-  DF_final <- data.frame("Trainsituation" = numeric(),
-                         "Testsituation"  = character(),
-                         "Metric"         = character())
+  # 1-2-3 Block 'B' - extract Results and average them then!
+  b_B_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$B[[1]][metric],
+        x_res[[x]]$B[[2]][metric],
+        x_res[[x]]$B[[3]][metric],
+        x_res[[x]]$B[[4]][metric],
+        x_res[[x]]$B[[5]][metric])
+    }))
   
-  # 1-4-1 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
-  #       & fill 'DF_final'
-  for (j in seq_len(length(res_curr_train_set_avg))) {
-    
-    # 1-4-1-1 Extract TrainSetting, folds, test_situation and the metrics
-    #         for the given column!
-    train_sit_ <- train_sit
-    test_sit   <- names(res_curr_train_set_avg)[j]
-    metric_c   <- res_curr_train_set_avg[j]
-    
-    # 1-4-1-2 Bind it to the DF with all Results
-    df_current <- data.frame("Trainsituation" = train_sit_,
-                             "Testsituation"  = test_sit,
-                             "Metric"         = metric_c)
-    DF_final <- rbind(DF_final, df_current)
-  }
+  b_B_res <- sapply(1:ncol(b_B_res), 
+                    function(col_) mean(as.numeric(unlist(b_B_res[,col_])), na.rm = T))
+  names(b_B_res) <- names(x_res)
+  
+  # 1-2-4 Block 'C' - extract Results and average them then!
+  b_C_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$C[[1]][metric],
+        x_res[[x]]$C[[2]][metric],
+        x_res[[x]]$C[[3]][metric],
+        x_res[[x]]$C[[4]][metric],
+        x_res[[x]]$C[[5]][metric])
+    }))
+  
+  b_C_res <- sapply(1:ncol(b_C_res), 
+                    function(col_) mean(as.numeric(unlist(b_C_res[,col_])), na.rm = T))
+  names(b_C_res) <- names(x_res)
+  
+  # 1-2-5 Block 'D' - extract Results and average them then!
+  b_D_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$D[[1]][metric],
+        x_res[[x]]$D[[2]][metric],
+        x_res[[x]]$D[[3]][metric],
+        x_res[[x]]$D[[4]][metric],
+        x_res[[x]]$D[[5]][metric])
+    }))
+  
+  b_D_res <- sapply(1:ncol(b_D_res), 
+                    function(col_) mean(as.numeric(unlist(b_D_res[,col_])), na.rm = T))
+  names(b_D_res) <- names(x_res)
+  
+  # 1-3 Bind the results from the different single_blocks into a single DF
+  DF_final <- data.frame()
+  
+  # 1-3-1 CLIN_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = train_sit,
+                               "Testsituation"  = names(clin_res),
+                               "Metric"         = clin_res,
+                               "Learn_Block"    = "Clinical"))
+  
+  # 1-3-2 A_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = train_sit,
+                               "Testsituation"  = names(b_A_res),
+                               "Metric"         = b_A_res,
+                               "Learn_Block"    = "A"))
+  
+  # 1-3-3 B_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = train_sit,
+                               "Testsituation"  = names(b_B_res),
+                               "Metric"         = b_B_res,
+                               "Learn_Block"    = "B"))
+  
+  # 1-3-4 C_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = train_sit,
+                               "Testsituation"  = names(b_C_res),
+                               "Metric"         = b_C_res,
+                               "Learn_Block"    = "C"))
+  
+  # 1-3-5 D_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = train_sit,
+                               "Testsituation"  = names(b_D_res),
+                               "Metric"         = b_D_res,
+                               "Learn_Block"    = "D"))
   
   # [2] Add the settings that have been used
   # 2-1 Add used DF and used Seed
@@ -735,15 +792,6 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   DF_final$num_trees          <- x_settings$num_trees
   DF_final$mtry               <- x_settings$mtry
   DF_final$min_node_size      <- x_settings$min_node_size
-  DF_final$weighted_ens       <- x_settings$weighted
-  
-  if (is.null(x_settings[["weighted"]]) || is.null(!x_settings[["weighted"]])) {
-    DF_final$weight_metric <- NA
-  } else {
-    ifelse(!x_settings$weighted,
-           DF_final$weight_metric <- NA,
-           DF_final$weight_metric <- x_settings$weight_metric)
-  }
   
   # [3] Return 'DF_final'
   return(DF_final)
@@ -941,7 +989,7 @@ for (curr_file in files) {
   file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
+  curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "F1", train_sit = 1)
   DF_all    <- rbind(DF_all, curr_df)
 }
 
@@ -951,11 +999,13 @@ used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
 
 # 2-2 The plot itself
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
-  geom_boxplot(fill = '#F8766D') + 
+  geom_boxplot() + 
   theme_bw() +
-  ggtitle("Imputation Approach - CV Results") +
+  facet_grid(Learn_Block ~ .) +
   ylab(used_metric_) +
-  xlab("TestSituations") + 
+  xlab("Different Test-Situations") +
+  ggtitle("Foldwise Approach - CV Results",
+          subtitle = "split by the weighting of the foldwise predictions!") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 18)) +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
@@ -963,3 +1013,5 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
              col = "darkgreen", lty = 2) +
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005)
+
+
