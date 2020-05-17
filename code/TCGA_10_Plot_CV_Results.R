@@ -7,7 +7,7 @@ require(gridExtra)
 library(reshape2)
 library(checkmate)
 
-# Used for all Results except from 'FoldWise_Approach'
+# Used for all Results except from 'FoldWise' & 'SingleBlock' approach
 extract_metrics     <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
@@ -121,12 +121,10 @@ extract_metrics     <- function(x, metric, train_sit) {
   DF_final$min_node_size      <- x_settings$min_node_size
   DF_final$weighted_ens       <- x_settings$weighted
   
-  if (is.null(x_settings[["weighted"]]) || !x_settings[["weighted"]]) {
+  if (is.null(x_settings[["weighted"]]) | !x_settings[["weighted"]]) {
     DF_final$weight_metric <- NA
   } else {
-    ifelse(!x_settings$weighted,
-           DF_final$weight_metric <- NA,
-           DF_final$weight_metric <- x_settings$weight_metric)
+    DF_final$weight_metric <- x_settings[["weighted"]]
   }
   
   # [3] Return 'DF_final'
@@ -249,12 +247,14 @@ extract_avg_metrics <- function(x, metric, train_sit) {
   DF_final$min_node_size      <- x_settings$min_node_size
   DF_final$weighted_ens       <- x_settings$weighted
   
-  if (is.null(x_settings[["weighted"]]) || is.null(!x_settings[["weighted"]])) {
-    DF_final$weight_metric <- NA
+  if ("weighted" %in% names(x_settings)) {
+    if (is.null(x_settings[["weighted"]]) | !x_settings[["weighted"]]) {
+      DF_final$weight_metric <- NA
+    } else {
+      DF_final$weight_metric <- x_settings[["weighted"]]
+    }
   } else {
-    ifelse(!x_settings$weighted,
-           DF_final$weight_metric <- NA,
-           DF_final$weight_metric <- x_settings$weight_metric)
+    DF_final$weight_metric <- NA
   }
   
   # [3] Return 'DF_final'
@@ -262,8 +262,7 @@ extract_avg_metrics <- function(x, metric, train_sit) {
 }
 
 # Used to extract Results from 'FoldWise_Approach'
-# - as these have a slightly different structure due to 
-#   performance realted changes
+# - these have a slightly different structure due to performance realted changes
 extract_metrics_FW     <- function(x, metric, train_sit) {
   "
   Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
@@ -620,6 +619,136 @@ extract_avg_metrics_FW <- function(x, metric, train_sit) {
   return(DF_final)
 }
 
+# Used for the 'SingleBlock' Approach
+extract_avg_metrics <- function(x, metric, train_sit) {
+  "
+  Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
+  to a DF, that we can use for plotting!
+  'x' is the result of a CV of one trainsetting & all has results for all of 
+  the 20 testsettings! From this list we extract the metric for all of the 
+  different trainsettings!
+    --> Only grab the average values for the metric of all folds!
+  
+   Args:
+    x (list)           : list filled with the metrics for every single 
+                         Itteration in CV + the settings it was created from!
+                         Needs the names:
+                         ['res_all' & 'settings']
+    metric (str)       : the metric we shall extraxt from the result list!
+                         Needs to be in:
+                         ['Accuracy', 'Sensitifity', 'Specificity', 'Precision', 
+                          'Recall', 'F1', 'Balance_Acc', 'AUC', 'MCC']
+    train_sit (int)    : Which TrainingSituation do the results come from!
+                         [four different trainsettings in total s. MS Thesis!]
+
+   Return:
+    DF, suited for plotting, with all metric for all testsettings in 'x'
+  "
+  # [0] Check Inputs 
+  # 0-1 'x' must be a list of length 2 w/ names 'res_all' & 'settings'
+  assert_list(x, len = 2)
+  if (!('res_all' %in% names(x)) | !('settings' %in% names(x))) {
+    stop("'x' needs 2 entrances called 'res_all' & 'settings'")
+  }
+  
+  # 0-2 'metric' must be in 'x'
+  assert_string(metric)
+  
+  # extract all used  metrics and check whether 'metric' exist!
+  met_meas <- unique(
+    unlist(sapply(, function(j) {
+      if (length(x$res_all[[j]]) != 0) {
+        names(x$res_all[[j]][[1]])
+      }
+    })))
+  
+  if (!(metric %in% met_meas)) {
+    stop("'metric' is not within these!")
+  }
+  
+  # 0-3 'train_sit' must be integer [1; 4]
+  assert_int(train_sit, lower = 1, upper = 4)
+  
+  # [1] Unpack the lists and put them into a single regular DF
+  # 1-1 Seperate Results and Settings
+  x_res      <- x$res_all
+  x_settings <- x$settings
+  
+  # 1-2 Extract the metric from the wanted TrainSetting for all 20 TestSettings!
+  #     ["full", "miss_1A", ...]
+  res_curr_train_set <- sapply(names(x_res), function(x) {
+    if (length(x_res[[x]]) == 0) {
+      c(rep(NA, times = 5))
+    }
+    else {
+      c(x_res[[x]][[1]][metric],
+        x_res[[x]][[2]][metric],
+        x_res[[x]][[3]][metric],
+        x_res[[x]][[4]][metric],
+        x_res[[x]][[5]][metric])
+    }
+  })
+  
+  # 1-3 Convert the results to a usable DF
+  res_curr_train_set <- as.data.frame(res_curr_train_set)
+  
+  # 1-3-1 Average the values, so for each DF we only recieve the averge metric of
+  #       all folds!
+  res_curr_train_set_avg <- sapply(1:ncol(res_curr_train_set), 
+                                   function(x) mean(as.numeric(unlist(res_curr_train_set[,x])), na.rm = T))
+  
+  # 1-3-2 Add the names of the testsituations
+  names(res_curr_train_set_avg) <- colnames(res_curr_train_set)
+  
+  # 1-4 Create a DF holding all results and Metainfos!
+  DF_final <- data.frame("Trainsituation" = numeric(),
+                         "Testsituation"  = character(),
+                         "Metric"         = character())
+  
+  # 1-4-1 Loop over each column in 'res_curr_train_set' (each is 1 testsetting)
+  #       & fill 'DF_final'
+  for (j in seq_len(length(res_curr_train_set_avg))) {
+    
+    # 1-4-1-1 Extract TrainSetting, folds, test_situation and the metrics
+    #         for the given column!
+    train_sit_ <- train_sit
+    test_sit   <- names(res_curr_train_set_avg)[j]
+    metric_c   <- res_curr_train_set_avg[j]
+    
+    # 1-4-1-2 Bind it to the DF with all Results
+    df_current <- data.frame("Trainsituation" = train_sit_,
+                             "Testsituation"  = test_sit,
+                             "Metric"         = metric_c)
+    DF_final <- rbind(DF_final, df_current)
+  }
+  
+  # [2] Add the settings that have been used
+  # 2-1 Add used DF and used Seed
+  path_split       <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_final$DF      <- path_split[length(path_split)]
+  DF_final$DF_seed <- path_split[length(path_split) - 1]
+  
+  # 2-2 Add the infos from "x_settings"
+  DF_final$performance_metric <- metric
+  DF_final$reponse            <- x_settings$response
+  DF_final$model_seed         <- x_settings$seed
+  DF_final$num_trees          <- x_settings$num_trees
+  DF_final$mtry               <- x_settings$mtry
+  DF_final$min_node_size      <- x_settings$min_node_size
+  DF_final$weighted_ens       <- x_settings$weighted
+  
+  if (is.null(x_settings[["weighted"]]) || is.null(!x_settings[["weighted"]])) {
+    DF_final$weight_metric <- NA
+  } else {
+    ifelse(!x_settings$weighted,
+           DF_final$weight_metric <- NA,
+           DF_final$weight_metric <- x_settings$weight_metric)
+  }
+  
+  # [3] Return 'DF_final'
+  return(DF_final)
+}
+
 # Analyse Results of the FoldWise_Approach                                  ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting1"
@@ -636,7 +765,7 @@ for (curr_file in files) {
   file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 2)
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 1)
   DF_all    <- rbind(DF_all, curr_df)
 }
 
@@ -667,7 +796,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
              col = "red", lty = 2, lwd = 1.005) +
   guides(fill = guide_legend(title = "Weight Metric"))
 
-# Analyse Results of the BlockWise Approach on the fixed DFs                ----
+# Analyse Results of the BlockWise Approach                                 ----
 data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting1"
 
 # [1] Load all Results w/ Romans Approach
@@ -685,19 +814,23 @@ for (curr_file in files) {
   # Extract the Metrics for the current file
   curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
   
+  if (grepl("acc", curr_file)) {
+    curr_df$weight_metric <- "Accuracy"
+  } else if (grepl("f1", curr_file)) {
+    curr_df$weight_metric <- "F1-Score"
+  } else {
+    curr_df$weight_metric <- "None"
+  }
+  
   # bind it to 'DF_all'
   DF_all <- rbind(DF_all, curr_df)
 }
 
 # [2] Plot the Results
-# 2-1-1 The used metric for the comparison of the performance
+# 2-1 The used metric for the comparison of the performance
 used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
 
-# 2-1-2 Rename the Weight Metrics [--> clearer names]
-DF_all$weight_metric[DF_all$weight_metric == "F1"]  <- "F1-Score"
-DF_all$weight_metric[DF_all$weight_metric == "Acc"] <- "Accuracy"
-DF_all$weight_metric[DF_all$weight_metric == "No"]  <- "None"
-
+# 2-2 Plot itself!
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
@@ -714,8 +847,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
              col = "red", lty = 2, lwd = 1.005) +
   guides(fill = guide_legend(title = "Weight Metric"))
 
-
-# Analyse Results of the complete case Approach on the fixed DFs            ----
+# Analyse Results of the complete case Approach                             ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
 
@@ -731,7 +863,7 @@ for (curr_file in files) {
   file_curr <- load(paste0(data_path, "/", curr_file))
   file_curr <- eval(as.symbol(file_curr))
   
-  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 2)
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
   DF_all    <- rbind(DF_all, curr_df)
 }
 
@@ -753,9 +885,49 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
              col = "darkgreen", lty = 2) +
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005)
-# Analyse Results of the Imputation Approach on the fixed DFs               ----
+
+# Analyse Results of the Imputation Approach                                ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/Imputation_Approach/setting1/"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
+}
+
+# [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+
+# 2-2 The plot itself
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot(fill = '#F8766D') + 
+  theme_bw() +
+  ggtitle("Imputation Approach - CV Results") +
+  ylab(used_metric_) +
+  xlab("TestSituations") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 18)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005)
+
+# Analyse Results of the Single-Block Approach                              ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting1/"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 get all files in the folder, that are singleblock performances

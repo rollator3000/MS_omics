@@ -221,6 +221,7 @@ ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 18)) 
 
+
 # Analyse Results of the BlockWise_Approach                                  ----
 # [0] Select the file with the results & load it as 'file_curr'
 curr_file <- "./docs/CV_Res/REAL/BlockWise_Approach.R"
@@ -243,7 +244,7 @@ ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
   xlab("Weighting of the blockwise predictions") +
   ggtitle("Blockwise Approach - CV Results") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 18)) 
+        text = element_text(size = 18))
 
 
 # Analyse Results of the Imputation                                          ----
@@ -271,8 +272,6 @@ ggplot(data = DF_all, aes(x = 1, y = Metric)) +
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
         axis.ticks.x = element_blank()) 
-  
-
 
 
 # Analyse Results of the CC Approach                                         ----
@@ -299,7 +298,8 @@ ggplot(data = DF_all, aes(x = 1, y = Metric)) +
   theme(text = element_text(size = 18),
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
-        axis.ticks.x = element_blank()) 
+        axis.ticks.x = element_blank())
+
 # Analyse Results of the Single Block Approach                               ----
 # [0] Select the file with the results & load it as 'file_curr'
 curr_file <- "./docs/CV_Res/REAL/SingleBlockApproach.R"
