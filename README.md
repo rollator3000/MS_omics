@@ -15,13 +15,11 @@ It can for example arise when concatenating multiple clinical studies with the s
 
 Data with blockwise missingness always consits of different **folds** and **blocks**.
   - A **block** describes a set of covariates containing all features collected on the basis of a characteristic.  
-    Basically all covariates that are related in content  
-    (e.g. *physical properties*: Height & Weight | *educational properties*: Income & Education').  
+    Basically all covariates that are related in content (e.g. *physical properties*: Height & Weight | *educational properties*: Income & Education').  
   - A **fold** represents a set of observations with the same observed blocks.  
-    Basically all observations with the same observed features.  
-    Each fold is unique and every obserbation belongs to exactly one of them.
+    Basically all observations with the same observed features. Each fold is unique and every obserbation belongs to exactly one of them.
 
-### A dataset with blockwise missingness could have the following form:  
+### Example for a dataset with blockwise missingness:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
 |---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
 | 1   | 65.4    | 187     | 2.536   | Upper       |         |       |         | 1   |
@@ -58,7 +56,7 @@ Regular model fitting on data with block-wise missingness is for most statistica
    - On this pruned (imputed) trainset fit a RF and generate predicitions for the testset then
 -  **Block-Wise Approach:** Fit a seperate RF on each feature block and create a final prediciton by combining the different block-wise predicitons
    - On each feature block of the data, fit a seperate RF *- one RF on the Physical properties, one RF on the Educational properties, ...*
-   - For a prediction, each block-wise RF is asked for a predicition - only the RFs that were trained on a feature-block that is available for the test-set can do so
+   - For a prediction, each block-wise RF is asked for a predicition - only the RFs that were trained on a feature-block that is available for the test-set can return a predicition 
    - Average the seperate block-wise predicitons for a final prediciton - weighted/ unweighted
 -  **Fold-Wise Approach:** Fit a seperate RF on each fold and create a final prediciton by combining the different fold-wise predicitons
    - On each fold of the data fit a seperate RF *- one RF on Fold1, one RF on Fold2, ...*
@@ -77,7 +75,7 @@ Only the subsetted TCGA data can be found in the repository under: "data/process
 With the script 'code/TCGA_03_subset_DFs' the data is subsetted & the script 'code/TCGA_04_TestTrain_splits_on_subsetted_DFs.R' splits the subsetted DFs to test- and train-set, whereby the training set is induced with block-wise missingness! Based on these test-train splits the predictive performance of the different approaches are investigated.
 
 #### Real Data
-The 'real' data used in the thesis are from a coperation with the 'Hospital of the University of Munich'. For data protection reasons, the data can not be stored in the repository at all.
+The 'real' dataset used in the thesis comes from a coperation with the 'Hospital of the University of Munich'. For data protection reasons, the data can not be stored in the repository nor be shared.
 
 ---
 
@@ -88,7 +86,7 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 #### General
 ``` 
 - GENERAL_DecisionTreeExample:
-    Get an example for the featurespace splitting of a singke decision tree
+    Get an example for the featurespace splitting of a single decision tree
 
 - GENERAL_simpleRF_adaption:
     Implement RF function where the single trees can be pruned.
@@ -98,12 +96,12 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 #### TCGA
 ``` 
 - TCGA_01_data_overview: 
-    Get a overview of the different DFs in TCGA. Get theDFs we can use for our work &  
-    some additional Information!
+    Get a overview of the different DFs in TCGA & get some additional Information!
 
 - TCGA_02_explorative_performance:
-    Check the performance of a RF when trained on single feature-blocks, on all blocks   
-    joint single subsetted blocks, all subsetted blocks joint & plot the results.
+    Check the performance of a RF when trained on a single feature-block/ on all blocks   
+    joint feature blocks. Then create different subsets of the original data & get the 
+    the predictive performance on these subsets [incl. plots]
 
 - TCGA_03_subset_DFs:
     Create final subsets of the original TCGA datasets & get the predictive performance
@@ -112,8 +110,8 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 
 - TCGA_04_TestTrain_splits_on_subsetted_DFs:
     Split the subsetted DFs into Test-Train splits for the CV. The training data is induced
-    with block-wise missingness. The resulting data can then be used for the CV of the 
-    different approaches.  
+    with block-wise missingness. The resulting Test-Train-Splits can then be used for the CV 
+    of the different approaches.  
 
 - TCGA_05_Foldwise_RF_CV:
     CrossValidate the foldwise Approach for all different settings & all possible combinations 
@@ -223,25 +221,25 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
             ├─ REAL        <- CV-Results for the different approaches on the 'REAL' data
             │
             └── TCGA       <- CV-Results for the different approaches on the 'TCGA' data
-                  │
-                  ├── BlockWise_Approach    <- CV Results of the BlockWise approach for the 
-                  │                            different pattern of missingness in TCGA
-                  │
-                  ├── CompleteCase_Approach <- CV Results of the CC approach for the 
-                  │                            different pattern of missingness in TCGA
-                  │
-                  ├── explorative_subsets   <- CV Results on joint-/ single blocks - for 
-                  │                            different fractions of subsets for the blocks
-                  |
-                  ├── final_subsets         <- CV Results on joint-/ single blocks for the 
-                  |                            the final subsets of TCGA used for the whole CV!
-                  │
-                  ├── FoldWise_Approach     <- CV Results of the FoldWise approach for the 
-                  │                            different pattern of missingness in TCGA
-                  │
-                  ├── Imputation_Approach   <- CV Results of the Imputation approach for the 
-                  │                            different pattern of missingness in TCGA
-                  │
-                  └── SingleBlock_Approach  <- CV Results of the SingleBlock approach for  
-                                               the different pattern of missingness in TCGA
+                 │
+                 ├── BlockWise_Approach    <- CV Results of the BlockWise approach for the 
+                 │                            different pattern of missingness in TCGA
+                 │
+                 ├── CompleteCase_Approach <- CV Results of the CC approach for the 
+                 │                            different pattern of missingness in TCGA
+                 │
+                 ├── explorative_subsets   <- CV Results on joint-/ single blocks - for 
+                 │                            different fractions of subsets for the blocks
+                 |
+                 ├── final_subsets         <- CV Results on joint-/ single blocks for the 
+                 |                            the final subsets of TCGA used for the whole CV!
+                 │
+                 ├── FoldWise_Approach     <- CV Results of the FoldWise approach for the 
+                 │                            different pattern of missingness in TCGA
+                 │
+                 ├── Imputation_Approach   <- CV Results of the Imputation approach for the 
+                 │                            different pattern of missingness in TCGA
+                 │
+                 └── SingleBlock_Approach  <- CV Results of the SingleBlock approach for  
+                                              the different pattern of missingness in TCGA
 ``` 
