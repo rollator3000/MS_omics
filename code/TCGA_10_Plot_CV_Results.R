@@ -664,6 +664,14 @@ extract_avg_metrics_SB <- function(x, metric, train_sit) {
   # 0-3 'train_sit' must be integer [1; 4]
   assert_int(train_sit, lower = 1, upper = 4)
   
+  # 0-4 There must be 5 single block results in 'x$res_all' [clin, A, B, C, D]
+  res_learners <- sapply(c("clin_block", "A", "B", "C", "D"), 
+                         function(block) block %in% names(x$res_all$full))
+  
+  if (!(all(res_learners))) {
+    stop("x does not have 5 single_block results ")
+  }
+  
   # [1] Unpack the lists and put them into a single regular DF
   # 1-1 Seperate Results and Settings
   x_res      <- x$res_all
