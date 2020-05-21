@@ -141,9 +141,8 @@ evaluate_RF       <- function(model, test_set) {
     base::ifelse(x == 1, yes = 0, no = 1)
   })
   
-  # 1-2 Delete all features from 'test_set' that were not used in training the RF
-  # 1-2-1 check whether any variable the RF has been trained with is in test?!
-  # 1-2-1-1 If there is no overlap -> can not create predictions!
+  # 1-2 Check whether any variable the RF has been trained with is in test?!
+  # 1-2-1 If there is no overlap -> can not create predictions!
   #         --> all metrics have worst value then!
   if (!(any(model$xvar.names %in% colnames(test_set)))) {
     
@@ -164,8 +163,9 @@ evaluate_RF       <- function(model, test_set) {
     return(res)
   }
   
-  # 1-2-1-2 If there is a overlap reduce the test_set, so it only contains
-  #         Variables the model has been trained with
+  # 1-3 Delete all features from 'test_set' that were not used in training the RF
+  # 1-3-1 If there is a overlap reduce the test_set, so it only contains
+  #       Variables the model has been trained with
   test_set <- test_set[, c("gender", model$xvar.names)]
   
   # 1-3 Create predictions for all observations w/o missing features
@@ -552,6 +552,196 @@ do_CV_NK_5_blocks     <- function(path = "data/processed/TCGA_subset_12345/missi
               "settings" = settings))
 }
 
+do_CV_NK_3_blocks     <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_4.RData",
+                                  num_trees = 300, mtry = NULL, min_node_size = 5) {
+  "CrossValidate the single-block Approach when the Traindata has blockwise 
+   missingness according to scenario 4!
+   
+   'path' must lead to a list with 2 entrances: 'data' & 'block_names'
+     - 'data' is a list filled with 'k' test-train-splits
+        --> k-fold-Validation on this test-train-splits!
+     - 'block_names' is a list filled with the names of the single blocks 
+        & must be ['A', 'B', 'clin_block']!
+        (Attention: With Scenario2 the order is different, but this is wanted!)
+      
+   Based on the 'k' test-train-splits in 'data', we will fit RFs to the single
+   feature-blocks in the train data (that has blockwise missingness in it). 
+   Then based on the RF that has been trained on a single feature-block, 
+   predicitions for the testset are created! If a predicition is not possible
+   for any observation, the prediction for these observations is labelld as wrong!
+   
+   The TestingSituations are different, as we can test the models on fully 
+   observed testdata, on testdata w/ 1 missing block, etc...
+    --> Results is list with all results from the k test-train splits for all 
+        possible testsituations - 5 in total!
+   
+  Args:
+      - path (char)         : path to data w/ blockwise missingness for the CV.
+                              Must end in '1.RData', '2.RData' or '3.RData'
+                             --> List with 2 entrances: 'data' & 'block_names'
+                                  - 'data' consitis of 'k' test-train-splits, 
+                                     where train has missingness induced and the 
+                                     test-set is fully observed!
+                                  - 'block_names' contains all colnames of the 
+                                     different blocks!
+      - num_trees (int)     : Amount of trees, we shall grow on each block!
+                                      > If NULL: 1000 is the default!
+      - mtry (int)          : Amount of split-variables we try, when looking for 
+                              a split variable! 
+                                      > If 'NULL': mtry = sqrt(p)
+      - min_node_size (int) : Amount of Observations a node must at least contain
+                              so the model keeps on trying to split them!  
+                                      > If NULL: min_node_size = 1 
+  Return:
+      - list filled w/:
+        * 'res_all' [the CV Results on different testsets]:
+           >> A = RNA & miRNA Block, B = CNV & Mutation Block
+            - full    : CV Results for each fold on the fully observed testdata!
+            - miss1_A : CV Results for each fold on the testdata, w/ missing A
+                        block [actually 2 blocks randomly thrown together]
+            - miss1_B : CV Results for each fold on the testdata, w/ missing B 
+                        block [actually 2 blocks randomly thrown together]
+            - single_A: CV Results for each fold on the testdata, w/ only block
+                        A as feature [actually 2 blocks randomly thrown together]
+            - single_B: CV Results for each fold on the testdata, w/ only block
+                        A as feature [actually 2 blocks randomly thrown together]
+            - single_clin: CV Results for each fold on the testdata, w/ only block
+                           clinical as feature
+        * 'settings' [settings used to do the CV - all arguments!]
+            - datapath, response, mtry, time for CV
+  "
+  # [0] Check Inputs -----------------------------------------------------------
+  # 0-1 path must be string and have '4.RData' in it!
+  assert_string(path, pattern = "4.RData")
+
+  # 0-2 'num_trees', 'min_node_size' & 'mtry' must be integer > 0 if NOT NULL
+  if (!is.null(num_trees)) assert_int(num_trees, lower = 10)
+  if (!is.null(mtry)) assert_int(mtry)
+  if (!is.null(min_node_size)) assert_int(min_node_size, lower = 1)
+  
+  # [1] Get the data & dimensions of train & test folds! -----------------------
+  # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
+  curr_data <- load_CV_data(path = path)
+  
+  # 1-1-1 Must contain 'A', 'B', 'C' 'D' & 'clin_block' as block_names
+  corr_block_names <- ("A" %in% names(curr_data$block_names) & 
+                       "B" %in% names(curr_data$block_names) &
+                       "clin_block" %in% names(curr_data$block_names))
+  
+  if (!corr_block_names) stop("'path' lead to a file without 'A', 'B', 'C', 'D' & 'clin_block' as blocknames!")
+  
+  # 1-2 Create empty lists to store results in!
+  unique_fea_blocks <- length(names(curr_data$block_names))
+  
+  # 1-2-1 Full TestSet
+  full        <- vector(mode = "list", length = unique_fea_blocks)
+  names(full) <- names(curr_data$block_names)
+  
+  # 1-2-2 TestSet with 1 missing omics-block
+  miss1_A        <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss1_A) <- names(curr_data$block_names)
+  
+  miss1_B        <- vector(mode = "list", length = unique_fea_blocks)
+  names(miss1_B) <- names(curr_data$block_names)
+  
+  # 1-2-2 Single BlockTestSet [4 missing blocks!]
+  single_A <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_A) <- names(curr_data$block_names)
+  
+  single_B <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_B) <- names(curr_data$block_names)
+  
+  single_CL <- vector(mode = "list", length = unique_fea_blocks)
+  names(single_CL) <- names(curr_data$block_names)
+  
+  # 1-3 Get the amount of test-train splits in data 
+  k_splits <- length(curr_data$data)
+  
+  # 1-4 Start the Timer, so we know how long CV took!
+  start_time <- Sys.time()
+  
+  # [2] Start the CV and loop over all test-train splits in data  --------------
+  for (i in seq_len(k_splits)) {
+    
+    # 2-1 Current Fold Status
+    print(paste0("FOLD ", i, "/", k_splits, " -------------------------------"))
+    
+    # 2-2 Extract the test and train set from 'curr_data'
+    train <- curr_data$data[[i]]$train
+    test  <- curr_data$data[[i]]$test
+    
+    # 2-3 Loop over each feature-block in train & fit a RF and create preds for 
+    #     the test-set based on the RF fitted on a single feature-block
+    for (curr_block in names(curr_data$block_names)) {
+      
+      # --1 Get all variables from 'train' that belong to 'curr_block'
+      curr_block_feas <- curr_data$block_names[[curr_block]]
+      
+      # --2 Only keep the observations w/o missing values in 'curr_block' to 
+      #     train the model
+      curr_train <- train[,c('gender', curr_block_feas)]
+      curr_train <- curr_train[complete.cases(curr_train),]
+      
+      # --3 Train a RF on 'curr_train'
+      # - define formula
+      curr_formula <- as.formula('gender ~ .')
+      
+      # - fit RF on 'curr_train'
+      RF <- rfsrc(formula = curr_formula, data = curr_train, 
+                  ntree = num_trees, mtry = mtry, nodesize = min_node_size, 
+                  samptype = "swr", seed = 12345678, var.used = 'all.trees')
+      
+      # --4 Evaluate the Model on the different Test.Sets
+      # --4-1 FullTestSet
+      print("Evaluation on full TestSet --------------------------------------")
+      full[[curr_block]][[i]] <- evaluate_RF(model = RF, test_set = test)
+      
+      # --4-1 One Missing FeatureBlock in Test
+      print("Evaluation TestSet w/ 1 missing Blocks --------------------------")
+      miss1_A[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                test_set = test[,-which(colnames(test) %in% curr_data$block_names$A)])
+      
+      miss1_B[[curr_block]][[i]] <- evaluate_RF(model = RF, 
+                                                test_set = test[,-which(colnames(test) %in% curr_data$block_names$B)])
+      
+      # --4-4 Single FeatureBlock in Test
+      print("Evaluation TestSet w/ only 1 observed Block -----------------------")
+      single_A[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
+                                                                                               curr_data$block_names$clin_block))])
+      
+      single_B[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                 test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                               curr_data$block_names$clin_block))])
+      single_CL[[curr_block]][[i]] <- evaluate_RF(model = RF,
+                                                  test_set = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
+                                                                                                curr_data$block_names$B))])
+    }
+  }
+  
+  # 1-5 Stop the time and take the difference!
+  time_for_CV <- Sys.time() - start_time
+  
+  # [2] Return the results & settings of parameters used to do CV! -------------
+  # 3-1 Collect all CV Results in a list!
+  res_all <- list("full" = full, "miss1_A" = miss1_A, "miss1_B" = miss1_B,
+                  "single_A" = single_A, "single_B" = single_B,
+                  "single_CL" = single_CL)
+  
+  # 3-2 Collect the Settings, used to do the CV!
+  settings <- list("data_path"     = path,
+                   "num_folds"     = k_splits,
+                   "response"      = "gender",
+                   "num_trees"     = num_trees,
+                   "mtry"          = mtry, 
+                   "min_node_size" = min_node_size,
+                   "time_for_CV"   = time_for_CV)
+  
+  # 3-3 Return both lists!
+  return(list("res_all"  = res_all, 
+              "settings" = settings))
+}
+
 # MAIN                                                                      ----
 DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
@@ -573,7 +763,7 @@ for (DF in DFs_w_gender) {
 # ----- Situation 2
 for (DF in DFs_w_gender) {
   
-  print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
+  print(paste0("----- Situation 2 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_2.RData")
@@ -587,7 +777,7 @@ for (DF in DFs_w_gender) {
 # ----- Situation 3
 for (DF in DFs_w_gender) {
   
-  print(paste0("----- Situation 1 for DF: '", DF, "' -----"))
+  print(paste0("----- Situation 3 for DF: '", DF, "' -----"))
   
   # Create the path for the current DF
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_3.RData")
@@ -596,4 +786,17 @@ for (DF in DFs_w_gender) {
   sit3 <- do_CV_NK_5_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
                             min_node_size = 5)
   save(sit3, file = paste0("./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/", DF, ".RData"))
+}
+
+# ----- Situation 4
+for (DF in DFs_w_gender) {
+  
+  print(paste0("----- Situation 4 for DF: '", DF, "' -----"))
+  
+  # Create the path for the current DF
+  curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_4.RData")
+  
+  sit4 <- do_CV_NK_3_blocks(path = curr_path, num_trees = 300, mtry = NULL, 
+                            min_node_size = 5)
+  save(sit4, file = paste0("./docs/CV_Res/TCGA/SingleBlock_Approach/setting4/", DF, ".RData"))
 }
