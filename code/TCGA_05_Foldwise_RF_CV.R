@@ -988,7 +988,7 @@ do_CV_2_blocks <- function(path = "data/processed/TCGA_subset_12345/missingness_
   Return:
       - list filled w/:
         * 'res_all' [the CV Results on different testsets]:
-           >> A = CNV-Block, B = RNA-Block, C = Mutation-Block, D = Mirna-Block
+           >> >> A = RNA & miRNA Block, B = CNV & Mutation Block
             - full    : CV Results for each fold on the fully observed testdata!
             - miss1_A : CV Results for each fold on the testdata, w/ missing A
                         block [actually 2 blocks randomly thrown together]
