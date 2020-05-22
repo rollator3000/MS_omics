@@ -1625,4 +1625,4 @@ for (curr_test in unique(DF_all$Testsituation)) {
   max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
   
   if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
-}
+} 
