@@ -295,7 +295,7 @@ missing_str$outcome <- NULL
 
 # [2] Start the 5-fold CV - BLOCK-WISE Approach                             ----
 # 2-1 Set the arguments for the fold-wise RandomForest Models!
-num_trees         = 25
+num_trees         = 300
 mtry              = NULL
 min_node_size     = 5
 
@@ -332,7 +332,7 @@ for (i in 1:5) {
     cols_ <- grep(paste0(block_, "_"), colnames(data_merged))
     
     # --2-1 add the response as column aswell!
-    cols_ <- c(1, cols_)
+    if (!(1 %in% cols_)) cols_ <- c(1, cols_)
     
     # --3 Fit a RF on this fully observed (fold-)subdata!
     # --3-1 Define formula
@@ -340,7 +340,7 @@ for (i in 1:5) {
     formula_all <- as.formula(paste(response, " ~ ."))
     
     # --3-2 Only keep the usable rows & columns and add the response
-    curr_fold_train_data <- train_x[which(row.names(train_x) %in% rows_), cols_]
+    curr_fold_train_data <- train_x[rows_, cols_]
     
     # --4 Fit a Tree on the block data
     print(paste0("Fit FoldWise RF on current block: '", block_, "'"))
