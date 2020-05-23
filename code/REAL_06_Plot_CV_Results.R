@@ -256,8 +256,7 @@ ggplot(data = DF_all, aes(x = Feature_Block, y = Metric)) +
   ggtitle("Single-Block Approach",
           subtitle = "Clinical asthma data") +
   theme(text = element_text(size = 20),
-        axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ylim(0, 1)
+        axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Analyse Results of the Imputation                                          ----
 # [0] Select the file with the results & load it as 'file_curr'
@@ -275,47 +274,20 @@ if (DF_all$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
   used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
-}s
+}
 
 # 2-2 Do the plot
 ggplot(data = DF_all, aes(x = 1, y = Metric)) +
-  geom_boxplot(fill = '#F8766D') + 
+  geom_boxplot(fill = 'darkolivegreen3') + 
   theme_bw() +
   ylab(used_metric_) +
   xlab("") +
-  ggtitle("Imputation Approach - CV Results") +
-  theme(text = element_text(size = 18),
+  ggtitle("Imputation Approach",
+          subtitle = "Clinical asthma data") +
+  theme(text = element_text(size = 20),
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
-        axis.ticks.x = element_blank()) 
-
-
-
-
-# Analyse Results of the FoldWise_Approach                                   ----
-# [0] Select the file with the results & load it as 'file_curr'
-curr_file <- "./docs/CV_Res/REAL/FoldWise_Approach.R"
-file_curr <- load(curr_file)
-file_curr <- eval(as.symbol(file_curr))
-
-# [1] Extract the metrics of the CV
-DF_all <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
-
-# [2] Plot the Results
-# 2-1 Extract the needed Information from 'DF_all'
-# 2-1-1 The used metric for the comparison of the performance
-used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
-
-# 2-2 Do the plot
-ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
-  geom_boxplot(fill = '#F8766D') + 
-  theme_bw() +
-  ylab(used_metric_) +
-  xlab("Weighting of the foldwise predictions") +
-  ggtitle("Foldwise Approach - CV Results") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 18)) 
-
+        axis.ticks.x = element_blank())
 
 # Analyse Results of the BlockWise_Approach                                  ----
 # [0] Select the file with the results & load it as 'file_curr'
@@ -329,17 +301,52 @@ DF_all <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
 # [2] Plot the Results
 # 2-1 Extract the needed Information from 'DF_all'
 # 2-1-1 The used metric for the comparison of the performance
-used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 2-2 Do the plot
+ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
+  geom_boxplot(fill = 'darkolivegreen3') + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Weight Metric for the block-wise predictions") +
+  ggtitle("Block-wise Approach",
+          subtitle = "Clinical asthma data") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        text = element_text(size = 20))
+
+# Analyse Results of the FoldWise_Approach                                  ----
+# [0] Select the file with the results & load it as 'file_curr'
+curr_file <- "./docs/CV_Res/REAL/FoldWise_Approach.R"
+file_curr <- load(curr_file)
+file_curr <- eval(as.symbol(file_curr))
+
+# [1] Extract the metrics of the CV
+DF_all <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
+
+# [2] Plot the Results
+# 2-1 Extract the needed Information from 'DF_all'
+# 2-1-1 The used metric for the comparison of the performance
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
 
 # 2-2 Do the plot
 ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
   geom_boxplot(fill = '#F8766D') + 
   theme_bw() +
   ylab(used_metric_) +
-  xlab("Weighting of the blockwise predictions") +
-  ggtitle("Blockwise Approach - CV Results") +
+  xlab("Weight Metric for the fold-wise predictions") +
+  ggtitle("Fold-wise Approach",
+          subtitle = "Clinical asthma data") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 18))
+        text = element_text(size = 18)) 
+
 
 
 
