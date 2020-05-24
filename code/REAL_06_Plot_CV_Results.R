@@ -226,8 +226,7 @@ ggplot(data = DF_all, aes(x = 1, y = Metric)) +
   theme(text = element_text(size = 20),
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
-        axis.ticks.x = element_blank()) +
-  ylim(0, 1)
+        axis.ticks.x = element_blank())
 
 # Analyse Results of the Single Block Approach                               ----
 # [0] Select the file with the results & load it as 'file_curr'
@@ -247,12 +246,25 @@ if (DF_all$performance_metric[1] == "F1") {
   used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
 }
 
+# 2-1-2 Rename the feature-blocks
+DF_all$Feature_Block <- as.character(DF_all$Feature_Block)
+DF_all$Feature_Block[DF_all$Feature_Block == 'df1']  <- "Questionaire"
+DF_all$Feature_Block[DF_all$Feature_Block == 'df2']  <- "Clinical routine diagnostics"
+DF_all$Feature_Block[DF_all$Feature_Block == 'df3']  <- "Allergen sensitization"
+DF_all$Feature_Block[DF_all$Feature_Block == 'df4']  <- "Cytokine expression data"
+DF_all$Feature_Block[DF_all$Feature_Block == 'df51'] <- "Gene expression data I"
+DF_all$Feature_Block[DF_all$Feature_Block == 'df53'] <- "Gene expression data II"
+DF_all$Feature_Block <- factor(DF_all$Feature_Block,
+                               levels = c("Questionaire", "Clinical routine diagnostics", 
+                                          "Allergen sensitization", "Cytokine expression data",
+                                          "Gene expression data I", "Gene expression data II"))
+                               
 # 2-2 Do the plot
 ggplot(data = DF_all, aes(x = Feature_Block, y = Metric)) +
   geom_boxplot(fill = 'darkolivegreen3') + 
   theme_bw() +
   ylab(used_metric_) +
-  xlab("Used feature-block") +
+  xlab("Feature-block") +
   ggtitle("Single-Block Approach",
           subtitle = "Clinical asthma data") +
   theme(text = element_text(size = 20),
@@ -338,7 +350,7 @@ if (DF_all$performance_metric[1] == "F1") {
 
 # 2-2 Do the plot
 ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
-  geom_boxplot(fill = '#F8766D') + 
+  geom_boxplot(fill = 'darkolivegreen3') + 
   theme_bw() +
   ylab(used_metric_) +
   xlab("Weight Metric for the fold-wise predictions") +
@@ -346,7 +358,3 @@ ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
           subtitle = "Clinical asthma data") +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         text = element_text(size = 18)) 
-
-
-
-
