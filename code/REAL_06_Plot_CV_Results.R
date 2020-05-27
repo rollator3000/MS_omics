@@ -223,10 +223,14 @@ ggplot(data = DF_all, aes(x = 1, y = Metric)) +
   xlab("") +
   ggtitle("Complete-Case Approach",
           subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 20),
+  theme(text = element_text(size = 24),
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
         axis.ticks.x = element_blank())
+
+# 2-3 Get a summary of the resulting Metrics
+summary(DF_all$Metric)
+
 
 # Analyse Results of the Single Block Approach                               ----
 # [0] Select the file with the results & load it as 'file_curr'
@@ -267,8 +271,14 @@ ggplot(data = DF_all, aes(x = Feature_Block, y = Metric)) +
   xlab("Feature-block") +
   ggtitle("Single-Block Approach",
           subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 20),
-        axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1))
+
+# 2-3 Get summary for each single-block
+res_curr <- sapply(unique(DF_all$Feature_Block), FUN = function(x_) {
+  summary(DF_all$Metric[DF_all$Feature_Block == x_])
+})
+colnames(res_curr) <- unique(DF_all$Feature_Block)
 
 # Analyse Results of the Imputation                                          ----
 # [0] Select the file with the results & load it as 'file_curr'
@@ -296,10 +306,14 @@ ggplot(data = DF_all, aes(x = 1, y = Metric)) +
   xlab("") +
   ggtitle("Imputation Approach",
           subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 20),
+  theme(text = element_text(size = 24),
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
         axis.ticks.x = element_blank())
+
+
+# 2-3 Get a summary of the resulting Metrics
+summary(DF_all$Metric)
 
 # Analyse Results of the BlockWise_Approach                                  ----
 # [0] Select the file with the results & load it as 'file_curr'
@@ -309,6 +323,12 @@ file_curr <- eval(as.symbol(file_curr))
 
 # [1] Extract the metrics of the CV
 DF_all <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
+
+# 1-1 Order and name factor levels correctly!
+DF_all$weight_metric <- as.character(DF_all$weight_metric)
+DF_all$weight_metric[DF_all$weight_metric == "F1-Score"] <- "F-1 Score"
+DF_all$weight_metric <- factor(DF_all$weight_metric,
+                               levels = c('None', 'Accuracy', 'F-1 Score'))
 
 # [2] Plot the Results
 # 2-1 Extract the needed Information from 'DF_all'
@@ -327,8 +347,15 @@ ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
   xlab("Weight Metric for the block-wise predictions") +
   ggtitle("Block-wise Approach",
           subtitle = "Clinical asthma data") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20))
+  theme(axis.text.x = element_text(angle = 25, hjust = 1),
+        text = element_text(size = 24))
+
+# 2-3 Get summary for each weighting metric used for the ensemble
+res_curr <- sapply(unique(DF_all$weight_metric), FUN = function(x_) {
+  summary(DF_all$Metric[DF_all$weight_metric == x_])
+})
+colnames(res_curr) <- unique(DF_all$weight_metric)
+
 
 # Analyse Results of the FoldWise_Approach                                  ----
 # [0] Select the file with the results & load it as 'file_curr'
@@ -338,6 +365,12 @@ file_curr <- eval(as.symbol(file_curr))
 
 # [1] Extract the metrics of the CV
 DF_all <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
+
+# 1-1 Order and name factor levels correctly!
+DF_all$weight_metric <- as.character(DF_all$weight_metric)
+DF_all$weight_metric[DF_all$weight_metric == "F1-Score"] <- "F-1 Score"
+DF_all$weight_metric <- factor(DF_all$weight_metric,
+                               levels = c('None', 'Accuracy', 'F-1 Score'))
 
 # [2] Plot the Results
 # 2-1 Extract the needed Information from 'DF_all'
@@ -356,5 +389,11 @@ ggplot(data = DF_all, aes(x = weight_metric, y = Metric)) +
   xlab("Weight Metric for the fold-wise predictions") +
   ggtitle("Fold-wise Approach",
           subtitle = "Clinical asthma data") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 18)) 
+  theme(axis.text.x = element_text(angle = 25, hjust = 1),
+        text = element_text(size = 24)) 
+
+# 2-3 Get summary for each weighting metric used for the ensemble
+res_curr <- sapply(unique(DF_all$weight_metric), FUN = function(x_) {
+  summary(DF_all$Metric[DF_all$weight_metric == x_])
+})
+colnames(res_curr) <- unique(DF_all$weight_metric)
