@@ -842,13 +842,19 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
           subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20)) +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24)) +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
              col = "darkgreen", lty = 2) +
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005)
+
+# 2-3 Get summarys to the perfornance!
+res_ <- sapply(unique(DF_all$Testsituation), FUN = function(x){
+  summary(DF_all$Metric[DF_all$Testsituation == x])
+})
+names(res_) <- unique(DF_all$Testsituation)
 
 # Analyse Results of the Single-Block Approach  --- pattern 1               ----
 # [0] Define needed Variables
@@ -887,13 +893,20 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
   xlab("Test-Situations") +
   ggtitle("Single-Block Approach",
           subtitle = "TCGA - Pattern 1") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20)) +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24)) +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
              col = "darkgreen", lty = 2) +
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005)
+
+# 2-3 Get summarys to the perfornance!
+res_ <- sapply(unique(DF_all$Learn_Block), FUN = function(x){
+  summary(DF_all$Metric[which(DF_all$Testsituation == "full" &
+                                DF_all$Learn_Block == x)])
+})
+colnames(res_) <- unique(DF_all$Learn_Block)
 
 # Analyse Results of the Imputation Approach    --- pattern 1               ----
 # [0] Define needed Variables
@@ -931,13 +944,19 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
           subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20)) +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24)) +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
              col = "darkgreen", lty = 2) +
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005)
+
+# 2-3 Get summarys to the perfornance!
+res_ <- sapply(unique(DF_all$Testsituation), FUN = function(x){
+  summary(DF_all$Metric[DF_all$Testsituation == x])
+})
+colnames(res_) <- unique(DF_all$Testsituation)
 
 # Analyse Results of the BlockWise Approach     --- pattern 1               ----
 data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting1"
@@ -977,6 +996,10 @@ if (DF_all$performance_metric[1] == "F1") {
   used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
 }
 
+# 2-2 Relevel the 'weight_metric' variable
+DF_all$weight_metric <- factor(DF_all$weight_metric, 
+                               levels = c("None", "Accuracy", "F-1 Score"))
+
 # 2-2 Plot itself!
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
@@ -985,8 +1008,8 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
           subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20),
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
@@ -994,9 +1017,9 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005) +
   guides(fill = guide_legend(title = "Weight Metric: ")) +
-  scale_fill_manual(values = c("darkorange3", "cyan4", 'darkolivegreen3'))
+  scale_fill_manual(values = c( 'darkolivegreen3', "darkorange3", "cyan4"))
 
-# 6-5 Count how often a approach has the highest median!
+# 2-3 Count how often a approach has the highest median!
 counter        <- c(0, 0, 0)
 names(counter) <- c("No", "F1", "Acc")
 for (curr_test in unique(DF_all$Testsituation)) {
@@ -1050,6 +1073,9 @@ DF_all$weight_metric[DF_all$weight_metric == "F1"]  <- "F-1 Score"
 DF_all$weight_metric[DF_all$weight_metric == "Acc"] <- "Accuracy"
 DF_all$weight_metric[DF_all$weight_metric == "No"]  <- "None"
 
+DF_all$weight_metric <- factor(DF_all$weight_metric, 
+                               levels = c("None", "Accuracy", "F-1 Score"))
+
 # 2-2 Do the plot
 ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
@@ -1058,8 +1084,8 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
           subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20),
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
@@ -1067,9 +1093,9 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005) +
   guides(fill = guide_legend(title = "Weight Metric: ")) +
-  scale_fill_manual(values = c("darkorange3", "cyan4", 'darkolivegreen3'))
+  scale_fill_manual(values = c('darkolivegreen3', "darkorange3", "cyan4"))
 
-# 6-5 Count how often a approach has the highest median!
+# 2-3 Count how often a approach has the highest median!
 counter        <- c(0, 0, 0)
 names(counter) <- c("No", "F1", "Acc")
 for (curr_test in unique(DF_all$Testsituation)) {
@@ -1231,8 +1257,8 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
           subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20),
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
@@ -1411,8 +1437,8 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
           subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20),
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
@@ -1590,8 +1616,8 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
           subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        text = element_text(size = 20),
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
