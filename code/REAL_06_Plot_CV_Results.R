@@ -357,7 +357,7 @@ res_curr <- sapply(unique(DF_all$weight_metric), FUN = function(x_) {
 colnames(res_curr) <- unique(DF_all$weight_metric)
 
 
-# Analyse Results of the FoldWise_Approach                                  ----
+# Analyse Results of the FoldWise_Approach                                   ----
 # [0] Select the file with the results & load it as 'file_curr'
 curr_file <- "./docs/CV_Res/REAL/FoldWise_Approach.R"
 file_curr <- load(curr_file)
@@ -397,3 +397,126 @@ res_curr <- sapply(unique(DF_all$weight_metric), FUN = function(x_) {
   summary(DF_all$Metric[DF_all$weight_metric == x_])
 })
 colnames(res_curr) <- unique(DF_all$weight_metric)
+# Comparison of the approaches                                              ----
+# [1] ----- CC Results
+DF_CC <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/REAL//CC_Approach.R"
+
+# 1-2 Get results
+file_curr <- load(data_path)
+file_curr <- eval(as.symbol(file_curr))
+
+DF_CC <- extract_metrics(x = file_curr, metric = "F1")
+
+# 1-3 Add the approach to the DF
+DF_CC$Approach <- "Complete-Case"
+
+# [2] ----- SB Results
+DF_SB <- data.frame()
+
+# 2-1 List the files in the path
+data_path <- "./docs/CV_Res/REAL/SingleBlockApproach.R"
+
+# 2-2 Get results
+file_curr <- load(data_path)
+file_curr <- eval(as.symbol(file_curr))
+
+DF_SB <- extract_metrics_SBAPP(x = file_curr, metric = "F1")
+
+# 2-3 Add the approach to the DF
+DF_SB$Approach <- "Single-Block"
+
+# 2-4 Only keep the block 'Questionaire' as the results were the best!
+DF_SB <- DF_SB[DF_SB$Feature_Block == "df1",]
+
+# [3] ----- IMP Results
+DF_IMP <- data.frame()
+
+# 3-1 List the files in the path
+data_path <- "./docs/CV_Res/REAL/Imputation_Approach.R"
+
+# 3-2 Get results
+file_curr <- load(data_path)
+file_curr <- eval(as.symbol(file_curr))
+
+DF_IMP <- extract_metrics(x = file_curr, metric = "F1")
+
+# 3-3 Add the approach to the DF
+DF_IMP$Approach <- "Imputation"
+
+# [4] ----- Block-Wise Results
+DF_BW <- data.frame()
+
+# 4-1 List the files in the path
+data_path <- "./docs/CV_Res/REAL/BlockWise_Approach.R"
+
+# 4-2 Get results
+file_curr <- load(data_path)
+file_curr <- eval(as.symbol(file_curr))
+
+DF_BW <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
+
+# 4-3 Add the approach to the DF
+DF_BW$Approach <- "Block-wise"
+
+# 4-4 Only keep the ones with weight_metric == "F-1 Score" 
+DF_BW <- DF_BW[DF_BW$weight_metric == 'F1-Score',]
+DF_BW$weight_metric <- "F-1 Score"
+
+# [5] ----- Fold-Wise Results
+DF_FW <- data.frame()
+
+# 5-1 List the files in the path
+data_path <- "./docs/CV_Res/REAL/FoldWise_Approach.R"
+
+# 5-2 Get results
+file_curr <- load(data_path)
+file_curr <- eval(as.symbol(file_curr))
+
+DF_FW <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
+
+# 5-3 Add the approach to the DF
+DF_FW$Approach <- "Fold-wise"
+
+# 5-4 Only keep the ones with weight_metric == "F-1 Score" 
+DF_FW <- DF_FW[DF_FW$weight_metric == 'F1-Score',]
+DF_FW$weight_metric <- "F-1 Score"
+
+# [6] ----- Bind the DFs and create a plot
+# 6-1 Columns we need from every approach-DF
+needed_cols <- c("Metric", "Approach")
+
+# 6-2 Bind the DFs from the different approaches to a single DF for plots!
+DF_all <- rbind(DF_CC[,needed_cols], DF_SB[,needed_cols], DF_IMP[,needed_cols],
+                DF_BW[,needed_cols], DF_FW[,needed_cols])
+
+# 6-2-1 Relevel the 'Approach' variable
+DF_all$Approach <- factor(DF_all$Approach, levels = c("Fold-wise", "Block-wise",
+                                                      "Imputation", "Single-Block",
+                                                      "Complete-Case"), 
+                          ordered = TRUE)
+
+# 6-3 Extract the used metric
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 6-4 Do the plot
+ggplot(data = DF_all, aes(x = Approach, y = Metric)) +
+  geom_boxplot(position = position_dodge(preserve = "single"),
+               fill = c("darkolivegreen2", "darkorange1", 'darkorchid1', 
+                        'darkgoldenrod1', 'darkslategray3')) + 
+  theme_bw() +
+  ggtitle("Comparison of all Approaches",
+          subtitle = "clinical asthma data") +
+  ylab(used_metric_) +
+  xlab("Approach") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5),
+             col = "red", lty = 2, lwd = 1.005)
