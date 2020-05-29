@@ -2,8 +2,8 @@ library(pROC)
 library(RColorBrewer)
 
 # load the results
-results <- readRDS("../data/results_different_blocks_2020_05_06.Rds")
-results_ddspls <- readRDS("../data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
+results <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_2020_05_06.Rds")
+results_ddspls <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
 
 true_values_list <- lapply(results, function(x) x$test_y)
 true_values <- do.call("c", true_values_list)
@@ -22,6 +22,7 @@ generate_roc_method_comp <- function(object = results,
   # plot the first ROC curve
   # define a colour palette
   col_pal <- brewer.pal(n = 5, name = "Set1")
+  
   # prioritylasso
   predicted_values_list <- lapply(object, function(x) {
     x[[type]][[indices[1]]]
