@@ -148,20 +148,42 @@ res_MD <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different
 true_values_list <- lapply(res_PL, function(x) x$test_y)
 true_values      <- do.call("c", true_values_list)
 
-# 1-3 Get Metrics for mdd-sPLS
+# 1-3 ---------- Get Metrics for mdd-sPLS 
 # 1-3-1 MD Predictions
 predicted_values_ddspls_list <- lapply(res_MD, function(x) {
   as.vector(x$pred_value_ddspls[, "1"])
 })
 
+# 1-3-2 Metrics
 MD_SPLSS <- get_metrics(predicted_values_ddspls_list, true_values_list)
 
+# 1-4  ---------- Get the Metrics for the different PL methods!
+# 1-4-1 Indices to read out results [given by Hagenberg]
+indices <- 21:24
+
+# 1-4-2 List to save the results
+PL <- list("ignore, zero",
+           "ignore, intercept",
+           "impute maximise blocks",
+           "impute, maximise n")
+
+# 1-4-2 Loop over the indices and get the metrics
+for (i_ in indices) {
+  
+  # Extract predicitons
+  predicted_values_list <- lapply(res_PL, function(x) {
+    x[[type]][[i_]]
+  })
+  
+  # Calculate the metric
+  curr_metric <- get_metrics(predicted_values_list, true_values_list)
+}
 
 # 1-3 Get the predicted Values
 # 1-3-1 Indices depending on the method
-indices <- 21:24
 
-# 1-3-2 PL predictions
+
+1-3-2 PL predictions
 predicted_values_list_PL <- lapply(res_PL, function(x) {
   x[["pred_value_list"]][[indices[1]]]
 })
