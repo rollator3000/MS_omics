@@ -2,9 +2,9 @@
   - only recived the predictions of the models!
 "
 # [0] Librarys and Functions
-library(assertthat)
+library(checkmate)
 
-mcc_metric  <- function(conf_matrix) {
+mcc_metric      <- function(conf_matrix) {
   "Calculate the MCC Metric [Matthews correlation coefficient]!
    Works only for binary cases! 
    If the Conf_Matrix has more than 2 classes it will return NA 
@@ -50,7 +50,7 @@ mcc_metric  <- function(conf_matrix) {
   # [2] Return  ----------------------------------------------------------------
   return(mcc_final)
 }
-get_metrics <- function(preds, truth) {
+get_metrics     <- function(preds, truth) {
   "Function to calculate the metrics based on 2 lists 'preds' 'truth'.
    Both lists need the same length & each of the list entrances needs the same
    length aswell!
@@ -139,7 +139,7 @@ get_metrics <- function(preds, truth) {
   return(metrics)
 }
 
-# [1] Section 5.3.1
+# [1] Section 5.3.1    ---------------------------------------------------------
 # 1-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
 res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_2020_05_06.Rds")
 res_MD <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
@@ -162,81 +162,189 @@ MD_SPLSS <- get_metrics(predicted_values_ddspls_list, true_values_list)
 indices <- 21:24
 
 # 1-4-2 List to save the results
-PL <- list("ignore, zero",
-           "ignore, intercept",
-           "impute maximise blocks",
-           "impute, maximise n")
+list_names      <- c("ignore, zero", "ignore, intercept",
+                     "impute maximise blocks", "impute, maximise n")
+all_res         <- vector("list", length(list_names))
+names(all_res)  <- list_names
 
 # 1-4-2 Loop over the indices and get the metrics
+j <- 1
 for (i_ in indices) {
   
   # Extract predicitons
   predicted_values_list <- lapply(res_PL, function(x) {
-    x[[type]][[i_]]
+    x[["pred_value_list"]][[i_]]
   })
   
   # Calculate the metric
   curr_metric <- get_metrics(predicted_values_list, true_values_list)
+  
+  all_res[[list_names[j]]] <- curr_metric
+  
+  # Count up index
+  j <- j + 1
 }
 
-# 1-3 Get the predicted Values
-# 1-3-1 Indices depending on the method
+# 1-5 Add the mdd-sPLS results to the 'all_res' list 
+all_res[["mdd_sPLS"]] <- MD_SPLSS
 
+# 1-6 Save the list with the results of all metrics
+save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
 
-1-3-2 PL predictions
-predicted_values_list_PL <- lapply(res_PL, function(x) {
-  x[["pred_value_list"]][[indices[1]]]
+# [2] Section 5.3.2    ---------------------------------------------------------
+# 2-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
+res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_2/data/results_different_blocks_2020_05_06.Rds")
+res_MD <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_2/data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
+
+# 2-2 Get the true responses
+true_values_list <- lapply(res_PL, function(x) x$test_y)
+true_values      <- do.call("c", true_values_list)
+
+# 2-3 ---------- Get Metrics for mdd-sPLS 
+# 2-3-1 MD Predictions
+predicted_values_ddspls_list <- lapply(res_MD, function(x) {
+  as.vector(x$pred_value_ddspls[, "1"])
 })
 
+# 2-3-2 Metrics
+MD_SPLSS <- get_metrics(predicted_values_ddspls_list, true_values_list)
+
+# 2-4  ---------- Get the Metrics for the different PL methods!
+# 2-4-1 List to save the results
+list_names      <- c("ignore, zero", "ignore, intercept",
+                     "impute maximise blocks", "impute, maximise n")
+all_res         <- vector("list", length(list_names))
+names(all_res)  <- list_names
+
+# 2-4-2 Loop over the different PL Methods & get the metrics
+for (curr_method in 1:4) {
+  
+  # Get Indices based on current method
+  indices <- seq(from = curr_method, to = 20 + curr_method, by = 4)
+  
+  # Get the name of the current method
+  curr_method_name <- names(all_res)[curr_method]
+  
+  # [1] ----- Predicitions w/ one Block! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block1_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[indices[1]]]
+  })
+  
+  all_res[[curr_method_name]]$block_1 <- get_metrics(preds = curr_block1_pred,
+                                                     truth = true_values_list)
+  
+  # [2] ----- Predicitions w/ two Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block2_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[indices[2]]]
+  })
+  
+  all_res[[curr_method_name]]$block_1_2 <- get_metrics(preds = curr_block2_pred,
+                                                       truth = true_values_list)
+  
+  # [3] ----- Predicitions w/ three Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block3_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[indices[3]]]
+  })
+  
+  all_res[[curr_method_name]]$block_1_2_3 <- get_metrics(preds = curr_block3_pred,
+                                                         truth = true_values_list)
+  
+  # [4] ----- Predicitions w/ four Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block4_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[indices[4]]]
+  })
+  
+  all_res[[curr_method_name]]$block_1_2_3_4 <- get_metrics(preds = curr_block4_pred,
+                                                           truth = true_values_list)
+  
+  # [5] ----- Predicitions w/ five Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block5_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[indices[5]]]
+  })
+  
+  all_res[[curr_method_name]]$block_1_2_3_4_5 <- get_metrics(preds = curr_block5_pred,
+                                                           truth = true_values_list)
+  
+  # [6] ----- Predicitions w/ all (six) Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block6_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[indices[6]]]
+  })
+  
+  all_res[[curr_method_name]]$block_1_2_3_4_5_6 <- get_metrics(preds = curr_block6_pred,
+                                                               truth = true_values_list)
+}
 
 
-# Calculate the Metrics
-a1 <- get_metrics(predicted_values_list_PL, true_values_list)
 
 
 
-mean(unlist(a1["AUC1",]))
 
 
-i_ = 1
-predicted_classes_list_PL <- ifelse(predicted_values_list_PL[[i_]] > 0.5,  1, 0)
-confmat                   <- caret::confusionMatrix(as.factor(predicted_classes_list_PL), 
-                                                    as.factor(true_values_list[[i_]]))
 
-# --5-2 Are under the ROC Curve
-roc1 <- pROC::auc(pROC::roc(as.numeric(predicted_classes_list_PL), 
-                            as.numeric(as.character(true_values_list[[i_]])),
-                            levels = levels(as.factor(as.character(true_values_list[[i_]]))),
-                            direction = "<"))
 
-roc2 <- pROC::auc(pROC::roc(as.numeric(predicted_classes_list_PL), 
-                            as.numeric(as.character(true_values_list[[i_]])),
-                            levels = levels(as.factor(as.character(true_values_list[[i_]]))),
-                            direction = ">"))
 
-# --5-3 MCC Matthews correlation coefficient [only for binary cases!]
-mcc <- mcc_metric(conf_matrix = confmat)
 
-# --5-4 Collect all metrics in a list & replace the not defined values
-res <- list("Accuracy"    = confmat$overall["Accuracy"],
-            "Kappa"       = confmat$overall["Kappa"],
-            "Sensitifity" = confmat$byClass["Sensitivity"],
-            "Specificity" = confmat$byClass["Specificity"],
-            "Precision"   = confmat$byClass["Precision"],
-            "Recall"      = confmat$byClass["Recall"],
-            "F1"          = confmat$byClass["F1"],
-            "Balance_Acc" = confmat$byClass["Balanced Accuracy"],
-            "Pos_Pred_Value" =  confmat$byClass["Pos Pred Value"],
-            "Neg_Pred_Value" =  confmat$byClass["Neg Pred Value"],
-            "Prevalence"  = confmat$byClass["Prevalence"],      
-            "AUC1"        = as.numeric(roc1),
-            "AUC2"        = as.numeric(roc2),
-            "MCC"         = mcc)
 
-#   If the F1-Score/ Precision/ Recall is NA, then we set it to 0 [-1 for MCC]! 
-if (is.na(res$F1))             res$F1             <- 0
-if (is.na(res$Precision))      res$Precision      <- 0
-if (is.na(res$Recall))         res$Recall         <- 0
-if (is.na(res$MCC))            res$MCC            <- -1
-if (is.na(res$Pos_Pred_Value)) res$Pos_Pred_Value <- 0
-if (is.na(res$Neg_Pred_Value)) res$Neg_Pred_Value <- 0
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# More Blocks
+for (i in 2:length(indices)) {
+  predicted_values_list <- lapply(res_PL, function(x) {
+    if (i != length(indices)) {
+      x[["pred_value_list"]][[indices[i]]]
+    } else {
+      # for all blocks, "pred_value_single" doesn't have its own model
+      x[["pred_value_list"]][[indices[i]]]
+    }
+    })
+}
+
+  
+for (i_ in indices) {
+  
+  # Extract predicitons
+  
+
+  
+  # Calculate the metric
+  curr_metric <- get_metrics(predicted_values_list, true_values_list)
+  
+  all_res[[list_names[j]]] <- curr_metric
+  
+  # Count up index
+  j <- j + 1
+}
+
+# 1-5 Add the mdd-sPLS results to the 'all_res' list 
+all_res[["mdd_sPLS"]] <- MD_SPLSS
+
+# 1-6 Save the list with the results of all metrics
+save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
+
