@@ -209,7 +209,7 @@ predicted_values_ddspls_list <- lapply(res_MD, function(x) {
 # 2-3-2 Metrics
 MD_SPLSS <- get_metrics(predicted_values_ddspls_list, true_values_list)
 
-# 2-4  ---------- Get the Metrics for the different PL methods!
+# 2-4  ---------- Get the Metrics for the different PL methods with ALL BLOCKS!
 # 2-4-1 List to save the results
 list_names      <- c("ignore, zero", "ignore, intercept",
                      "impute maximise blocks", "impute, maximise n")
@@ -280,71 +280,75 @@ for (curr_method in 1:4) {
                                                                truth = true_values_list)
 }
 
+# 2-5  ---------- Get the Metrics for the different PL methods with PRED BLOCKS!
+# 2-5-1 List to save the results
+list_names       <- c("ignore, zero", "ignore, intercept",
+                      "impute maximise blocks", "impute, maximise n")
+all_res2         <- vector("list", length(list_names))
+names(all_res2)  <- list_names
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# More Blocks
-for (i in 2:length(indices)) {
-  predicted_values_list <- lapply(res_PL, function(x) {
-    if (i != length(indices)) {
-      x[["pred_value_list"]][[indices[i]]]
-    } else {
-      # for all blocks, "pred_value_single" doesn't have its own model
-      x[["pred_value_list"]][[indices[i]]]
-    }
-    })
+# 2-4-2 Loop over the different PL Methods & get the metrics
+for (curr_method in 1:4) {
+  
+  # Get Indices based on current method
+  indices <- seq(from = curr_method, to = 20 + curr_method, by = 4)
+  
+  # Get the name of the current method
+  curr_method_name <- names(all_res2)[curr_method]
+  
+  # [1] ----- Predicitions w/ one Block! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block1_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_single"]][[indices[1]]]
+  })
+  
+  all_res2[[curr_method_name]]$block_1 <- get_metrics(preds = curr_block1_pred,
+                                                      truth = true_values_list)
+  
+  # [2] ----- Predicitions w/ two Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block2_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_single"]][[indices[2]]]
+  })
+  
+  all_res2[[curr_method_name]]$block_1_2 <- get_metrics(preds = curr_block2_pred,
+                                                        truth = true_values_list)
+  
+  # [3] ----- Predicitions w/ three Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block3_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_single"]][[indices[3]]]
+  })
+  
+  all_res2[[curr_method_name]]$block_1_2_3 <- get_metrics(preds = curr_block3_pred,
+                                                          truth = true_values_list)
+  
+  # [4] ----- Predicitions w/ four Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block4_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_single"]][[indices[4]]]
+  })
+  
+  all_res2[[curr_method_name]]$block_1_2_3_4 <- get_metrics(preds = curr_block4_pred,
+                                                            truth = true_values_list)
+  
+  # [5] ----- Predicitions w/ five Blocks! 
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block5_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_single"]][[indices[5]]]
+  })
+  
+  all_res2[[curr_method_name]]$block_1_2_3_4_5 <- get_metrics(preds = curr_block5_pred,
+                                                              truth = true_values_list)
+  
+  # [6] ----- Predicitions w/ all (six) Blocks! 
+  #           For all blocks, "pred_value_single" doesn't have its own model
+  #     --> Calculate the Metrics & add to 'all_res'
+  curr_block6_pred <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[indices[6]]]
+  })
+  
+  all_res2[[curr_method_name]]$block_1_2_3_4_5_6 <- get_metrics(preds = curr_block6_pred,
+                                                                truth = true_values_list)
 }
-
-  
-for (i_ in indices) {
-  
-  # Extract predicitons
-  
-
-  
-  # Calculate the metric
-  curr_metric <- get_metrics(predicted_values_list, true_values_list)
-  
-  all_res[[list_names[j]]] <- curr_metric
-  
-  # Count up index
-  j <- j + 1
-}
-
-# 1-5 Add the mdd-sPLS results to the 'all_res' list 
-all_res[["mdd_sPLS"]] <- MD_SPLSS
-
-# 1-6 Save the list with the results of all metrics
-save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
 
