@@ -482,6 +482,14 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
+# 3-5-3-4 MDD_SPLS
+predicted_values_ddspls_list <- lapply(res_PL, function(x) {
+  as.vector(x$pred_ddspls[, "1"])
+})
+
+all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
+
+# 3-6 Save the metrics
 save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting1.R")
 
 # Setting 2 [4, 2, 1, 5, 3]  ---------------------------------------------------
@@ -606,6 +614,14 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
+# 3-5-3-4 MDD_SPLS
+predicted_values_ddspls_list <- lapply(res_PL, function(x) {
+  as.vector(x$pred_ddspls[, "1"])
+})
+
+all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
+
+# 3-6 Save the metrics
 save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting2.R")
 
 # Setting 3 [4, 2, 1, 3, 6]  ---------------------------------------------------
@@ -730,6 +746,14 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
+# 3-5-3-4 MDD_SPLS
+predicted_values_ddspls_list <- lapply(res_PL, function(x) {
+  as.vector(x$pred_ddspls[, "1"])
+})
+
+all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
+
+# 3-6 Save the metrics
 save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting3.R")
 
 # Setting 4 [4, 2, 1, 6, 3]  ---------------------------------------------------
@@ -854,4 +878,12 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
+# 3-5-3-4 MDD_SPLS
+predicted_values_ddspls_list <- lapply(res_PL, function(x) {
+  as.vector(x$pred_ddspls[, "1"])
+})
+
+all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
+
+# 3-6 Save the metrics
 save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting4.R")
