@@ -397,7 +397,213 @@ res_curr <- sapply(unique(DF_all$weight_metric), FUN = function(x_) {
   summary(DF_all$Metric[DF_all$weight_metric == x_])
 })
 colnames(res_curr) <- unique(DF_all$weight_metric)
-# Comparison of the approaches                                              ----
+# Analyse the approaches of Hagenberg                                        ----
+# All metrics were read out and calculated in 'REAL_07_get_metrics_for_mDD....R'
+# Hagenberg --- Setting1 5_3_1                                               ----
+" Pririty of blocks is assigned by the amount of missing values! "
+
+# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
+
+# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
+#                             "Precision", "Recall", "F1", "Balance_Acc", 
+#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
+#                             "AUC1", "AUC2", "MCC"]
+metric__ = "F1"
+
+if (metric__ == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# [3] Create a DF to plot the results!
+plot_df <- data.frame("method" = c(rep('PL - ignore, zero', 5),
+                                   rep('PL - ignore, intercept', 5),
+                                   rep('PL - impute, maximise blocks', 5),
+                                   rep('PL - impute, maximise n', 5),
+                                   rep("mdd-sPLS", 5)),
+                      "fold"   = rep(1:5, 5),
+                      "Metric" = c(unlist(all_res$`ignore, zero`[metric__,]),
+                                   unlist(all_res$`ignore, intercept`[metric__,]),
+                                   unlist(all_res$`impute maximise blocks`[metric__,]),
+                                   unlist(all_res$`impute, maximise n`[metric__,]),
+                                   unlist(all_res$mdd_sPLS[metric__,])),
+                      "used_Metric" = metric__)
+
+
+# [4] Do the plot
+ggplot(data = plot_df, aes(x = method, y = Metric)) +
+  geom_boxplot(fill = 'darkolivegreen3') + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Different Approaches") +
+  ggtitle("Priority-Lasso & mdd-sPLS Approaches",
+          subtitle = "Clinical asthma data") +
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1))
+
+# Hagenberg --- Setting1 5_3_2                                               ----
+"Different Block Combinations for the prediciton [Train on all blocks - but only
+ use block YZ & QX for the prediciton, etc.
+ Two further distinctions for PL approach - 'all_blocks' & 'pred_blocks' "
+
+# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_2.RData")
+
+# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
+#                             "Precision", "Recall", "F1", "Balance_Acc", 
+#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
+#                             "AUC1", "AUC2", "MCC"]
+metric__ = "F1"
+
+if (metric__ == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# [3] Create data for the plots
+# 3-1 `ignore, zero` & all blocks
+df1_1 <- data.frame("method" = rep("ignore, zero", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("all"),
+                    "used_block"  = rep(names(all_res_532$all_block$`ignore, zero`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$all_block$`ignore, zero`$block_1[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, zero`$block_1_2[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, zero`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, zero`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, zero`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, zero`$block_1_2_3_4_5_6[metric__,])))
+
+# 3-2 `ignore, zero` & pred_blocks
+df1_2 <- data.frame("method" = rep("ignore, zero", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("prediction"),
+                    "used_block"  = rep(names(all_res_532$pred_blocks$`ignore, zero`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$pred_blocks$`ignore, zero`$block_1[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, zero`$block_1_2[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, zero`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, zero`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, zero`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, zero`$block_1_2_3_4_5_6[metric__,])))
+
+
+# 3-3 `ignore, intercept` & all blocks
+df2_1 <- data.frame("method" = rep("ignore, intercept", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("all"),
+                    "used_block"  = rep(names(all_res_532$all_block$`ignore, intercept`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$all_block$`ignore, intercept`$block_1[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, intercept`$block_1_2[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, intercept`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, intercept`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, intercept`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$all_block$`ignore, intercept`$block_1_2_3_4_5_6[metric__,])))
+
+# 3-4 `ignore, intercept` & pred_blocks
+df2_2 <- data.frame("method" = rep("ignore, intercept", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("prediction"),
+                    "used_block"  = rep(names(all_res_532$pred_blocks$`ignore, intercept`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$pred_blocks$`ignore, intercept`$block_1[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, intercept`$block_1_2[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, intercept`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, intercept`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, intercept`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`ignore, intercept`$block_1_2_3_4_5_6[metric__,])))
+
+# 3-5 `impute maximise blocks` & all blocks
+df3_1 <- data.frame("method" = rep("impute maximise blocks", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("all"),
+                    "used_block"  = rep(names(all_res_532$all_block$`impute maximise blocks`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$all_block$`impute maximise blocks`$block_1[metric__,]),
+                                 unlist(all_res_532$all_block$`impute maximise blocks`$block_1_2[metric__,]),
+                                 unlist(all_res_532$all_block$`impute maximise blocks`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$all_block$`impute maximise blocks`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$all_block$`impute maximise blocks`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$all_block$`impute maximise blocks`$block_1_2_3_4_5_6[metric__,])))
+
+# 3-6 `impute maximise blocks` & pred_blocks
+df3_2 <- data.frame("method" = rep("impute maximise blocks", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("prediction"),
+                    "used_block"  = rep(names(all_res_532$pred_blocks$`impute maximise blocks`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$pred_blocks$`impute maximise blocks`$block_1[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute maximise blocks`$block_1_2[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute maximise blocks`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute maximise blocks`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute maximise blocks`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute maximise blocks`$block_1_2_3_4_5_6[metric__,])))
+
+# 3-7 `impute, maximise n` & all blocks
+df4_1 <- data.frame("method" = rep("impute, maximise n", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("all"),
+                    "used_block"  = rep(names(all_res_532$all_block$`impute, maximise n`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$all_block$`impute, maximise n`$block_1[metric__,]),
+                                 unlist(all_res_532$all_block$`impute, maximise n`$block_1_2[metric__,]),
+                                 unlist(all_res_532$all_block$`impute, maximise n`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$all_block$`impute, maximise n`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$all_block$`impute, maximise n`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$all_block$`impute, maximise n`$block_1_2_3_4_5_6[metric__,])))
+
+# 3-8 `impute maximise n` & pred_blocks
+df4_2 <- data.frame("method" = rep("impute, maximise n", 30),
+                    "Fold"   = rep(1:5),
+                    "Block"  = rep("prediction"),
+                    "used_block"  = rep(names(all_res_532$pred_blocks$`impute, maximise n`), 
+                                        each = 5),
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1_2[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1_2_3[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1_2_3_4[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1_2_3_4_5[metric__,]),
+                                 unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1_2_3_4_5_6[metric__,])))
+
+'# 3-9 `mdd_SPLS`
+df5_1 <- data.frame("method" = rep("mdd_SPLS", 5),
+                    "Fold"   = rep(1:5),
+                    "Block"  = "all",
+                    "used_block"  = "block_1_2_3_4_5_6",
+                    "used_metric" = used_metric_,
+                    "metric" = c(unlist(all_res_532$mdd_splss["F1",])))'
+
+# [4] Create a DF to plot the results!
+# 4-1 Bind the DFs
+plot_df <- rbind(df1_1, df1_2, df2_1, df2_2, df3_1, df3_2, df4_1, df4_2)
+
+# 4-2 Do the plot
+ggplot(data = plot_df, aes(x = method, y = metric, fill = used_block)) +
+  geom_boxplot() + 
+  theme_bw() +
+  facet_grid(. ~ Block) +
+  ylab(used_metric_) +
+  xlab("Different Approaches") +
+  ggtitle("Priority-Lasso - split by the blocks used for the prediction",
+          subtitle = "Clinical asthma data") +
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1)) +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5, 5.5))
+
+
+# Comparison of the approaches                                               ----
 # [1] ----- CC Results
 DF_CC <- data.frame()
 
@@ -406,7 +612,7 @@ data_path <- "./docs/CV_Res/REAL//CC_Approach.R"
 
 # 1-2 Get results
 file_curr <- load(data_path)
-file_curr <- eval(as.symbol(file_curr))
+file_curr     <- eval(as.symbol(file_curr))
 
 DF_CC <- extract_metrics(x = file_curr, metric = "F1")
 
