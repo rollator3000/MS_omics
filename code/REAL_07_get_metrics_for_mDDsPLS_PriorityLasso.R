@@ -1,5 +1,6 @@
 "Script to calculate the Metrics of the Priority-Lasso / mdd-sPLS
   - only recived the predictions of the models!
+  Save the metrics as files and use them in an other script to create plots!
 "
 # [0] Librarys and Functions
 library(checkmate)
@@ -141,7 +142,7 @@ get_metrics     <- function(preds, truth) {
 
 # [1] Section 5.3.1    ---------------------------------------------------------
 # 1-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
-res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_2020_05_06.Rds")
+res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_2020_05_28.Rds")
 res_MD <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
 
 # 1-2 Get the true responses
@@ -193,7 +194,7 @@ save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
 
 # [2] Section 5.3.2    ---------------------------------------------------------
 # 2-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
-res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_2/data/results_different_blocks_2020_05_06.Rds")
+res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_2/data/results_different_blocks_2020_05_28.Rds")
 res_MD <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_2/data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
 
 # 2-2 Get the true responses
@@ -362,7 +363,7 @@ save(all_res_532, file = "./docs/CV_Res/REAL/Hagenberg_5_3_2.RData")
 # [3] Section 5.3.4    ---------------------------------------------------------
 # Setting 1 [4, 2, 1, 3, 5]  ---------------------------------------------------
 # 3-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
-res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_1_2020_05_20.Rds")
+res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_1_2020_05_28.Rds")
 
 # 3-2 Get the true responses
 true_values_list <- lapply(res_PL, function(x) x$test_y)
@@ -371,26 +372,19 @@ true_values      <- do.call("c", true_values_list)
 # 3-3 Get the indices (all combinations from block 1-5)
 indices <- 1:20
 
-# 3-4 Calculate the metric for 'mdd_sPLS'
-mdd_spls_predicted_values_list <- lapply(res_PL, function(x) {
-  as.vector(x$pred_ddspls[, "1"])
-})
-
-mdd_spls_metric <- get_metrics(predicted_values_list, true_values_list)
-
-# 3-5 loop over the remaining indices and get PL results
-# 3-5-1 Initalize list to save results
+# 3-4 loop over the remaining indices and get PL results
+# 3-4-1 Initalize list to save results
 list_names      <- c("ignore, zero", "ignore, intercept",
                      "impute maximise blocks", "impute, maximise n")
 all_res         <- vector("list", length(list_names))
 names(all_res)  <- list_names
 
-# 3-5-2 Define the different situations [which blocks used]
+# 3-4-2 Define the different situations [which blocks used]
 all_sits <- c("block_4", "block_4_2", "block_4_2_1", 
               "block_4_2_1_3", "block_4_2_1_3_5")
 
-# 3-5-3 Calculate the metrics for the different methods and blocks for predictions
-# 3-5-3-1 IGNORE ZERO
+# 3-4-3 Calculate the metrics for the different methods and blocks for predictions
+# 3-4-3-1 IGNORE ZERO
 j <- 1
 for (i in seq(from = 1, to = 20, by = 4)) {
   
@@ -413,7 +407,7 @@ for (i in seq(from = 1, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-2 IGNORE INTERCEPT
+# 3-4-3-2 IGNORE INTERCEPT
 j <- 1
 for (i in seq(from = 2, to = 20, by = 4)) {
   
@@ -436,7 +430,7 @@ for (i in seq(from = 2, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-3 IMPUTE MAXIMISE BLOCKS
+# 3-4-3-3 IMPUTE MAXIMISE BLOCKS
 j <- 1
 for (i in seq(from = 3, to = 20, by = 4)) {
   
@@ -459,7 +453,7 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-3 IMPUTE MAXIMISE N
+# 3-4-3-3 IMPUTE MAXIMISE N
 j <- 1
 for (i in seq(from = 3, to = 20, by = 4)) {
   
@@ -482,19 +476,19 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-4 MDD_SPLS
+# 3-4-3-4 MDD_SPLS
 predicted_values_ddspls_list <- lapply(res_PL, function(x) {
   as.vector(x$pred_ddspls[, "1"])
 })
 
 all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
 
-# 3-6 Save the metrics
+# 3-5 Save the metrics
 save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting1.R")
 
-# Setting 2 [4, 2, 1, 5, 3]  ---------------------------------------------------
+# Setting 2 [4, 2, 1, 3, 6]  ---------------------------------------------------
 # 3-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
-res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_2_2020_05_20.Rds")
+res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_2_2020_05_28.Rds")
 
 # 3-2 Get the true responses
 true_values_list <- lapply(res_PL, function(x) x$test_y)
@@ -503,158 +497,19 @@ true_values      <- do.call("c", true_values_list)
 # 3-3 Get the indices (all combinations from block 1-5)
 indices <- 1:20
 
-# 3-4 Calculate the metric for 'mdd_sPLS'
-mdd_spls_predicted_values_list <- lapply(res_PL, function(x) {
-  as.vector(x$pred_ddspls[, "1"])
-})
-
-mdd_spls_metric <- get_metrics(predicted_values_list, true_values_list)
-
-# 3-5 loop over the remaining indices and get PL results
-# 3-5-1 Initalize list to save results
+# 3-4 loop over the remaining indices and get PL results
+# 3-4-1 Initalize list to save results
 list_names      <- c("ignore, zero", "ignore, intercept",
                      "impute maximise blocks", "impute, maximise n")
 all_res         <- vector("list", length(list_names))
 names(all_res)  <- list_names
 
-# 3-5-2 Define the different situations [which blocks used]
-all_sits <- c("block_4", "block_4_2", "block_4_2_1", 
-              "block_4_2_1_5", "block_4_2_1_5_3")
-
-# 3-5-3 Calculate the metrics for the different methods and blocks for predictions
-# 3-5-3-1 IGNORE ZERO
-j <- 1
-for (i in seq(from = 1, to = 20, by = 4)) {
-  
-  # Get current predictions
-  curr_predicted_values_list <- lapply(res_PL, function(x) {
-    x[["pred_value_list"]][[i]]
-  })
-  
-  # Calculate metric
-  curr_metric <- get_metrics(curr_predicted_values_list,
-                             true_values_list)
-  
-  # current situatiuon
-  curr_sit <- all_sits[j]
-  
-  # Add the result to the list
-  all_res$`ignore, zero`[[curr_sit]] <- curr_metric
-  
-  # Count up Index
-  j <- j + 1
-}
-
-# 3-5-3-2 IGNORE INTERCEPT
-j <- 1
-for (i in seq(from = 2, to = 20, by = 4)) {
-  
-  # Get current predictions
-  curr_predicted_values_list <- lapply(res_PL, function(x) {
-    x[["pred_value_list"]][[i]]
-  })
-  
-  # Calculate metric
-  curr_metric <- get_metrics(curr_predicted_values_list,
-                             true_values_list)
-  
-  # current situatiuon
-  curr_sit <- all_sits[j]
-  
-  # Add the result to the list
-  all_res$`ignore, intercept`[[curr_sit]] <- curr_metric
-  
-  # Count up Index
-  j <- j + 1
-}
-
-# 3-5-3-3 IMPUTE MAXIMISE BLOCKS
-j <- 1
-for (i in seq(from = 3, to = 20, by = 4)) {
-  
-  # Get current predictions
-  curr_predicted_values_list <- lapply(res_PL, function(x) {
-    x[["pred_value_list"]][[i]]
-  })
-  
-  # Calculate metric
-  curr_metric <- get_metrics(curr_predicted_values_list,
-                             true_values_list)
-  
-  # current situatiuon
-  curr_sit <- all_sits[j]
-  
-  # Add the result to the list
-  all_res$`impute maximise blocks`[[curr_sit]] <- curr_metric
-  
-  # Count up Index
-  j <- j + 1
-}
-
-# 3-5-3-3 IMPUTE MAXIMISE N
-j <- 1
-for (i in seq(from = 3, to = 20, by = 4)) {
-  
-  # Get current predictions
-  curr_predicted_values_list <- lapply(res_PL, function(x) {
-    x[["pred_value_list"]][[i]]
-  })
-  
-  # Calculate metric
-  curr_metric <- get_metrics(curr_predicted_values_list,
-                             true_values_list)
-  
-  # current situatiuon
-  curr_sit <- all_sits[j]
-  
-  # Add the result to the list
-  all_res$`impute, maximise n`[[curr_sit]] <- curr_metric
-  
-  # Count up Index
-  j <- j + 1
-}
-
-# 3-5-3-4 MDD_SPLS
-predicted_values_ddspls_list <- lapply(res_PL, function(x) {
-  as.vector(x$pred_ddspls[, "1"])
-})
-
-all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
-
-# 3-6 Save the metrics
-save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting2.R")
-
-# Setting 3 [4, 2, 1, 3, 6]  ---------------------------------------------------
-# 3-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
-res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_3_2020_05_20.Rds")
-
-# 3-2 Get the true responses
-true_values_list <- lapply(res_PL, function(x) x$test_y)
-true_values      <- do.call("c", true_values_list)
-
-# 3-3 Get the indices (all combinations from block 1-5)
-indices <- 1:20
-
-# 3-4 Calculate the metric for 'mdd_sPLS'
-mdd_spls_predicted_values_list <- lapply(res_PL, function(x) {
-  as.vector(x$pred_ddspls[, "1"])
-})
-
-mdd_spls_metric <- get_metrics(predicted_values_list, true_values_list)
-
-# 3-5 loop over the remaining indices and get PL results
-# 3-5-1 Initalize list to save results
-list_names      <- c("ignore, zero", "ignore, intercept",
-                     "impute maximise blocks", "impute, maximise n")
-all_res         <- vector("list", length(list_names))
-names(all_res)  <- list_names
-
-# 3-5-2 Define the different situations [which blocks used]
+# 3-4-2 Define the different situations [which blocks used]
 all_sits <- c("block_4", "block_4_2", "block_4_2_1", 
               "block_4_2_1_3", "block_4_2_1_3_6")
 
-# 3-5-3 Calculate the metrics for the different methods and blocks for predictions
-# 3-5-3-1 IGNORE ZERO
+# 3-4-3 Calculate the metrics for the different methods and blocks for predictions
+# 3-4-3-1 IGNORE ZERO
 j <- 1
 for (i in seq(from = 1, to = 20, by = 4)) {
   
@@ -677,7 +532,7 @@ for (i in seq(from = 1, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-2 IGNORE INTERCEPT
+# 3-4-3-2 IGNORE INTERCEPT
 j <- 1
 for (i in seq(from = 2, to = 20, by = 4)) {
   
@@ -700,7 +555,7 @@ for (i in seq(from = 2, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-3 IMPUTE MAXIMISE BLOCKS
+# 3-4-3-3 IMPUTE MAXIMISE BLOCKS
 j <- 1
 for (i in seq(from = 3, to = 20, by = 4)) {
   
@@ -723,7 +578,7 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-3 IMPUTE MAXIMISE N
+# 3-4-3-3 IMPUTE MAXIMISE N
 j <- 1
 for (i in seq(from = 3, to = 20, by = 4)) {
   
@@ -746,19 +601,144 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-4 MDD_SPLS
+# 3-4-3-4 MDD_SPLS
 predicted_values_ddspls_list <- lapply(res_PL, function(x) {
   as.vector(x$pred_ddspls[, "1"])
 })
 
 all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
 
-# 3-6 Save the metrics
+# 3-5 Save the metrics
+save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting2.R")
+
+# Setting 3 [4, 2, 1, 5, 3]  ---------------------------------------------------
+# 3-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
+res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_3_2020_05_28.Rds")
+
+# 3-2 Get the true responses
+true_values_list <- lapply(res_PL, function(x) x$test_y)
+true_values      <- do.call("c", true_values_list)
+
+# 3-3 Get the indices (all combinations from block 1-5)
+indices <- 1:20
+
+# 3-4 loop over the remaining indices and get PL results
+# 3-4-1 Initalize list to save results
+list_names      <- c("ignore, zero", "ignore, intercept",
+                     "impute maximise blocks", "impute, maximise n")
+all_res         <- vector("list", length(list_names))
+names(all_res)  <- list_names
+
+# 3-4-2 Define the different situations [which blocks used]
+all_sits <- c("block_4", "block_4_2", "block_4_2_1", 
+              "block_4_2_1_5", "block_4_2_1_5_3")
+
+# 3-4-3 Calculate the metrics for the different methods and blocks for predictions
+# 3-4-3-1 IGNORE ZERO
+j <- 1
+for (i in seq(from = 1, to = 20, by = 4)) {
+  
+  # Get current predictions
+  curr_predicted_values_list <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[i]]
+  })
+  
+  # Calculate metric
+  curr_metric <- get_metrics(curr_predicted_values_list,
+                             true_values_list)
+  
+  # current situatiuon
+  curr_sit <- all_sits[j]
+  
+  # Add the result to the list
+  all_res$`ignore, zero`[[curr_sit]] <- curr_metric
+  
+  # Count up Index
+  j <- j + 1
+}
+
+# 3-4-3-2 IGNORE INTERCEPT
+j <- 1
+for (i in seq(from = 2, to = 20, by = 4)) {
+  
+  # Get current predictions
+  curr_predicted_values_list <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[i]]
+  })
+  
+  # Calculate metric
+  curr_metric <- get_metrics(curr_predicted_values_list,
+                             true_values_list)
+  
+  # current situatiuon
+  curr_sit <- all_sits[j]
+  
+  # Add the result to the list
+  all_res$`ignore, intercept`[[curr_sit]] <- curr_metric
+  
+  # Count up Index
+  j <- j + 1
+}
+
+# 3-4-3-3 IMPUTE MAXIMISE BLOCKS
+j <- 1
+for (i in seq(from = 3, to = 20, by = 4)) {
+  
+  # Get current predictions
+  curr_predicted_values_list <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[i]]
+  })
+  
+  # Calculate metric
+  curr_metric <- get_metrics(curr_predicted_values_list,
+                             true_values_list)
+  
+  # current situatiuon
+  curr_sit <- all_sits[j]
+  
+  # Add the result to the list
+  all_res$`impute maximise blocks`[[curr_sit]] <- curr_metric
+  
+  # Count up Index
+  j <- j + 1
+}
+
+# 3-4-3-3 IMPUTE MAXIMISE N
+j <- 1
+for (i in seq(from = 3, to = 20, by = 4)) {
+  
+  # Get current predictions
+  curr_predicted_values_list <- lapply(res_PL, function(x) {
+    x[["pred_value_list"]][[i]]
+  })
+  
+  # Calculate metric
+  curr_metric <- get_metrics(curr_predicted_values_list,
+                             true_values_list)
+  
+  # current situatiuon
+  curr_sit <- all_sits[j]
+  
+  # Add the result to the list
+  all_res$`impute, maximise n`[[curr_sit]] <- curr_metric
+  
+  # Count up Index
+  j <- j + 1
+}
+
+# 3-4-3-4 MDD_SPLS
+predicted_values_ddspls_list <- lapply(res_PL, function(x) {
+  as.vector(x$pred_ddspls[, "1"])
+})
+
+all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
+
+# 3-5 Save the metrics
 save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting3.R")
 
 # Setting 4 [4, 2, 1, 6, 3]  ---------------------------------------------------
 # 3-1 Load the CV results ['Priority Lasso' & 'mdd-sPLS']
-res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_4_2020_05_20.Rds")
+res_PL <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_4/data/results_permute_blocks_small_4_2020_05_28.Rds")
 
 # 3-2 Get the true responses
 true_values_list <- lapply(res_PL, function(x) x$test_y)
@@ -767,26 +747,19 @@ true_values      <- do.call("c", true_values_list)
 # 3-3 Get the indices (all combinations from block 1-5)
 indices <- 1:20
 
-# 3-4 Calculate the metric for 'mdd_sPLS'
-mdd_spls_predicted_values_list <- lapply(res_PL, function(x) {
-  as.vector(x$pred_ddspls[, "1"])
-})
-
-mdd_spls_metric <- get_metrics(predicted_values_list, true_values_list)
-
-# 3-5 loop over the remaining indices and get PL results
-# 3-5-1 Initalize list to save results
+# 3-4 loop over the remaining indices and get PL results
+# 3-4-1 Initalize list to save results
 list_names      <- c("ignore, zero", "ignore, intercept",
                      "impute maximise blocks", "impute, maximise n")
 all_res         <- vector("list", length(list_names))
 names(all_res)  <- list_names
 
-# 3-5-2 Define the different situations [which blocks used]
+# 3-4-2 Define the different situations [which blocks used]
 all_sits <- c("block_4", "block_4_2", "block_4_2_1", 
               "block_4_2_1_6", "block_4_2_1_6_3")
 
-# 3-5-3 Calculate the metrics for the different methods and blocks for predictions
-# 3-5-3-1 IGNORE ZERO
+# 3-4-3 Calculate the metrics for the different methods and blocks for predictions
+# 3-4-3-1 IGNORE ZERO
 j <- 1
 for (i in seq(from = 1, to = 20, by = 4)) {
   
@@ -809,7 +782,7 @@ for (i in seq(from = 1, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-2 IGNORE INTERCEPT
+# 3-4-3-2 IGNORE INTERCEPT
 j <- 1
 for (i in seq(from = 2, to = 20, by = 4)) {
   
@@ -832,7 +805,7 @@ for (i in seq(from = 2, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-3 IMPUTE MAXIMISE BLOCKS
+# 3-4-3-3 IMPUTE MAXIMISE BLOCKS
 j <- 1
 for (i in seq(from = 3, to = 20, by = 4)) {
   
@@ -855,7 +828,7 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-3 IMPUTE MAXIMISE N
+# 3-4-3-3 IMPUTE MAXIMISE N
 j <- 1
 for (i in seq(from = 3, to = 20, by = 4)) {
   
@@ -878,12 +851,12 @@ for (i in seq(from = 3, to = 20, by = 4)) {
   j <- j + 1
 }
 
-# 3-5-3-4 MDD_SPLS
+# 3-4-3-4 MDD_SPLS
 predicted_values_ddspls_list <- lapply(res_PL, function(x) {
   as.vector(x$pred_ddspls[, "1"])
 })
 
 all_res[["mdd_spls"]] <- get_metrics(predicted_values_ddspls_list, truth = true_values_list)
 
-# 3-6 Save the metrics
+# 3-5 Save the metrics
 save(all_res, file = "./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting4.R")
