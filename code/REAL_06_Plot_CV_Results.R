@@ -399,7 +399,7 @@ res_curr <- sapply(unique(DF_all$weight_metric), FUN = function(x_) {
 colnames(res_curr) <- unique(DF_all$weight_metric)
 # Analyse the approaches of Hagenberg                                        ----
 # All metrics were read out and calculated in 'REAL_07_get_metrics_for_mDD....R'
-# Hagenberg --- Setting1 5_3_1                                               ----
+# Hagenberg --- Setting 5_3_1                                                ----
 " Pririty of blocks is assigned by the amount of missing values! "
 
 # [1] Load the Metrics of the CV w/ Hagenbergs Approaches
@@ -443,7 +443,7 @@ ggplot(data = plot_df, aes(x = method, y = Metric)) +
   theme(text = element_text(size = 24),
         axis.text.x = element_text(angle = 25, hjust = 1))
 
-# Hagenberg --- Setting1 5_3_2                                               ----
+# Hagenberg --- Setting 5_3_2                                                ----
 "Different Block Combinations for the prediciton [Train on all blocks - but only
  use block YZ & QX for the prediciton, etc.
  Two further distinctions for PL approach - 'all_blocks' & 'pred_blocks' "
@@ -593,7 +593,7 @@ plot_df <- rbind(df1_1, df1_2, df2_1, df2_2, df3_1, df3_2, df4_1, df4_2)
 ggplot(data = plot_df, aes(x = method, y = metric, fill = used_block)) +
   geom_boxplot() + 
   theme_bw() +
-  facet_grid(. ~ Block) +
+  facet_grid(Block ~ .) +
   ylab(used_metric_) +
   xlab("Different Approaches") +
   ggtitle("Priority-Lasso - split by the blocks used for the prediction",
@@ -601,6 +601,376 @@ ggplot(data = plot_df, aes(x = method, y = metric, fill = used_block)) +
   theme(text = element_text(size = 24),
         axis.text.x = element_text(angle = 25, hjust = 1)) +
   geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5, 5.5))
+
+
+# Hagenberg --- Setting 5_3_4  --- 1 [4, 2, 1, 3, 5]                         ----
+# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting1.R")
+
+# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
+#                             "Precision", "Recall", "F1", "Balance_Acc", 
+#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
+#                             "AUC1", "AUC2", "MCC"]
+metric__ = "F1"
+
+if (metric__ == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# [3] Create a DF to plot the results!
+# 3-0-1 Define a DF to store the results
+df_all <- data.frame(approach = factor(),
+                     fold     = integer(),
+                     blocks   = factor(),
+                     metrics  = numeric(),
+                     used_metric = factor())
+
+# 3-1 'ignore, zero' Approach
+for (used_blocks in names(all_res$`ignore, zero`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, zero`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, zero",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-2 'ignore, intercept' Approach
+for (used_blocks in names(all_res$`ignore, intercept`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, intercept`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, intercept",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-3 'impute, maximise blocks' Approach
+for (used_blocks in names(all_res$`impute maximise blocks`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute maximise blocks`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute maximise blocks",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-4 'impute, maximise n' Approach
+for (used_blocks in names(all_res$`impute, maximise n`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute, maximise n`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute, maximise n",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# [4] Do the plot
+ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Different Approaches") +
+  ggtitle("Priority-Lasso with different block-priorities",
+          subtitle = "Clinical asthma data") +
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1)) +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5))
+
+
+# Hagenberg --- Setting 5_3_4  --- 2 [4, 2, 1, 3, 6]                         ----
+# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting2.R")
+
+# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
+#                             "Precision", "Recall", "F1", "Balance_Acc", 
+#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
+#                             "AUC1", "AUC2", "MCC"]
+metric__ = "F1"
+
+if (metric__ == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# [3] Create a DF to plot the results!
+# 3-0-1 Define a DF to store the results
+df_all <- data.frame(approach = factor(),
+                     fold     = integer(),
+                     blocks   = factor(),
+                     metrics  = numeric(),
+                     used_metric = factor())
+
+# 3-1 'ignore, zero' Approach
+for (used_blocks in names(all_res$`ignore, zero`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, zero`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, zero",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-2 'ignore, intercept' Approach
+for (used_blocks in names(all_res$`ignore, intercept`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, intercept`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, intercept",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-3 'impute, maximise blocks' Approach
+for (used_blocks in names(all_res$`impute maximise blocks`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute maximise blocks`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute maximise blocks",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-4 'impute, maximise n' Approach
+for (used_blocks in names(all_res$`impute, maximise n`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute, maximise n`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute, maximise n",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# [4] Do the plot
+ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Different Approaches") +
+  ggtitle("Priority-Lasso with different block-priorities",
+          subtitle = "Clinical asthma data") +
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1)) +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5))
+
+# Hagenberg --- Setting 5_3_4  --- 3 [4, 2, 1, 5, 3]                         ----
+# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting3.R")
+
+# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
+#                             "Precision", "Recall", "F1", "Balance_Acc", 
+#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
+#                             "AUC1", "AUC2", "MCC"]
+metric__ = "F1"
+
+if (metric__ == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# [3] Create a DF to plot the results!
+# 3-0-1 Define a DF to store the results
+df_all <- data.frame(approach = factor(),
+                     fold     = integer(),
+                     blocks   = factor(),
+                     metrics  = numeric(),
+                     used_metric = factor())
+
+# 3-1 'ignore, zero' Approach
+for (used_blocks in names(all_res$`ignore, zero`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, zero`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, zero",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-2 'ignore, intercept' Approach
+for (used_blocks in names(all_res$`ignore, intercept`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, intercept`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, intercept",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-3 'impute, maximise blocks' Approach
+for (used_blocks in names(all_res$`impute maximise blocks`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute maximise blocks`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute maximise blocks",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-4 'impute, maximise n' Approach
+for (used_blocks in names(all_res$`impute, maximise n`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute, maximise n`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute, maximise n",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# [4] Do the plot
+ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Different Approaches") +
+  ggtitle("Priority-Lasso with different block-priorities",
+          subtitle = "Clinical asthma data") +
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1)) +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5))
+
+# Hagenberg --- Setting 5_3_4  --- 4 [4, 2, 1, 6, 3]                         ----
+# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting4.R")
+
+# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
+#                             "Precision", "Recall", "F1", "Balance_Acc", 
+#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
+#                             "AUC1", "AUC2", "MCC"]
+metric__ = "F1"
+
+if (metric__ == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# [3] Create a DF to plot the results!
+# 3-0-1 Define a DF to store the results
+df_all <- data.frame(approach = factor(),
+                     fold     = integer(),
+                     blocks   = factor(),
+                     metrics  = numeric(),
+                     used_metric = factor())
+
+# 3-1 'ignore, zero' Approach
+for (used_blocks in names(all_res$`ignore, zero`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, zero`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, zero",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-2 'ignore, intercept' Approach
+for (used_blocks in names(all_res$`ignore, intercept`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`ignore, intercept`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "ignore, intercept",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-3 'impute, maximise blocks' Approach
+for (used_blocks in names(all_res$`impute maximise blocks`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute maximise blocks`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute maximise blocks",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# 3-4 'impute, maximise n' Approach
+for (used_blocks in names(all_res$`impute, maximise n`)) {
+  
+  # extract the metrics for 'used_blocks' 
+  curr_metrics_ <- unlist(all_res$`impute, maximise n`[[used_blocks]][metric__,])
+  
+  # bind it to 'df_all'
+  df_all <- rbind(df_all, data.frame(approach = "impute, maximise n",
+                                     fold     = 1:5,
+                                     blocks   = used_blocks,
+                                     metrics  = curr_metrics_,
+                                     used_metric = used_metric_))
+}
+
+# [4] Do the plot
+ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Different Approaches") +
+  ggtitle("Priority-Lasso with different block-priorities",
+          subtitle = "Clinical asthma data") +
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1)) +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5))
 
 
 # Comparison of the approaches                                               ----
