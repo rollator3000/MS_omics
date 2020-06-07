@@ -1,10 +1,11 @@
 library(pROC)
+library(xtable)
 
 # read in the results from the different block combinations
-comb_1 <- readRDS("../data/results_permute_blocks_small_1_2020_05_20.Rds")
-comb_2 <- readRDS("../data/results_permute_blocks_small_2_2020_05_20.Rds")
-comb_3 <- readRDS("../data/results_permute_blocks_small_3_2020_05_20.Rds")
-comb_4 <- readRDS("../data/results_permute_blocks_small_4_2020_05_20.Rds")
+comb_1 <- readRDS("../data/results_permute_blocks_small_1_2020_05_28.Rds")
+comb_2 <- readRDS("../data/results_permute_blocks_small_2_2020_05_28.Rds")
+comb_3 <- readRDS("../data/results_permute_blocks_small_3_2020_05_28.Rds")
+comb_4 <- readRDS("../data/results_permute_blocks_small_4_2020_05_28.Rds")
 
 
 generate_auc_method_comp <- function(object) {
@@ -51,21 +52,25 @@ generate_auc_method_comp <- function(object) {
        auc_ddspls = auc_ddspls)
 }
 
+# 4, 2, 1, 3, 5
 comb_1_auc <- generate_auc_method_comp(comb_1)
 print(xtable(t(comb_1_auc$results_auc)))
 comb_1_auc$auc_ddspls
 # ddspls 0.8653
 
+# 4, 2, 1, 3, 6
 comb_2_auc <- generate_auc_method_comp(comb_2)
 print(xtable(t(comb_2_auc$results_auc)))
 comb_2_auc$auc_ddspls
 # ddspls 0.8969
 
+# 4, 2, 1, 5, 3
 comb_3_auc <- generate_auc_method_comp(comb_3)
 print(xtable(t(comb_3_auc$results_auc)))
 comb_3_auc$auc_ddspls
 # ddspls 0.882
 
+# 4, 2, 1, 6, 3
 comb_4_auc <- generate_auc_method_comp(comb_4)
 print(xtable(t(comb_4_auc$results_auc)))
 comb_4_auc$auc_ddspls

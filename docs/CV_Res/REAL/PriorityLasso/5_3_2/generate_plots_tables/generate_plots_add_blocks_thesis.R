@@ -2,7 +2,7 @@ library(pROC)
 library(RColorBrewer)
 
 # load the results
-results <- readRDS("../data/results_different_blocks_2020_05_06.Rds")
+results <- readRDS("../data/results_different_blocks_2020_05_28.Rds")
 
 true_values_list <- lapply(results, function(x) x$test_y)
 true_values <- do.call("c", true_values_list)

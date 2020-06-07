@@ -2,8 +2,8 @@ library(pROC)
 library(RColorBrewer)
 
 # load the results
-results <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_2020_05_06.Rds")
-results_ddspls <- readRDS("./docs/CV_Res/REAL/PriorityLasso/5_3_1/data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
+results <- readRDS("../data/results_different_blocks_2020_05_28.Rds")
+results_ddspls <- readRDS("../data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
 
 true_values_list <- lapply(results, function(x) x$test_y)
 true_values <- do.call("c", true_values_list)
@@ -22,7 +22,6 @@ generate_roc_method_comp <- function(object = results,
   # plot the first ROC curve
   # define a colour palette
   col_pal <- brewer.pal(n = 5, name = "Set1")
-  
   # prioritylasso
   predicted_values_list <- lapply(object, function(x) {
     x[[type]][[indices[1]]]
@@ -54,8 +53,8 @@ generate_roc_method_comp <- function(object = results,
   # add a legend
   legend("bottomright",
          legend = c("mdd-sPLS",
-                    "ignore, zero", "ignore, intercept",
-                    "impute, maximise blocks", "impute, max. n"),
+                    "pL-ign (zero)", "pL-ign (intercept)",
+                    "pL-imp (available, max. blocks)", "pL-imp (available, max. n)"),
          col = col_pal, lwd = 2)
   
   # return the AUCs
@@ -66,4 +65,4 @@ generate_roc_method_comp <- function(object = results,
 pdf("../plots/compare_5_methods.pdf")
 generate_roc_method_comp()
 dev.off()
-# AUCs: 0.8780642 0.6193731 0.6469098 0.8756824 0.8742980
+# AUCs: 0.8780642 0.8746397 0.8742980 0.8756824 0.8742980

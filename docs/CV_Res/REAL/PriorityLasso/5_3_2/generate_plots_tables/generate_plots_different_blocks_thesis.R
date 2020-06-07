@@ -2,7 +2,7 @@ library(pROC)
 library(RColorBrewer)
 
 # load the results
-results <- readRDS("../data/results_different_blocks_2020_05_06.Rds")
+results <- readRDS("../data/results_different_blocks_2020_05_28.Rds")
 results_ddspls <- readRDS("../data/results_different_blocks_ddsPLS_weight_2020_05_20.Rds")
 
 true_values_list <- lapply(results, function(x) x$test_y)
@@ -75,11 +75,13 @@ generate_plot_one_method <- function(object = results,
 # generate the plot
 # combine these plots to one plot
 op <- par(no.readonly = TRUE)
+pdf("../plots/model_all_blocks_add_blocks_4_graphs_together.pdf")
 par(mfrow=c(2,2))
 generate_plot_one_method(method = 1, show_legend = FALSE)
 generate_plot_one_method(method = 2, show_legend = FALSE)
 generate_plot_one_method(method = 3, show_legend = FALSE)
 generate_plot_one_method(method = 4, show_legend = TRUE)
+dev.off()
 par(op)
 
 ################################################################################
@@ -89,12 +91,12 @@ par(op)
 # ignore, zero
 generate_plot_one_method(method = 1, plot = FALSE)
 # AUCs
-# 0.8896152 0.9053930 0.9161937 0.9165354 0.6494874 0.6193731
+# 0.8896152 0.9054078 0.9198633 0.9206507 0.8900461 0.8746397
 
 # ignore, intercept
 generate_plot_one_method(method = 2, plot = FALSE)
 # AUCs
-# 0.8919923 0.9073095 0.9162532 0.9156737 0.6459367 0.6469098
+# 0.8919923 0.9073243 0.9190759 0.9193285 0.8897786 0.8742980
 
 # impute, maximise blocks
 generate_plot_one_method(method = 3, plot = FALSE)
@@ -112,12 +114,12 @@ generate_plot_one_method(method = 4, plot = FALSE)
 # ignore, zero
 generate_plot_one_method(method = 1, type = "pred_value_single", plot = FALSE)
 # AUCs
-# 0.8920963 0.9073986 0.9212450 0.9201159 0.6448076 0.6193731
+# 0.8920963 0.9074135 0.9248997 0.9244837 0.8915614 0.8746397
 
 # ignore, intercept
 generate_plot_one_method(method = 2, type = "pred_value_single", plot = FALSE)
 # AUCs
-# 0.8951567 0.9106373 0.9164314 0.9230426 0.6587431 0.6469098
+# 0.8951567 0.9106968 0.9197742 0.9273065 0.8916803 0.8742980
 
 # impute, maximise blocks
 generate_plot_one_method(method = 3, type = "pred_value_single", plot = FALSE)

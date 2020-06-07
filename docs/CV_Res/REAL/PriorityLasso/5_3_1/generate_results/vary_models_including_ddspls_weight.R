@@ -1,5 +1,4 @@
 # load the needed libraries
-devtools::load_all("../../prioritylasso/")
 library(pROC)
 library(dplyr)
 library(ddsPLS)
