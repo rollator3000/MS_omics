@@ -400,7 +400,7 @@ colnames(res_curr) <- unique(DF_all$weight_metric)
 # Analyse the approaches of Hagenberg                                        ----
 # All metrics were read out and calculated in 'REAL_07_get_metrics_for_mDD....R'
 # Hagenberg --- Setting 5_3_1                                                ----
-" Pririty of blocks is assigned by the amount of missing values! "
+"Pririty of blocks is assigned by the amount of missing values! "
 
 # [1] Load the Metrics of the CV w/ Hagenbergs Approaches
 load("./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
@@ -438,10 +438,12 @@ ggplot(data = plot_df, aes(x = method, y = Metric)) +
   theme_bw() +
   ylab(used_metric_) +
   xlab("Different Approaches") +
-  ggtitle("Priority-Lasso & mdd-sPLS Approaches",
+  ggtitle("Priority-Lasso adaptions & mdd-sPLS method",
           subtitle = "Clinical asthma data") +
   theme(text = element_text(size = 24),
         axis.text.x = element_text(angle = 25, hjust = 1))
+
+sapply(levels(plot_df$method), FUN = function(x) summary(plot_df$Metric[plot_df$method == x]))
 
 # Hagenberg --- Setting 5_3_2                                                ----
 "Different Block Combinations for the prediciton [Train on all blocks - but only
