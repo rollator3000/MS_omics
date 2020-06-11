@@ -715,18 +715,51 @@ for (used_blocks in names(all_res$`impute, maximise n`)) {
                                      used_metric = used_metric_))
 }
 
+# 3-5 Add the mdd-sPLS approach to df_all
+df_all <- rbind(df_all, data.frame(approach = "mdd-sPLS",
+                                   fold     = 1:5,
+                                   blocks   = "block_4_2_1_3_5",
+                                   metrics  = unlist(all_res$mdd_spls[metric__,]),
+                                   used_metric = used_metric_))
+
 # [4] Do the plot
-ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
+# 4-1 Rename the used blocks [used for the prediction]
+df_all$used_block2 <- sapply(1:nrow(df_all), FUN = function(x) {
+  strsplit(as.character(df_all$blocks[x]), split = "block_")[[1]][2]
+})
+
+# 4-2 Rename the approaches so it is consitent!
+levels(df_all$approach) <- c("PL - ignore, zero", "PL - ignore, intercept",
+                             "PL - impute, maximise blocks", "PL - impute, maximise n", "mdd-sPLS")
+
+df_all$approach <- factor(df_all$approach, levels = c("mdd-sPLS",
+                                                      "PL - ignore, intercept", 
+                                                      "PL - ignore, zero", 
+                                                      "PL - impute, maximise blocks",
+                                                      "PL - impute, maximise n"))
+
+# 4-3 Do the actual plot
+ggplot(data = df_all, aes(x = approach, y = metrics, fill = used_block2)) +
   geom_boxplot() + 
   theme_bw() +
   ylab(used_metric_) +
   xlab("Different Approaches") +
-  ggtitle("Priority-Lasso with different block-priorities",
-          subtitle = "Clinical asthma data") +
+  ggtitle("Priority-Lasso adaptions & mdd-sPLS approach",
+          subtitle = "Clinical asthma data with block-priorities: 4, 2, 1, 3, 5") +
   theme(text = element_text(size = 24),
         axis.text.x = element_text(angle = 25, hjust = 1)) +
-  geom_vline(xintercept = c(1.5, 2.5, 3.5))
+  labs(fill = "Blocks used for \nthe predictions") +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5))
 
+# 4-4 Get the summarys of the single approaches!
+for (method_ in levels(df_all$approach)) {
+  print("METHOD ----------------------------")
+  print(method_)
+  
+  print(sapply(levels(df_all$blocks), FUN = function(blocks_) {
+    summary(df_all$metric[df_all$approach == method_ & df_all$blocks == blocks_])
+  }))
+}
 
 # Hagenberg --- Setting 5_3_4  --- 2 [4, 2, 1, 3, 6]                         ----
 # [1] Load the Metrics of the CV w/ Hagenbergs Approaches
@@ -808,7 +841,69 @@ for (used_blocks in names(all_res$`impute, maximise n`)) {
                                      used_metric = used_metric_))
 }
 
+# 3-5 Add the mdd-sPLS approach to df_all
+df_all <- rbind(df_all, data.frame(approach = "mdd-sPLS",
+                                   fold     = 1:5,
+                                   blocks   = "block_4_2_1_3_6",
+                                   metrics  = unlist(all_res$mdd_spls[metric__,]),
+                                   used_metric = used_metric_))
+
 # [4] Do the plot
+# 4-1 Rename the used blocks [used for the prediction]
+df_all$used_block2 <- sapply(1:nrow(df_all), FUN = function(x) {
+  strsplit(as.character(df_all$blocks[x]), split = "block_")[[1]][2]
+})
+
+# 4-2 Rename the approaches so it is consitent!
+levels(df_all$approach) <- c("PL - ignore, zero", "PL - ignore, intercept",
+                             "PL - impute, maximise blocks", "PL - impute, maximise n", 
+                             "mdd-sPLS")
+
+df_all$approach <- factor(df_all$approach, levels = c("mdd-sPLS",
+                                                      "PL - ignore, intercept", 
+                                                      "PL - ignore, zero", 
+                                                      "PL - impute, maximise blocks",
+                                                      "PL - impute, maximise n"))
+
+# 4-3 Do the actual plot
+ggplot(data = df_all, aes(x = approach, y = metrics, fill = used_block2)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Different Approaches") +
+  ggtitle("Priority-Lasso adaptions & mdd-sPLS approach",
+          subtitle = "Clinical asthma data with block-priorities: 4, 2, 1, 3, 6") +
+  theme(text = element_text(size = 24),
+        axis.text.x = element_text(angle = 25, hjust = 1)) +
+  labs(fill = "Blocks used for \nthe predictions") +
+  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5))
+
+# 4-4 Get the summarys of the single approaches!
+for (method_ in levels(df_all$approach)) {
+  print("METHOD ----------------------------")
+  print(method_)
+  
+  print(sapply(levels(df_all$blocks), FUN = function(blocks_) {
+    summary(df_all$metric[df_all$approach == method_ & df_all$blocks == blocks_])
+  }))
+}
+
+# 4-1 Rename the used blocks [used for the prediction]
+df_all$used_block2 <- sapply(1:nrow(df_all), FUN = function(x) {
+  strsplit(as.character(df_all$blocks[x]), split = "block_")[[1]][2]
+})
+
+# 4-2 Rename the approaches so it is consitent!
+levels(df_all$approach) <- c("PL - ignore, zero", "PL - ignore, intercept",
+                             "PL - impute, maximise blocks", "PL - impute, maximise n", "mdd-sPLS")
+
+df_all$approach <- factor(df_all$approach, levels = c("mdd-sPLS",
+                                                      "PL - ignore, intercept", 
+                                                      "PL - ignore, zero", 
+                                                      "PL - impute, maximise blocks",
+                                                      "PL - impute, maximise n"))
+
+# 4-3 Do the actual plot
 ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
   geom_boxplot() + 
   theme_bw() +
@@ -818,7 +913,7 @@ ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
           subtitle = "Clinical asthma data") +
   theme(text = element_text(size = 24),
         axis.text.x = element_text(angle = 25, hjust = 1)) +
-  geom_vline(xintercept = c(1.5, 2.5, 3.5))
+  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5))
 
 # Hagenberg --- Setting 5_3_4  --- 3 [4, 2, 1, 5, 3]                         ----
 # [1] Load the Metrics of the CV w/ Hagenbergs Approaches
