@@ -335,6 +335,8 @@ impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1,
     save_path <- paste0(save_path, curr_ind, "_", name_save)
     save(data_imputed, file = save_path)
   }
+  
+  return(data_all)
 }
 do_evaluation_imputed       <- function(train, test, num_trees, min_node_size, mtry) {
   "Evaluate the Imputation Approach! MissForest was used to impute the missing 
