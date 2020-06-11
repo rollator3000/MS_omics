@@ -400,7 +400,7 @@ colnames(res_curr) <- unique(DF_all$weight_metric)
 # Analyse the approaches of Hagenberg                                        ----
 # All metrics were read out and calculated in 'REAL_07_get_metrics_for_mDD....R'
 # Hagenberg --- Setting 5_3_1                                                ----
-" Pririty of blocks is assigned by the amount of missing values! "
+"Pririty of blocks is assigned by the amount of missing values! "
 
 # [1] Load the Metrics of the CV w/ Hagenbergs Approaches
 load("./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
@@ -438,10 +438,13 @@ ggplot(data = plot_df, aes(x = method, y = Metric)) +
   theme_bw() +
   ylab(used_metric_) +
   xlab("Different Approaches") +
-  ggtitle("Priority-Lasso & mdd-sPLS Approaches",
+  ggtitle("Priority-Lasso adaptions & mdd-sPLS method",
           subtitle = "Clinical asthma data") +
   theme(text = element_text(size = 24),
         axis.text.x = element_text(angle = 25, hjust = 1))
+
+# 4-1 Get a summary for the different approaches
+sapply(levels(plot_df$method), FUN = function(x) summary(plot_df$Metric[plot_df$method == x]))
 
 # Hagenberg --- Setting 5_3_2                                                ----
 "Different Block Combinations for the prediciton [Train on all blocks - but only
@@ -577,30 +580,59 @@ df4_2 <- data.frame("method" = rep("impute, maximise n", 30),
                                  unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1_2_3_4_5[metric__,]),
                                  unlist(all_res_532$pred_blocks$`impute, maximise n`$block_1_2_3_4_5_6[metric__,])))
 
-'# 3-9 `mdd_SPLS`
+# 3-9 mdd_SPLS
 df5_1 <- data.frame("method" = rep("mdd_SPLS", 5),
                     "Fold"   = rep(1:5),
                     "Block"  = "all",
                     "used_block"  = "block_1_2_3_4_5_6",
                     "used_metric" = used_metric_,
-                    "metric" = c(unlist(all_res_532$mdd_splss["F1",])))'
+                    "metric" = c(unlist(all_res_532$mdd_splss["F1",])))
 
 # [4] Create a DF to plot the results!
 # 4-1 Bind the DFs
 plot_df <- rbind(df1_1, df1_2, df2_1, df2_2, df3_1, df3_2, df4_1, df4_2)
 
-# 4-2 Do the plot
-ggplot(data = plot_df, aes(x = method, y = metric, fill = used_block)) +
+# 4-2 Only keep the 'all' results, as the results are almost identical
+plot_df <- plot_df[plot_df$Block == "all",]
+
+# 4-3 Rename the used blocks [used for the prediction]
+plot_df$used_block2 <- sapply(1:nrow(plot_df), FUN = function(x) {
+  strsplit(as.character(plot_df$used_block[x]), split = "block_")[[1]][2]
+})
+
+# 4-4 Rename the approaches so it is consitent!
+levels(plot_df$method) <- c("PL - ignore, zero", "PL - ignore, intercept",
+                            "PL - impute, maximise blocks", "PL - impute, maximise n")
+
+plot_df$method <- factor(plot_df$method, levels = c( "PL - ignore, intercept", 
+                                                     "PL - ignore, zero", 
+                                                     "PL - impute, maximise blocks",
+                                                     "PL - impute, maximise n"))
+
+# 4-4 Do the plot
+ggplot(data = plot_df, aes(x = method, y = metric, fill = used_block2)) +
   geom_boxplot() + 
   theme_bw() +
-  facet_grid(Block ~ .) +
   ylab(used_metric_) +
   xlab("Different Approaches") +
   ggtitle("Priority-Lasso - split by the blocks used for the prediction",
           subtitle = "Clinical asthma data") +
   theme(text = element_text(size = 24),
         axis.text.x = element_text(angle = 25, hjust = 1)) +
+  labs(fill = "Blocks used for \nthe predictions") +
   geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5, 5.5))
+
+# 4-5 Get a summary for the different approaches
+for (method_ in levels(plot_df$method)) {
+  print("METHOD ----------------------------")
+  print(method_)
+  
+  print(sapply(levels(plot_df$used_block), FUN = function(blocks_) {
+    summary(plot_df$metric[plot_df$method == method_ & plot_df$used_block == blocks_])
+  }))
+}
+
+summary(df5_1$metric)
 
 
 # Hagenberg --- Setting 5_3_4  --- 1 [4, 2, 1, 3, 5]                         ----
