@@ -13,7 +13,7 @@ library(doParallel)
 
 # Set Cores for parallel computaion!
 detectCores()
-registerDoParallel(cores = 1)
+registerDoParallel(cores = 6)
 
 load_CV_data      <- function(path) {
   "Load the subsetted, test-train splitted data, with blockwise missingness 
@@ -331,7 +331,7 @@ impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1,
     
     # 1-9 Save the prt that has been imputed!
     name_save <- strsplit(path, split = "1234/")[[1]][2]
-    save_path <- "data/processed/RH_subsetted_12345/missingness_1234_imputed/"
+    save_path <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
     save_path <- paste0(save_path, curr_ind, "_", name_save)
     save(data_imputed, file = save_path)
   }
@@ -952,9 +952,9 @@ path         <- "data/processed/TCGA_subset_12345/missingness_1234/"
 save_path    <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
 
 # 1-4 Which block-wise missingness setting [1, 2, 3 or 4]?
-setting      <- "1"
+setting      <- "2"
 
-for (curr_data in DFs_w_gender) {
+for (curr_data in "ESCA") {
   
   # print current DF we do Imputation on!
   print(paste("Start Imputation for:", curr_data))
@@ -964,8 +964,8 @@ for (curr_data in DFs_w_gender) {
   
   # start the imputation and take the time
   start_time <- Sys.time()
-  imputed_data <- impute_train_data(path = curr_path, ntree_imp = 25, maxiter = 1,
-                                    para = "forests")
+  imputed_data <- impute_train_data_foldwise(path = curr_path, ntree_imp = 25, maxiter = 1,
+                                             para = "forests", start_fold = 1)
   end_time <- Sys.time()
   
   # print the needed time
