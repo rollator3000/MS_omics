@@ -599,6 +599,8 @@ plot_df <- plot_df[plot_df$Block == "all",]
 plot_df$used_block2 <- sapply(1:nrow(plot_df), FUN = function(x) {
   strsplit(as.character(plot_df$used_block[x]), split = "block_")[[1]][2]
 })
+plot_df$used_block2 <- gsub("_", ", ", plot_df$used_block2)
+
 
 # 4-4 Rename the approaches so it is consitent!
 levels(plot_df$method) <- c("PL - ignore, zero", "PL - ignore, intercept",
@@ -727,6 +729,7 @@ df_all <- rbind(df_all, data.frame(approach = "mdd-sPLS",
 df_all$used_block2 <- sapply(1:nrow(df_all), FUN = function(x) {
   strsplit(as.character(df_all$blocks[x]), split = "block_")[[1]][2]
 })
+df_all$used_block2 <- gsub("_", ", ", df_all$used_block2)
 
 # 4-2 Rename the approaches so it is consitent!
 levels(df_all$approach) <- c("PL - ignore, zero", "PL - ignore, intercept",
@@ -853,6 +856,7 @@ df_all <- rbind(df_all, data.frame(approach = "mdd-sPLS",
 df_all$used_block2 <- sapply(1:nrow(df_all), FUN = function(x) {
   strsplit(as.character(df_all$blocks[x]), split = "block_")[[1]][2]
 })
+df_all$used_block2 <- gsub("_", ", ", df_all$used_block2)
 
 # 4-2 Rename the approaches so it is consitent!
 levels(df_all$approach) <- c("PL - ignore, zero", "PL - ignore, intercept",
