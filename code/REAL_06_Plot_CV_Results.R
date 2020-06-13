@@ -892,193 +892,8 @@ for (method_ in levels(df_all$approach)) {
   }))
 }
 
-# Hagenberg --- Setting 5_3_4  --- 3 [4, 2, 1, 5, 3]                         ----
-# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
-load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting3.R")
-
-# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
-#                             "Precision", "Recall", "F1", "Balance_Acc", 
-#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
-#                             "AUC1", "AUC2", "MCC"]
-metric__ = "F1"
-
-if (metric__ == "F1") {
-  used_metric_ <- "Metric: F-1 Score"
-} else {
-  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
-}
-
-# [3] Create a DF to plot the results!
-# 3-0-1 Define a DF to store the results
-df_all <- data.frame(approach = factor(),
-                     fold     = integer(),
-                     blocks   = factor(),
-                     metrics  = numeric(),
-                     used_metric = factor())
-
-# 3-1 'ignore, zero' Approach
-for (used_blocks in names(all_res$`ignore, zero`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`ignore, zero`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "ignore, zero",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# 3-2 'ignore, intercept' Approach
-for (used_blocks in names(all_res$`ignore, intercept`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`ignore, intercept`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "ignore, intercept",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# 3-3 'impute, maximise blocks' Approach
-for (used_blocks in names(all_res$`impute maximise blocks`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`impute maximise blocks`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "impute maximise blocks",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# 3-4 'impute, maximise n' Approach
-for (used_blocks in names(all_res$`impute, maximise n`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`impute, maximise n`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "impute, maximise n",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# [4] Do the plot
-ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
-  geom_boxplot() + 
-  theme_bw() +
-  ylab(used_metric_) +
-  xlab("Different Approaches") +
-  ggtitle("Priority-Lasso with different block-priorities",
-          subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 24),
-        axis.text.x = element_text(angle = 25, hjust = 1)) +
-  geom_vline(xintercept = c(1.5, 2.5, 3.5))
-
-# Hagenberg --- Setting 5_3_4  --- 4 [4, 2, 1, 6, 3]                         ----
-# [1] Load the Metrics of the CV w/ Hagenbergs Approaches
-load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting4.R")
-
-# [2] Select a metric from:  ["Accuracy", "Kappa", "Sensitifity", "Specificity", 
-#                             "Precision", "Recall", "F1", "Balance_Acc", 
-#                             "Pos_Pred_Value", "Neg_Pred_Value", "Prevalence", 
-#                             "AUC1", "AUC2", "MCC"]
-metric__ = "F1"
-
-if (metric__ == "F1") {
-  used_metric_ <- "Metric: F-1 Score"
-} else {
-  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
-}
-
-# [3] Create a DF to plot the results!
-# 3-0-1 Define a DF to store the results
-df_all <- data.frame(approach = factor(),
-                     fold     = integer(),
-                     blocks   = factor(),
-                     metrics  = numeric(),
-                     used_metric = factor())
-
-# 3-1 'ignore, zero' Approach
-for (used_blocks in names(all_res$`ignore, zero`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`ignore, zero`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "ignore, zero",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# 3-2 'ignore, intercept' Approach
-for (used_blocks in names(all_res$`ignore, intercept`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`ignore, intercept`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "ignore, intercept",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# 3-3 'impute, maximise blocks' Approach
-for (used_blocks in names(all_res$`impute maximise blocks`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`impute maximise blocks`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "impute maximise blocks",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# 3-4 'impute, maximise n' Approach
-for (used_blocks in names(all_res$`impute, maximise n`)) {
-  
-  # extract the metrics for 'used_blocks' 
-  curr_metrics_ <- unlist(all_res$`impute, maximise n`[[used_blocks]][metric__,])
-  
-  # bind it to 'df_all'
-  df_all <- rbind(df_all, data.frame(approach = "impute, maximise n",
-                                     fold     = 1:5,
-                                     blocks   = used_blocks,
-                                     metrics  = curr_metrics_,
-                                     used_metric = used_metric_))
-}
-
-# [4] Do the plot
-ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
-  geom_boxplot() + 
-  theme_bw() +
-  ylab(used_metric_) +
-  xlab("Different Approaches") +
-  ggtitle("Priority-Lasso with different block-priorities",
-          subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 24),
-        axis.text.x = element_text(angle = 25, hjust = 1)) +
-  geom_vline(xintercept = c(1.5, 2.5, 3.5))
-
-
 # Comparison of the approaches                                               ----
-# [1] ----- CC Results
+# [1] -------------------- CC Results
 DF_CC <- data.frame()
 
 # 1-1 List the files in the path
@@ -1086,14 +901,14 @@ data_path <- "./docs/CV_Res/REAL//CC_Approach.R"
 
 # 1-2 Get results
 file_curr <- load(data_path)
-file_curr     <- eval(as.symbol(file_curr))
+file_curr <- eval(as.symbol(file_curr))
 
 DF_CC <- extract_metrics(x = file_curr, metric = "F1")
 
 # 1-3 Add the approach to the DF
 DF_CC$Approach <- "Complete-Case"
 
-# [2] ----- SB Results
+# [2] -------------------- SB Results
 DF_SB <- data.frame()
 
 # 2-1 List the files in the path
@@ -1105,13 +920,16 @@ file_curr <- eval(as.symbol(file_curr))
 
 DF_SB <- extract_metrics_SBAPP(x = file_curr, metric = "F1")
 
-# 2-3 Add the approach to the DF
-DF_SB$Approach <- "Single-Block"
-
-# 2-4 Only keep the block 'Questionaire' as the results were the best!
+# 2-3 Only keep the block 'Questionaire' as the results were the best!
 DF_SB <- DF_SB[DF_SB$Feature_Block == "df1",]
 
-# [3] ----- IMP Results
+# 2-3 Add the approach to the DF
+DF_SB$Approach <- "Single-Block Questionaire"
+
+# 2-4 Delete the 'Feature_Block' column [so we can paste the DFs later on!]
+DF_SB$Feature_Block <- NULL
+
+# [3] -------------------- IMP Results
 DF_IMP <- data.frame()
 
 # 3-1 List the files in the path
@@ -1124,9 +942,9 @@ file_curr <- eval(as.symbol(file_curr))
 DF_IMP <- extract_metrics(x = file_curr, metric = "F1")
 
 # 3-3 Add the approach to the DF
-DF_IMP$Approach <- "Imputation"
+DF_IMP$Approach <- "Random Forest Imputation"
 
-# [4] ----- Block-Wise Results
+# [4] -------------------- Block-Wise Results
 DF_BW <- data.frame()
 
 # 4-1 List the files in the path
@@ -1138,14 +956,15 @@ file_curr <- eval(as.symbol(file_curr))
 
 DF_BW <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
 
+# 4-3 Only keep the ones with weight_metric == "F-1 Score" 
+DF_BW               <- DF_BW[DF_BW$weight_metric == 'F1-Score',]
+DF_BW$weight_metric <- NULL
+
 # 4-3 Add the approach to the DF
-DF_BW$Approach <- "Block-wise"
+DF_BW$Approach <- "Block-wise F-1 weighted"
 
-# 4-4 Only keep the ones with weight_metric == "F-1 Score" 
-DF_BW <- DF_BW[DF_BW$weight_metric == 'F1-Score',]
-DF_BW$weight_metric <- "F-1 Score"
 
-# [5] ----- Fold-Wise Results
+# [5] -------------------- Fold-Wise Results
 DF_FW <- data.frame()
 
 # 5-1 List the files in the path
@@ -1157,46 +976,92 @@ file_curr <- eval(as.symbol(file_curr))
 
 DF_FW <- extract_metrics_FW_BW(x = file_curr, metric = "F1")
 
-# 5-3 Add the approach to the DF
-DF_FW$Approach <- "Fold-wise"
+# 5-3 Only keep the ones with weight_metric == "F-1 Score" 
+DF_FW               <- DF_FW[DF_FW$weight_metric == 'F1-Score',]
+DF_FW$weight_metric <- NULL
 
-# 5-4 Only keep the ones with weight_metric == "F-1 Score" 
-DF_FW <- DF_FW[DF_FW$weight_metric == 'F1-Score',]
-DF_FW$weight_metric <- "F-1 Score"
+# 5-4 Add the approach to the DF
+DF_FW$Approach <- "Fold-wise F-1 weighted"
 
-# [6] ----- Bind the DFs and create a plot
-# 6-1 Columns we need from every approach-DF
-needed_cols <- c("Metric", "Approach")
 
-# 6-2 Bind the DFs from the different approaches to a single DF for plots!
-DF_all <- rbind(DF_CC[,needed_cols], DF_SB[,needed_cols], DF_IMP[,needed_cols],
-                DF_BW[,needed_cols], DF_FW[,needed_cols])
+# [6] -------------------- Naive BlockOrder
+# 6-1 Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_1.RData")
 
-# 6-2-1 Relevel the 'Approach' variable
-DF_all$Approach <- factor(DF_all$Approach, levels = c("Fold-wise", "Block-wise",
-                                                      "Imputation", "Single-Block",
-                                                      "Complete-Case"), 
-                          ordered = TRUE)
+naive_BO <- data.frame("Fold"                = 1:5,
+                       "Metric"              = unlist(all_res$`ignore, intercept`['F1',]),
+                       "performance_metric"  = "F1",
+                       "Approach"            = "PL - ignore, intercept [1, 2, 3, 4, 5, 6]")
 
-# 6-3 Extract the used metric
-if (DF_all$performance_metric[1] == "F1") {
-  used_metric_ <- "Metric: F-1 Score"
-} else {
-  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
-}
+# [7] -------------------- Naive BlockOrder subsetted
+# 7-1 Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_2.RData")
 
-# 6-4 Do the plot
-ggplot(data = DF_all, aes(x = Approach, y = Metric)) +
-  geom_boxplot(position = position_dodge(preserve = "single"),
-               fill = c("darkolivegreen2", "darkorange1", 'darkorchid1', 
-                        'darkgoldenrod1', 'darkslategray3')) + 
+naive_BO_subset <- data.frame("Fold"                = 1:5,
+                              "Metric"              = unlist(all_res_532$all_block$`ignore, zero`$block_1_2_3['F1',]),
+                              "performance_metric"  = "F1",
+                              "Approach"            = "PL - ignore, zero [1, 2, 3]")
+
+# [8] -------------------- Adjusted BlockOrder [4, 2, 1, 3, 5]
+# 8-1 Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting1.R")
+
+adhusted_prios_1 <- data.frame("Fold"                = 1:5,
+                               "Metric"              = unlist(all_res$`ignore, zero`$block_4_2_1_3_5['F1',]),
+                               "performance_metric"  = "F1",
+                               "Approach"            = "PL - ignore, zero [4, 2, 1, 3, 5]")
+
+# [9] -------------------- Adjusted BlockOrder [4, 2, 1, 3, 6]
+# 9-1 Load the Metrics of the CV w/ Hagenbergs Approaches
+load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting2.R")
+
+adhusted_prios_2 <- data.frame("Fold"                = 1:5,
+                               "Metric"              = unlist(all_res$`ignore, intercept`$block_4_2_1_3['F1',]),
+                               "performance_metric"  = "F1",
+                               "Approach"            = "PL - ignore, zero [4, 2, 1, 3]")
+
+
+adhusted_prios_2_mdd <- data.frame("Fold"                = 1:5,
+                                   "Metric"              = unlist(all_res$mdd_spls['F1',]),
+                                   "performance_metric"  = "F1",
+                                   "Approach"            = "mdd-sPLS [4, 2, 1, 3, 6]")
+
+# [11] -------------------- Bind the DFs and create a plot!
+# 11-1 Bind the DFs
+df_all <- rbind(DF_CC, DF_SB, DF_IMP, DF_BW, DF_FW, naive_BO, naive_BO_subset,
+                adhusted_prios_1, adhusted_prios_2, adhusted_prios_2_mdd)
+
+# 11-2 Adjust the levels of the approaches
+df_all$Approach <- factor(df_all$Approach, 
+                          levels = c("Complete-Case", "Single-Block Questionaire", 
+                                     "Random Forest Imputation", "Block-wise F-1 weighted",
+                                     "Fold-wise F-1 weighted", "PL - ignore, intercept [1, 2, 3, 4, 5, 6]",
+                                     "PL - ignore, zero [1, 2, 3]", "PL - ignore, zero [4, 2, 1, 3, 5]",
+                                     "PL - ignore, zero [4, 2, 1, 3]", "mdd-sPLS [4, 2, 1, 3, 6]"))
+
+
+# 11-3 Plot the results
+ggplot(data = df_all, aes(x = Approach, y = Metric )) +
+  geom_boxplot(fill = c("darkolivegreen3", "darkolivegreen3", "darkolivegreen3",
+                        "darkolivegreen3", "darkolivegreen3", "darkorchid1", 
+                        "darkorchid1", "darkorchid1", "darkorchid1", "darkgoldenrod")) + 
   theme_bw() +
   ggtitle("Comparison of all Approaches",
-          subtitle = "clinical asthma data") +
-  ylab(used_metric_) +
+          subtitle = "Clinical asthma data") +
+  ylab("Metric: F-1 Score") +
   xlab("Approach") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
         text = element_text(size = 24),
         legend.position = "top") +
-  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5),
-             col = "red", lty = 2, lwd = 1.005)
+  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5),
+             col = "black", lty = 2, lwd = 1.005)
+
+# 4-4 Get the summarys of the single approaches!
+for (method_ in levels(df_all$Approach)) {
+  print("METHOD ----------------------------")
+  print(method_)
+  print(
+  summary(df_all$Metric[df_all$Approach == method_])
+  )
+}
+             
