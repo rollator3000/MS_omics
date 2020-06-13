@@ -892,33 +892,6 @@ for (method_ in levels(df_all$approach)) {
   }))
 }
 
-# 4-1 Rename the used blocks [used for the prediction]
-df_all$used_block2 <- sapply(1:nrow(df_all), FUN = function(x) {
-  strsplit(as.character(df_all$blocks[x]), split = "block_")[[1]][2]
-})
-
-# 4-2 Rename the approaches so it is consitent!
-levels(df_all$approach) <- c("PL - ignore, zero", "PL - ignore, intercept",
-                             "PL - impute, maximise blocks", "PL - impute, maximise n", "mdd-sPLS")
-
-df_all$approach <- factor(df_all$approach, levels = c("mdd-sPLS",
-                                                      "PL - ignore, intercept", 
-                                                      "PL - ignore, zero", 
-                                                      "PL - impute, maximise blocks",
-                                                      "PL - impute, maximise n"))
-
-# 4-3 Do the actual plot
-ggplot(data = df_all, aes(x = approach, y = metrics, fill = blocks)) +
-  geom_boxplot() + 
-  theme_bw() +
-  ylab(used_metric_) +
-  xlab("Different Approaches") +
-  ggtitle("Priority-Lasso with different block-priorities",
-          subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 24),
-        axis.text.x = element_text(angle = 25, hjust = 1)) +
-  geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5))
-
 # Hagenberg --- Setting 5_3_4  --- 3 [4, 2, 1, 5, 3]                         ----
 # [1] Load the Metrics of the CV w/ Hagenbergs Approaches
 load("./docs/CV_Res/REAL/Hagenberg_5_3_4__Setting3.R")
