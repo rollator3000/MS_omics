@@ -997,7 +997,7 @@ for (curr_data in DFs_w_gender) {
 # ----- Situation 2
 for (curr_data in DFs_w_gender) {
   
-  print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
+  print(paste0("----- Situation 2 for DF: '", curr_data, "' -----------------"))
   
   # --1 Define current path
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234_imputed/", 
@@ -1014,7 +1014,7 @@ for (curr_data in DFs_w_gender) {
 # ----- Situation 3
 for (curr_data in DFs_w_gender) {
   
-  print(paste0("----- Situation 1 for DF: '", curr_data, "' -----------------"))
+  print(paste0("----- Situation 3 for DF: '", curr_data, "' -----------------"))
   
   # --1 Define current path
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234_imputed/", 
