@@ -1,5 +1,6 @@
 "
-Script to visualize the different Results from the TCGA CVs
+Script to visualize the different Results from the CrossValidations of the 
+different random forest adaptions on the TCGA data. 
 "
 # [0] Load Packages and define functions
 library(ggplot2)
@@ -1854,7 +1855,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
   geom_boxplot() + 
   theme_bw() +
   ggtitle("Blockwise Approach",
-          subtitle = "TCGA - Pattern 1") +
+          subtitle = "TCGA - Pattern 2") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
@@ -1890,7 +1891,7 @@ for (curr_test in unique(DF_all$Testsituation)) {
 
 # Analyse Results of the FoldWise_Approach      --- pattern 2               ----
 # [0] Define needed Variables
-data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting1"
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting2"
 
 # [1] Load all Results w/ Romans Approach
 # 1-1 List all files from the 'data_path'
@@ -1930,7 +1931,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) 
   geom_boxplot() + 
   theme_bw() +
   ggtitle("Foldwise Approach",
-          subtitle = "TCGA - Pattern 1") +
+          subtitle = "TCGA - Pattern 2") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
@@ -1970,7 +1971,7 @@ for (curr_test in unique(DF_all$Testsituation)) {
 DF_CC <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -1991,7 +1992,7 @@ DF_CC$Approach <- "Complete-Case"
 DF_SB <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting1/"
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2003,8 +2004,8 @@ for (curr_file in files) {
   
   curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "F1", train_sit = 1)
   
-  # Only keep the results of single 'A'
-  curr_df   <- curr_df[curr_df$Learn_Block == 'A',]
+  # Only keep the results of single 'D'
+  curr_df   <- curr_df[curr_df$Learn_Block == 'D',]
   DF_SB     <- rbind(DF_SB, curr_df)
 }
 
@@ -2015,7 +2016,7 @@ DF_SB$Approach <- "Single-Block"
 DF_IMP <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2036,7 +2037,7 @@ DF_IMP$Approach <- "Imputation"
 DF_BW <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2057,7 +2058,7 @@ DF_BW$Approach <- "Block-wise"
 DF_FW <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2103,7 +2104,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   theme_bw() +
   ggtitle("Comparison of all Approaches",
-          subtitle = "TCGA - Pattern 1") +
+          subtitle = "TCGA - Pattern 2") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
@@ -2148,7 +2149,7 @@ for (curr_test in unique(DF_all$Testsituation)) {
 DF_CC <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2169,7 +2170,7 @@ DF_CC$Approach <- "Complete-Case"
 DF_SB <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting1/"
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2181,8 +2182,8 @@ for (curr_file in files) {
   
   curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "Balance_Acc", train_sit = 1)
   
-  # Only keep the results of single 'A'
-  curr_df   <- curr_df[curr_df$Learn_Block == 'A',]
+  # Only keep the results of single 'D'
+  curr_df   <- curr_df[curr_df$Learn_Block == 'D',]
   DF_SB     <- rbind(DF_SB, curr_df)
 }
 
@@ -2193,7 +2194,7 @@ DF_SB$Approach <- "Single-Block"
 DF_IMP <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2214,7 +2215,7 @@ DF_IMP$Approach <- "Imputation"
 DF_BW <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2235,7 +2236,7 @@ DF_BW$Approach <- "Block-wise"
 DF_FW <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2283,7 +2284,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   theme_bw() +
   ggtitle("Comparison of all Approaches",
-          subtitle = "TCGA - Pattern 1") +
+          subtitle = "TCGA - Pattern 2") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
@@ -2327,7 +2328,7 @@ for (curr_test in unique(DF_all$Testsituation)) {
 DF_CC <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2348,7 +2349,7 @@ DF_CC$Approach <- "Complete-Case"
 DF_SB <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting1/"
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2360,8 +2361,8 @@ for (curr_file in files) {
   
   curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "MCC", train_sit = 1)
   
-  # Only keep the results of single 'A'
-  curr_df   <- curr_df[curr_df$Learn_Block == 'A',]
+  # Only keep the results of single 'D'
+  curr_df   <- curr_df[curr_df$Learn_Block == 'D',]
   DF_SB     <- rbind(DF_SB, curr_df)
 }
 
@@ -2372,7 +2373,7 @@ DF_SB$Approach <- "Single-Block"
 DF_IMP <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2393,7 +2394,7 @@ DF_IMP$Approach <- "Imputation"
 DF_BW <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2414,7 +2415,7 @@ DF_BW$Approach <- "Block-wise"
 DF_FW <- data.frame()
 
 # 1-1 List the files in the path
-data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting1/"
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting2/"
 files     <- list.files(data_path)
 
 # 1-2 Loop over the files and get the results
@@ -2462,7 +2463,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   theme_bw() +
   ggtitle("Comparison of all Approaches",
-          subtitle = "TCGA - Pattern 1") +
+          subtitle = "TCGA - Pattern 2") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
