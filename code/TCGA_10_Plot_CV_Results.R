@@ -1269,9 +1269,12 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   guides(fill = guide_legend(title = "Approach: ")) +
   scale_fill_manual(values = c("darkolivegreen2", "darkorange1", 'darkorchid1', 'darkgoldenrod1', 'darkslategray3'))
 
-# 6-5 Count how often a approach has the highest median!
-counter        <- c(0, 0, 0, 0, 0)
-names(counter) <- c("CC", "SB", "IMP", "BW", "FW")
+# 6-5 Count how often a approach has the highest/ worst median!
+best_counter        <- c(0, 0, 0, 0, 0)
+names(best_counter) <- c("CC", "SB", "IMP", "BW", "FW")
+
+worst_counter        <- c(0, 0, 0, 0, 0)
+names(worst_counter) <- c("CC", "SB", "IMP", "BW", "FW")
 for (curr_test in unique(DF_all$Testsituation)) {
   
   m_cc <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
@@ -1290,10 +1293,14 @@ for (curr_test in unique(DF_all$Testsituation)) {
                                  DF_all$Approach == 'Fold-wise'])
   
   all_res_  <- c(m_cc, m_sb, m_imp, m_bw, m_fw)
-  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
   
-  if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
+  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
+  min_index <- which(all_res_ == min(all_res_, na.rm = TRUE))
+  
+  if (length(max_index) == 1) best_counter[max_index]  <- best_counter[max_index] + 1
+  if (length(min_index) == 1) worst_counter[min_index] <- worst_counter[min_index] + 1
 }
+
 
 # Compare the different Approaches              --- pattern 1 [Balanced Accuracy]   ----
 # [1] ----- CC Results
