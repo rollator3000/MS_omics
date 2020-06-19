@@ -1,10 +1,13 @@
 " Script to modify 'simpleRF' implementation for our use case!
-  We want to add the method 'prune', which prunes a tree at splitpoints, that 
-  are not avaible in the test_set we want to get predicitons by a Random Forest
-  [collection of trees basically]!
+
+  Create a RF-Class that has the option to dynamically prune the single decision
+  trees of a random forest model. This is needed for the implementation of the 
+  fold-wise appropach.
+  Add the method 'prune'! This method prunes a tree at splitpoints, that 
+  are not avaible in the test_set we want to get predicitons for!
   We do this by enlarging the functionality of the 'simpleRF' package!
 "
-# setwd("C:/Users/kuche_000/Desktop/MS-Thesis/")
+# [0] Load packages
 require(parallel)
 library(checkmate)
 library(ROCR)
@@ -175,7 +178,7 @@ methods = list(
         # [2-2] Else move observations to the child node [based on split criterion]
         if (length(split_levels_left[[nodeID]]) == 0) { 
           
-          # [2-2-1] ORDERD splitting & assigning to the child node!
+          # 2-2-1 ORDERD splitting & assigning to the child node!
           value <- as.numeric(predict_data$subset(i, split_varIDs[nodeID]))
           if (value <= split_values[nodeID]) {
             nodeID <- child_nodeIDs[[nodeID]][1]
@@ -184,7 +187,7 @@ methods = list(
           }
         } else {
           
-          # [2-2-2] UNORDERED SPLITTING & assiging to the child node!
+          # 2-2-2 UNORDERED SPLITTING & assiging to the child node!
           value <- predict_data$subset(i, split_varIDs[nodeID])
           if (value %in% split_levels_left[[nodeID]]) {
             nodeID <- child_nodeIDs[[nodeID]][1]
@@ -194,7 +197,7 @@ methods = list(
         }
       }
       
-      # [2-2] Add to prediction, but make sure the tree was not pruned in the  
+      # [2-3] Add to prediction, but make sure the tree was not pruned in the  
       #       first split!
       if (nodeID == 1) {
         predictions[[i]] <- NA
@@ -282,10 +285,10 @@ methods = list(
     
     # [4] PRUNE - If we have reached this point, we NEED TP PRUNE THE TREE
     # [4-1] Find all Nodes, that use a split_point, not avaible in our data!
-    # [4-1-1] Get the names of all split_variables used in the tree [incl position]
+    # 4-1-1 Get the names of all split_variables used in the tree [incl position]
     split_var_names_orderd <- colnames(data$data)[split_varIDs]
     
-    # [4-1-2] Get all nodes, that use a missing variable for splitting!
+    # 4-1-2 Get all nodes, that use a missing variable for splitting!
     nodes_to_prune <- c()
     for (miss_var_name_curr in missing_var_names) {
       curr_          <- which(split_var_names_orderd == miss_var_name_curr)
@@ -345,7 +348,7 @@ methods = list(
      data_values <- data$subset(sampleIDs[[nodeID]], split_varID)
      
      # [2-2] Based on the class of the current 'split_varID' find the best split
-     # [2-2-1] Non-Numeric unorderd values + 'order_split' as 'unordered_factors'
+     # 2-2-1 Non-Numeric unorderd values + 'order_split' as 'unordered_factors'
      if (!is.numeric(data_values) & !is.ordered(data_values) & unordered_factors == "order_split") {
       
        # Order the factor levels, by the mean value of the repsonse 
@@ -364,7 +367,7 @@ methods = list(
        data_values <- factor(data_values, levels = levels.ordered, ordered = TRUE)
      }
      
-     # [2-2-2] Non-Numeric unorderd values + NOT order_split' as 'unordered_factors'
+     # 2-2-2 Non-Numeric unorderd values + NOT order_split' as 'unordered_factors'
      if (!is.numeric(data_values) & !is.ordered(data_values)) {
        
        # Find best split w/ extra method!
@@ -376,7 +379,7 @@ methods = list(
        }
      } else {
        
-       # [2-2-3] ORDERD features
+       # 2-2-3 ORDERD features
        # Find best split value orderd (numeric, orderd factors etc.)
        best_split = findBestSplitValueOrdered(split_varID, data_values, best_split, response)
        
