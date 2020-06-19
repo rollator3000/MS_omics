@@ -1,4 +1,5 @@
-"Minimalistic Example for a better explanation of the decision tree!"
+"Minimalistic Example for a better explanation of the decision tree"
+# Load the needed libraries
 library(rpart)
 library(rpart.plot)
 library(ggplot2)
@@ -62,4 +63,6 @@ a4 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) +
   annotate("text", x = 65.5, y = 180, label = "N3", size = 15, col = "seagreen") +
   ggtitle("Splitting N2 into child nodes N3 & N4")
 
+
+# Paste all plots into a single figure
 grid.arrange(a2, a3, a4, nrow = 1)
