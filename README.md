@@ -21,7 +21,7 @@ Data with blockwise missingness always consits of different **folds** and **bloc
   - A **fold** represents a set of observations with the same observed blocks.  
     Basically all observations with the same observed features. Each fold is unique and every obserbation belongs to exactly one of them.
 
-### Example for data with blockwise missingness:  
+#### Example for data with blockwise missingness:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
 |---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
 | 1   | 65.4    | 187     | 2.536   | Upper       |         |       |         | 1   |
@@ -66,14 +66,14 @@ Regular model fitting on data with block-wise missingness is for most statistica
    - **Pruning:** If a decision tree uses a split variable that is not avaible in the testset, cut the decision tree and use the node before that split as new terminal node
    - Average the seperate fold-wise predicitons for a final prediciton - weighted/ unweighted
 
-### ! ! ! Closer Information to these approaches, aswell as to the results are in the MS-Thesis itself! ! !
+#### ! ! ! Closer Information to these approaches, aswell as to the results are in the MS-Thesis itself! ! !
 
 - **mdd-sPLS:**
    - Method from Hagenberg's thesis that can directly deal with block-wise missingness
 - **piority-Lasso**
    - Method from Hagenberg's thesis that adapted the original priority-Lasso method to deal with block-wise missingness
 
-### ! ! ! Closer Information to these approaches in the MS-Thesis of Hagenberg! ! !
+#### ! ! ! Closer Information to these approaches in the MS-Thesis of Hagenberg! ! !
 
 ---
 
@@ -83,7 +83,8 @@ The original TCGA data is not part of this Repo. If interested in the original d
 Only the subsetted TCGA data can be found in the repository under: "data/processed/TCGA_subset_12345" 
 
 #### Clinical asthma data
-The clinical asthma data is a real medical data-set and comes from a coperation with the 'Hospital of the University of Munich'. This data set is also used for the comparison of the approaches. For data protection reasons, the data can not be stored in the repository nor be shared.
+The clinical asthma data is a real medical data-set and comes from a coperation with the 'Hospital of the University of Munich'.  
+This data set is also used for the comparison of the approaches. For data protection reasons, the data can not be stored in the repository nor be shared.
 
 ---
 
@@ -97,7 +98,8 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
     Get an example for the splitting of the feature-space of a single decision tree
 
 - GENERAL_simpleRF_adaption:
-    Implement a random forest class that can has the option to dynamically prune the single decision trees it consits of. This is needed for the implementation of the 'fold-wise' approach. Whole code builds up on 'github.com/mnwright/simpleRF'
+    Implement a random forest class that can has the option to dynamically prune the single decision trees it consits of.  
+    This is needed for the implementation of the 'fold-wise' approach. Whole code builds up on 'github.com/mnwright/simpleRF'
 ``` 
 
 #### TCGA
