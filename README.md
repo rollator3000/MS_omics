@@ -43,48 +43,59 @@ Data with blockwise missingness always consits of different **folds** and **bloc
      - **Fold3:** All observations with observed Physical & Biological properties
   
 
-Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! Besides the training, the testdata can also consist of block-wise missingness. Therefore the approaches must be able to deal with block-wise missing data in the test data as well as in the train data <br>
+Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! Besides the training, the testdata can also consist of block-wise missingness. Therefore the approaches must be able to deal with block-wise missing data in the test data as well as in the train data. <br>
 
 ### Approaches:
+The different random forest - RF - adaptions/ approaches are listed below and briefly explained using the example data above.
+
 -  **Complete Case Approach:** Only use complete cases - regarding the testset - to fit a RF
-   - if the testset consists of 'Weight', 'Height' & 'g1',...,'g100' then only the observations with these observed features are used for the trainig of the model!  
+   - If the test-set consists of the features 'Weight', 'Height' (Physical properties) & 'g1',...,'g100' (Biological properties) then only the observations with these observed features are used for the trainig of the model (Fold3)! The fitted model can then predict on the test-set regularly
 -  **Single Block Approach:** Only use the features from a single feature block to fit a RF
-   - if the testset consists of 'Weight', 'Height' & 'g1',...,'g100' then fit a model on all observations with the features 'Weight' & 'Height' **OR** on all observations with the features 'g1',...,'g100'. 
-   - For predicitons on the test data only use the features the model has been trained with and discard all other variables in test!
-   - If a test observation misses a feature the RF has been trained with predictions are not possible
--  **Imputation Approach:** Use the 'missForest' approach to impute the missing values and fit a RF on this fully observed data then
-   - Impute the missing data in the TrainingSet with the missForest Approach 
-   - For predicition on testset, remove all features from the (imputed) train-set that are not part of the test-set
-   - On this pruned (imputed) train-set fit a RF and generate predicitions for the testset then
--  **Block-Wise Approach:** Fit a seperate RF on each feature block and create a final prediciton by combining the different block-wise predicitons
-   - On each feature block of the data, fit a seperate RF *- one RF on the Physical properties, one RF on the Educational properties, ...*
-   - For a prediction, each block-wise RF is asked for a predicition - only the RFs that were trained on a feature-block that is available for the test-set can return a predicition 
-   - Average the seperate block-wise predicitons for a final prediciton - weighted/ unweighted
+   - If the test-set consists of the features 'Weight', 'Height' (Physical properties) & 'g1',...,'g100' (Biological properties) then we a model can either be fit on all observations with the features 'Weight' & 'Height' (Physical properties) **OR** on all observations with the features 'g1',...,'g100' (Biological properties)
+   - For predicitons on the test-set only use the features the model has been trained with and discard all other variables
+-  **Imputation Approach:** Impute the missing values with the 'missForest' approach and fit a RF - regarding the testset - on this fully observed data
+   - Impute the missing data in the TrainingSet with the missForest Approach
+   - For predicition on testset, remove all features from the fully observed train-set that are not part of the test-set
+   - On this pruned (imputed) train-set fit a RF and predicit on the test-set then
+-  **Block-Wise Approach:** Fit a seperate RF on each feature-block and create a final prediciton by combining the different block-wise predicitons
+   - Fit a seperate RF on each feature block of the data *- one RF on the Physical properties, one RF on the Educational properties, ...*
+   - For a prediction, each block-wise RF is asked for a predicition - only the RFs that were trained on a feature-block that is available for the test-set can predict on the test-set  
+   - The seperate block-wise predicitons are averaged in a weighted/ unweighted way for the final predicitons
 -  **Fold-Wise Approach:** Fit a seperate RF on each fold and create a final prediciton by combining the different fold-wise predicitons
-   - On each fold of the data fit a seperate RF *- one RF on Fold1, one RF on Fold2, ...*
-   - For a prediction, each fold-wise RF generates a seperate prediciton *- for these predicitons it might be that the single decision trees the RF consists of need to pruned.* 
-   - **Pruning:** If a decision tree uses a split variable that is not avaible in the testset, cut the decision tree and use the node before that split as new terminal node
-   - Average the seperate fold-wise predicitons for a final prediciton - weighted/ unweighted
+   - Fit a seperate RF on each fold of the data  *- one RF on Fold1, one RF on Fold2, ...*
+   - For a prediction, each fold-wise RF is asked for a predicition - the RFs that were trained that were trained on a fold with at least one feature-block that is also in the test-set can can try it  
+   - A RF that was trained on a fold that has a feature-block that is not available for the test-set might use split variables that are not available for the test-set
+   - These RFs need to pruned before they can genterate a prediciton
+   - **Pruning:** If a decision tree of a RF uses a split variable that is not avaible in the test-set, this split needs to 'cut off', such that the node before that split is a new terminal node then
+   - The seperate fold-wise predicitons are averaged in a weighted/ unweighted way for the final predicitons
 
-#### ! ! ! Closer Information to these approaches, aswell as to the results are in the MS-Thesis itself! ! !
+#### ! ! ! Closer Information to approaches above are in the MS-Thesis itself! ! !  
 
+
+The approaches from Hagenberg's master thesis are listed below - closer Information to these approaches in the MS-Thesis of Hagenberg.
 - **mdd-sPLS:**
-   - Method from Hagenberg's thesis that can directly deal with block-wise missingness
+   - Method from Lorenzo et al. that can directly deal with block-wise missingness
 - **piority-Lasso**
-   - Method from Hagenberg's thesis that adapted the original priority-Lasso method to deal with block-wise missingness
-
-#### ! ! ! Closer Information to these approaches in the MS-Thesis of Hagenberg! ! !
+   - Hagenberg's adaption of the original priority-Lasso method to deal with block-wise missingness
 
 ---
 
 ## Data
-#### TCGA
+Two different data sources are used for the comparison of the differnt approaches for data with block-wise missingness.
+
+### TCGA
+14 real multi-omics data sets, where each of these data sets contains the measurements of patients with a certain cancer type. The data was not directly accessed via TCGA, but provided by R. Hornung who has used the data in one of his articles already.  
+
 The original TCGA data is not part of this Repo. If interested in the original data send an E-Mail to 'f.ludwigs@yahoo.de'.  
 Only the subsetted TCGA data can be found in the repository under: "data/processed/TCGA_subset_12345" 
 
-#### Clinical asthma data
-The clinical asthma data is a real medical data-set and comes from a coperation with the 'Hospital of the University of Munich'.  
-This data set is also used for the comparison of the approaches. For data protection reasons, the data can not be stored in the repository nor be shared.
+### Clinical asthma data
+It is a real world data set with block-wise missingness that was provided by the group of Prof. Dr. med. Bianca Schaub at the 'paediatric clinic Dr. von Haunersches Kinderspital'. The data was collected as part of a clinical case-control study in the field of asthma research, whereby the target variable of the data is binary and defined as the presence of asthma.  
+
+For data protection reasons, the data can not be stored in the repository nor be shared.  
+
+
+#### ! ! ! Closer Information to the data above are in the MS-Thesis itself! ! !  
 
 ---
 
@@ -95,11 +106,12 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 #### General
 ``` 
 - GENERAL_DecisionTreeExample:
-    Get an example for the splitting of the feature-space of a single decision tree
+    Get an example figure for the splitting of the feature-space of a single decision tree
 
 - GENERAL_simpleRF_adaption:
-    Implement a random forest class that can has the option to dynamically prune the single decision trees it consits of.  
-    This is needed for the implementation of the 'fold-wise' approach. Whole code builds up on 'github.com/mnwright/simpleRF'
+    Implemention of a random forest class that has the option to dynamically prune the single decision trees of RF.    
+    This is needed for the implementation of the 'fold-wise' approach.  
+    Whole code builds up on 'github.com/mnwright/simpleRF'
 ``` 
 
 #### TCGA
@@ -108,9 +120,9 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
     Get a overview of the different DFs in TCGA & get some additional Information!
 
 - TCGA_02_explorative_performance:
-    Check the performance of a RF when trained on a single feature-block/ on all blocks   
+    Check the performance of a RF when trained on a single feature-block/ on all   
     joint feature blocks. Then create different subsets of the original data & get the 
-    the predictive performance on these subsets [incl. plots]
+    the predictive performance on these subsets
 
 - TCGA_03_subset_DFs:
     Create final subsets of the original TCGA datasets & get the predictive performance
@@ -118,29 +130,29 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
     of the subsetted DFs
 
 - TCGA_04_TestTrain_splits_on_subsetted_DFs:
-    Split the subsetted DFs into Test-Train splits for the CV. The training data is induced
-    with block-wise missingness. The resulting Test-Train-Splits can then be used for the CV 
-    of the different approaches.  
+    Split the subsetted DFs into Test-Train splits for the 5-fold CV. The training data is
+    induced with different patterns of block-wise missingness. The resulting Test-Train splits 
+    can then be used for the CV of the different approaches.  
 
 - TCGA_05_Foldwise_RF_CV:
     CrossValidate the fold-wise Approach for all different settings & all possible combinations 
-    of block-wise missingness in the TestSet
+    of block-wise missingness in the test-set
 
 - TCGA_06_BlockWise_RF_CV:
     CrossValidate the block-wise Approach for all different settings & all possible combinations 
-    of block-wise missingness in the TestSet
+    of block-wise missingness in the test-set
 
 - TCGA_07_CompleteCases_CV:
     CrossValidate the complete-case Approach for all different settings & all possible combinations 
-    of block-wise missingness in the TestSet
+    of block-wise missingness in the test-set
 
 - TCGA_08_Imputation_CV:
     CrossValidate the Imputation Approach for all different settings & all possible combinations 
-    of block-wise missingness in the TestSet
+    of block-wise missingness in the test-set
 
 - TCGA_09_SingleBlock_CV:
    CrossValidate the Single-Block Approach for all different settings & all possible combinations 
-    of block-wise missingness in the TestSet
+    of block-wise missingness in the test-set
 
 - TCGA_10_Plot_CV_Results:
     Vizualize the Results from the CV of the TCGA data for all the different approaches!
