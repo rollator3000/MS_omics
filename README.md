@@ -4,12 +4,14 @@ This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
 supervised by: <br>
 ***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***  
 <br> 
-Block-wise missingness is a common problem in the context of Multi-Omics Data. To my knowledge there are no standard approaches, nor compariosons studies for this type of missingness yet. In 2018 Norbert Krautenbacher has already stated that a reliable analysis strategy for multi-omics data with block-wise missingness are urgently needed! This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy.
+Block-wise missingness describes a special type of missingness that is a common problem in the context of Multi-Omics data. To my knowledge there are no standard approaches, nor compariosons studies for this type of missingness yet. In 2018 Norbert Krautenbacher has already stated that a reliable analysis strategy for multi-omics data with block-wise missingness is urgently needed! This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy for data with block-wise missingness.
 
 ---
 
 ## Project description
-This project compares different approaches capable to deal with block-wise missingness in Multi-Omics data.  
+This project compares different approaches capable to deal with block-wise missingness in Multi-Omics data. For this different random forest based adaptions that are capable to deal with block-wise missingness are introduced. Penalised regeression adaptions from Hagenberg's thesis are also compared to the random forest based adaptions, even though these are not introduced thepretically. 
+
+### Block-wise missingness:
 Block-wise missingness is a special type of missingness that appears frequently in the context of Multi-Omics data. 
 It can for example arise when concatenating multiple clinical studies with the same target variable. Eventhough the datasets from the different studies have the same target variable, the observed features can still can differ! The concatination of such datasets results then in a DF with block-wise missingness!  
 
@@ -19,7 +21,7 @@ Data with blockwise missingness always consits of different **folds** and **bloc
   - A **fold** represents a set of observations with the same observed blocks.  
     Basically all observations with the same observed features. Each fold is unique and every obserbation belongs to exactly one of them.
 
-### Example for a dataset with blockwise missingness:  
+### Example for data with blockwise missingness:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
 |---- |-------- |-------- |-------- |-----------  |-------  |-----  |-------  |---  |
 | 1   | 65.4    | 187     | 2.536   | Upper       |         |       |         | 1   |
@@ -41,7 +43,7 @@ Data with blockwise missingness always consits of different **folds** and **bloc
      - **Fold3:** All observations with observed Physical & Biological properties
   
 
-Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! Besides the data we use to fit a model, the testdata can also consist of block-wise missingness - e.g. 1 block avaible; Combination of 2 blocks avaible; .... Therefore the approaches must be able to deal with block-wise missing data in the test data as well <br>
+Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! Besides the training, the testdata can also consist of block-wise missingness. Therefore the approaches must be able to deal with block-wise missing data in the test data as well as in the train data <br>
 
 ### Approaches:
 -  **Complete Case Approach:** Only use complete cases - regarding the testset - to fit a RF
@@ -52,8 +54,8 @@ Regular model fitting on data with block-wise missingness is for most statistica
    - If a test observation misses a feature the RF has been trained with predictions are not possible
 -  **Imputation Approach:** Use the 'missForest' approach to impute the missing values and fit a RF on this fully observed data then
    - Impute the missing data in the TrainingSet with the missForest Approach 
-   - For predicition on testset, remove all features from the (imputed) trainset that are not part of the testst
-   - On this pruned (imputed) trainset fit a RF and generate predicitions for the testset then
+   - For predicition on testset, remove all features from the (imputed) train-set that are not part of the test-set
+   - On this pruned (imputed) train-set fit a RF and generate predicitions for the testset then
 -  **Block-Wise Approach:** Fit a seperate RF on each feature block and create a final prediciton by combining the different block-wise predicitons
    - On each feature block of the data, fit a seperate RF *- one RF on the Physical properties, one RF on the Educational properties, ...*
    - For a prediction, each block-wise RF is asked for a predicition - only the RFs that were trained on a feature-block that is available for the test-set can return a predicition 
@@ -64,18 +66,24 @@ Regular model fitting on data with block-wise missingness is for most statistica
    - **Pruning:** If a decision tree uses a split variable that is not avaible in the testset, cut the decision tree and use the node before that split as new terminal node
    - Average the seperate fold-wise predicitons for a final prediciton - weighted/ unweighted
 
-### ! ! ! Closer Information to the approaches, aswell as to the results are in the MS-Thesis itself! ! !
+### ! ! ! Closer Information to these approaches, aswell as to the results are in the MS-Thesis itself! ! !
+
+- **mdd-sPLS:**
+   - Method from Hagenberg's thesis that can directly deal with block-wise missingness
+- **piority-Lasso**
+   - Method from Hagenberg's thesis that adapted the original priority-Lasso method to deal with block-wise missingness
+
+### ! ! ! Closer Information to these approaches in the MS-Thesis of Hagenberg! ! !
 
 ---
 
 ## Data
 #### TCGA
 The original TCGA data is not part of this Repo. If interested in the original data send an E-Mail to 'f.ludwigs@yahoo.de'.  
-Only the subsetted TCGA data can be found in the repository under: "data/processed/TCGA_subset_12345"   
-With the script 'code/TCGA_03_subset_DFs' the data is subsetted & the script 'code/TCGA_04_TestTrain_splits_on_subsetted_DFs.R' splits the subsetted DFs to test- and train-set, whereby the training set is induced with block-wise missingness! Based on these test-train splits the predictive performance of the different approaches are investigated.
+Only the subsetted TCGA data can be found in the repository under: "data/processed/TCGA_subset_12345" 
 
-#### Real Data
-The 'real' dataset used in the thesis comes from a coperation with the 'Hospital of the University of Munich'. For data protection reasons, the data can not be stored in the repository nor be shared.
+#### Clinical asthma data
+The clinical asthma data is a real medical data-set and comes from a coperation with the 'Hospital of the University of Munich'. This data set is also used for the comparison of the approaches. For data protection reasons, the data can not be stored in the repository nor be shared.
 
 ---
 
@@ -86,11 +94,10 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 #### General
 ``` 
 - GENERAL_DecisionTreeExample:
-    Get an example for the featurespace splitting of a single decision tree
+    Get an example for the splitting of the feature-space of a single decision tree
 
 - GENERAL_simpleRF_adaption:
-    Implement RF function where the single trees can be pruned.
-      --> builds up on 'github.com/mnwright/simpleRF'
+    Implement a random forest class that can has the option to dynamically prune the single decision trees it consits of. This is needed for the implementation of the 'fold-wise' approach. Whole code builds up on 'github.com/mnwright/simpleRF'
 ``` 
 
 #### TCGA
@@ -114,48 +121,48 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
     of the different approaches.  
 
 - TCGA_05_Foldwise_RF_CV:
-    CrossValidate the foldwise Approach for all different settings & all possible combinations 
-    of blockwise missingness in the TestSet
+    CrossValidate the fold-wise Approach for all different settings & all possible combinations 
+    of block-wise missingness in the TestSet
 
 - TCGA_06_BlockWise_RF_CV:
-    CrossValidate the blockwise Approach for all different settings & all possible combinations 
-    of blockwise missingness in the TestSet
+    CrossValidate the block-wise Approach for all different settings & all possible combinations 
+    of block-wise missingness in the TestSet
 
 - TCGA_07_CompleteCases_CV:
-    CrossValidate the complete case Approach for all different settings & all possible combinations 
-    of blockwise missingness in the TestSet
+    CrossValidate the complete-case Approach for all different settings & all possible combinations 
+    of block-wise missingness in the TestSet
 
 - TCGA_08_Imputation_CV:
     CrossValidate the Imputation Approach for all different settings & all possible combinations 
-    of blockwise missingness in the TestSet
+    of block-wise missingness in the TestSet
 
 - TCGA_09_SingleBlock_CV:
-   CrossValidate the SingleBlock Approach for all different settings & all possible combinations 
-    of blockwise missingness in the TestSet
+   CrossValidate the Single-Block Approach for all different settings & all possible combinations 
+    of block-wise missingness in the TestSet
 
 - TCGA_10_Plot_CV_Results:
     Vizualize the Results from the CV of the TCGA data for all the different approaches!
 ``` 
 
-#### REAL
+#### Clinical Asthma Data
 ``` 
 - REAL_01_Fold-Wise-Approach: 
-    CrossValidate the foldwise Approach on the real dataset 
+    CrossValidate the fold-wise Approach on the clinical asthma data 
 
 - REAL_02_Block-Wise-Approach:
-    CrossValidate the blockwise Approach on the real dataset 
+    CrossValidate the block-wise Approach on the clinical asthma data   
 
 - REAL_03_Imputation-Approach:
-   CrossValidate the Imputation Approach on the real dataset 
+   CrossValidate the Imputation Approach on the clinical asthma data 
 
 - REAL_04_CompleteCase-Approach:
-    CrossValidate the CompleteCase Approach on the real dataset
+    CrossValidate the Complete-Case Approach on the clinical asthma data 
 
 - REAL_05_Single-Block-Approach:
-    CrossValidate the SingleBlock Approach on the real dataset
+    CrossValidate the Single-Block Approach on the clinical asthma data 
 
 - REAL_06_Plot_CV_Results:
-    Vizualize the Results from the CV of the real data for all the different approaches!
+    Vizualize the Results from the CV of the clinical asthma data for all the different approaches!
 ``` 
 ---
 
