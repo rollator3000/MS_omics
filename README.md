@@ -168,8 +168,6 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 
 ## Project Organization
 ```
-    ├── LICENSE
-    ├── .git               <- Folder for VersionControl [created by GIT]
     ├── README.md          <- Top-level 'README' for developers
     │
     ├── code               <- All the R-Code needed to run this repository! 
@@ -191,8 +189,8 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
     │   │    └─ TCGA_subset_12345    <- Subsetted TCGA Data - single blocks were subsetted. 
     │   │        │                      Basically original data with lower dimensions!   
     │   │        │
-    │   │        ├─ missingness_1234 <- Subsetted data split to test and train, whereby
-    │   │        │                      the trainsplit contains blockwise missingness 
+    │   │        ├─ missingness_1234 <- Subsetted data split to test and train set, whereby
+    │   │        │                      the train-set contains blockwise missingness 
     │   │        │
     │   │        └─ missingness_1234_imputed  <- TestTrainSplits of the subsetted data,
     │   │                                        whereby the blockwise missingness in 
@@ -210,6 +208,9 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
     │   │
     │   ├── Omics_Methods  <- Sources related to Block-Wise missingness 
     │   │                     in Multi-Omics data
+    │   │
+    │   ├── Hagenberg      <- Part of the thesis' of Hagenberg + describtion
+    │   │                     of clinical asthma data from Hagenberg
     │   │
     │   ├── Online Sources <- Online sources from the internet 
     │   │                    - downloaded whole web-pages
