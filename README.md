@@ -1,25 +1,25 @@
 # A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
-This is the README to the repository of Frederik Ludwigs' Master-Thesis: <br>
-***A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values*** <br> 
-supervised by: <br>
-***Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE***  
-<br> 
-Block-wise missingness describes a special type of missingness that is a common problem in the context of Multi-Omics data. To my knowledge there are no standard approaches, nor compariosons studies for this type of missingness yet. In 2018 Norbert Krautenbacher has already stated that a reliable analysis strategy for multi-omics data with block-wise missingness is urgently needed! This thesis aims to provide such a comparison study and shall help finding a reliable analysis strategy for data with block-wise missingness.
+This is the README to the repository of Frederik Ludwigs' Master-Thesis:
+A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
+supervised by:
+Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE
+
+Block-wise missingness describes a special type of missingness that is common in the context of Multi-Omics data. To my knowledge, there are no standard approaches, nor comparison studies for this type of missingness yet. In 2018 Norbert Krautenbacher has already stated that a reliable analysis strategy for multi-omics data with block-wise missingness is urgently needed! This thesis aims to provide such a comparison study and shall help to find a reliable analysis strategy for data with block-wise missingness.
 
 ---
 
 ## Project description
-This project compares different approaches capable to deal with block-wise missingness in Multi-Omics data. For this different random forest based adaptions that are capable to deal with block-wise missingness are introduced. Penalised regeression adaptions from Hagenberg's thesis are also compared to the random forest based adaptions, even though these are not introduced thepretically. 
+This project compares different approaches capable to deal with block-wise missingness in Multi-Omics data. For this different random forest based adaptions that are capable to deal with block-wise missingness are introduced. Penalised regression adaptions from Hagenberg's thesis are also compared to the random forest based adaptions, even though these are not introduced theoretically.
 
 ### Block-wise missingness:
 Block-wise missingness is a special type of missingness that appears frequently in the context of Multi-Omics data. 
-It can for example arise when concatenating multiple clinical studies with the same target variable. Eventhough the datasets from the different studies have the same target variable, the observed features can still can differ! The concatination of such datasets results then in a DF with block-wise missingness!  
+It can, for example, arise when concatenating multiple clinical studies with the same target variable. Even though the datasets from the different studies have the same target variable, the observed features can still differ! The concatenation of such datasets results then in a DF with block-wise missingness!  
 
-Data with blockwise missingness always consits of different **folds** and **blocks**.
-  - A **block** describes a set of covariates containing all features collected on the basis of a characteristic.  
+Data with blockwise missingness always consists of different **folds** and **blocks**.
+  - A **block** describes a set of covariates containing all features collected based on a characteristic.  
     Basically all covariates that are related in content (e.g. *physical properties*: Height & Weight | *educational properties*: Income & Education').  
   - A **fold** represents a set of observations with the same observed blocks.  
-    Basically all observations with the same observed features. Each fold is unique and every obserbation belongs to exactly one of them.
+    All observations with the same observed features. Each fold is unique and every observation belongs to exactly one of them.
 
 #### Example for data with blockwise missingness:  
 | ID  | Weight  | Height  | Income  | Education   | g1      | ...   | g100    | Y   |
@@ -41,21 +41,21 @@ Data with blockwise missingness always consits of different **folds** and **bloc
      - **Fold1:** All observations with observed Physical & Educational properties
      - **Fold2:** All observations with observed Educational & Biological properties
      - **Fold3:** All observations with observed Physical & Biological properties
-  
-
-Regular model fitting on data with block-wise missingness is for most statistical appropaches not directly possible, so that either the method needs to be adjusted or the data processed! Besides the training, the testdata can also consist of block-wise missingness. Therefore the approaches must be able to deal with block-wise missing data in the test data as well as in the train data. <br>
+   
+Regular model fitting on data with block-wise missingness is for most statistical approaches not directly possible so that either the method needs to be adjusted or the data processed! Besides the training, the test data can also consist of block-wise missingness. Therefore the approaches must be able to deal with block-wise missing data in the test data as well as in the train data. <br>
 
 ### Approaches:
 The different random forest - RF - adaptions/ approaches are listed below and briefly explained using the example data above.
 
 -  **Complete Case Approach:** Only use complete cases - regarding the testset - to fit a RF
-   - If the test-set consists of the features 'Weight', 'Height' (Physical properties) & 'g1',...,'g100' (Biological properties) then only the observations with these observed features are used for the trainig of the model (Fold3)! The fitted model can then predict on the test-set regularly
+   - If the test-set consists of the features 'Weight', 'Height' (Physical properties) & 'g1',...,'g100' (Biological properties) then only the observations with these observed features are used for the trainig of the model (Fold3)
+   - The fitted model can then predict on the test-set regularly
 -  **Single Block Approach:** Only use the features from a single feature block to fit a RF
-   - If the test-set consists of the features 'Weight', 'Height' (Physical properties) & 'g1',...,'g100' (Biological properties) then we a model can either be fit on all observations with the features 'Weight' & 'Height' (Physical properties) **OR** on all observations with the features 'g1',...,'g100' (Biological properties)
-   - For predicitons on the test-set only use the features the model has been trained with and discard all other variables
+   - If the test-set consists of the features 'Weight', 'Height' (Physical properties) & 'g1',...,'g100' (Biological properties) then a model can either be fit on all observations with the features 'Weight' & 'Height' (Physical properties) **OR** on all observations with the features 'g1',...,'g100' (Biological properties)
+   - For predicitons on the test-set only use the features the model has been trained with and discard all other variables from the test-set
 -  **Imputation Approach:** Impute the missing values with the 'missForest' approach and fit a RF - regarding the testset - on this fully observed data
-   - Impute the missing data in the TrainingSet with the missForest Approach
-   - For predicition on testset, remove all features from the fully observed train-set that are not part of the test-set
+   - Impute the missing data in the train-set with the missForest Approach
+   - For predicition on test-set, remove all features from the fully observed train-set that are not part of the test-set
    - On this pruned (imputed) train-set fit a RF and predicit on the test-set then
 -  **Block-Wise Approach:** Fit a seperate RF on each feature-block and create a final prediciton by combining the different block-wise predicitons
    - Fit a seperate RF on each feature block of the data *- one RF on the Physical properties, one RF on the Educational properties, ...*
@@ -63,10 +63,10 @@ The different random forest - RF - adaptions/ approaches are listed below and br
    - The seperate block-wise predicitons are averaged in a weighted/ unweighted way for the final predicitons
 -  **Fold-Wise Approach:** Fit a seperate RF on each fold and create a final prediciton by combining the different fold-wise predicitons
    - Fit a seperate RF on each fold of the data  *- one RF on Fold1, one RF on Fold2, ...*
-   - For a prediction, each fold-wise RF is asked for a predicition - the RFs that were trained that were trained on a fold with at least one feature-block that is also in the test-set can can try it  
-   - A RF that was trained on a fold that has a feature-block that is not available for the test-set might use split variables that are not available for the test-set
-   - These RFs need to pruned before they can genterate a prediciton
-   - **Pruning:** If a decision tree of a RF uses a split variable that is not avaible in the test-set, this split needs to 'cut off', such that the node before that split is a new terminal node then
+   - For a prediction, each fold-wise RF is asked for a predicition - only the RFs that were trained on a fold with at least one feature-block that is also in the test-set can can try it  
+   - A RF that was trained on a fold that has a feature-block that is not available for the test-set might use split variables that are not available for the test-set can try to create a prediciton
+   - The RFs might need to be pruned before they can genterate a prediciton
+   - **Pruning:** If a decision tree of a RF uses a split variable that is not avaible in the test-set, this split needs to be 'cut off', such that the node before that split is a new terminal node then
    - The seperate fold-wise predicitons are averaged in a weighted/ unweighted way for the final predicitons
 
 #### ! ! ! Closer Information to approaches above are in the MS-Thesis itself! ! !  
@@ -109,8 +109,8 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
     Get an example figure for the splitting of the feature-space of a single decision tree
 
 - GENERAL_simpleRF_adaption:
-    Implemention of a random forest class that has the option to dynamically prune the single decision trees of RF.    
-    This is needed for the implementation of the 'fold-wise' approach.  
+    Implemention of a random forest class that has the option to dynamically prune the single     
+    decision trees of a RF. This is needed for the implementation of the 'fold-wise' approach.  
     Whole code builds up on 'github.com/mnwright/simpleRF'
 ``` 
 
