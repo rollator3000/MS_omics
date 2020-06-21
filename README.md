@@ -1,7 +1,7 @@
 # A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
 This is the README to the repository of Frederik Ludwigs' Master-Thesis:
 A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
-supervised by:
+supervised by:  
 Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE
 
 Block-wise missingness describes a special type of missingness that is common in the context of Multi-Omics data. To my knowledge, there are no standard approaches, nor comparison studies for this type of missingness yet. In 2018 Norbert Krautenbacher has already stated that a reliable analysis strategy for multi-omics data with block-wise missingness is urgently needed! This thesis aims to provide such a comparison study and shall help to find a reliable analysis strategy for data with block-wise missingness.
