@@ -178,6 +178,40 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 - REAL_06_Plot_CV_Results:
     Vizualize the Results from the CV of the clinical asthma data for all the different approaches!
 ``` 
+
+
+All scripts were written in the 'R' language - version 3.6.2.  
+The used packages and their corresponding versions are listed below:  
+- Attached base packages:
+[1] grid      parallel  stats     graphics  grDevices utils     datasets 
+[8] methods   base     
+
+- Other attached packages:
+ [1] rattle_5.3.0          rpart.plot_3.0.8      rpart_4.1-15         
+ [4] missForest_1.4        itertools_0.1-3       ROCR_1.0-7           
+ [7] gplots_3.0.1.1        e1071_1.7-3           doParallel_1.0.15    
+[10] iterators_1.0.12      foreach_1.4.7         assertthat_0.2.1     
+[13] pROC_1.15.3           mlbench_2.1-1         reshape2_1.4.3       
+[16] gridExtra_2.3         checkmate_1.9.4       caret_6.0-84         
+[19] ggplot2_3.2.1         lattice_0.20-38       randomForestSRC_2.9.2
+[22] randomForest_4.6-14  
+
+- Loaded via a namespace (and not attached):
+ [1] Rcpp_1.0.3         lubridate_1.7.4    class_7.3-15       gtools_3.8.1      
+ [5] ipred_0.9-9        R6_2.4.1           plyr_1.8.5         backports_1.1.5   
+ [9] stats4_3.6.2       pillar_1.4.3       rlang_0.4.2        lazyeval_0.2.2    
+[13] rstudioapi_0.10    data.table_1.12.8  gdata_2.18.0       Matrix_1.2-18     
+[17] splines_3.6.2      gower_0.2.1        stringr_1.4.0      munsell_0.5.0     
+[21] compiler_3.6.2     pkgconfig_2.0.3    nnet_7.3-12        tidyselect_0.2.5  
+[25] tibble_2.1.3       prodlim_2019.11.13 codetools_0.2-16   crayon_1.3.4      
+[29] dplyr_0.8.5        withr_2.1.2        MASS_7.3-51.4      bitops_1.0-6      
+[33] recipes_0.1.8      ModelMetrics_1.2.2 nlme_3.1-142       gtable_0.3.0      
+[37] lifecycle_0.1.0    magrittr_1.5       scales_1.1.0       KernSmooth_2.23-16
+[41] stringi_1.4.3      timeDate_3043.102  generics_0.0.2     lava_1.6.6        
+[45] tools_3.6.2        glue_1.4.0         purrr_0.3.3        survival_3.1-8    
+[49] colorspace_1.4-1   caTools_1.17.1.3  
+
+
 ---
 
 ## Project Organization
