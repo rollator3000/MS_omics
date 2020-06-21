@@ -182,11 +182,15 @@ The code scripts either refer to the 'TCGA' data, the 'real' data or is 'general
 
 All scripts were written in the 'R' language - version 3.6.2.  
 The used packages and their corresponding versions are listed below:  
+
 - Attached base packages:  
+``` 
 [1] grid      parallel  stats     graphics  grDevices utils     datasets 
 [8] methods   base     
+``` 
 
 - Other attached packages:  
+``` 
  [1] rattle_5.3.0          rpart.plot_3.0.8      rpart_4.1-15         
  [4] missForest_1.4        itertools_0.1-3       ROCR_1.0-7           
  [7] gplots_3.0.1.1        e1071_1.7-3           doParallel_1.0.15    
@@ -195,8 +199,9 @@ The used packages and their corresponding versions are listed below:
 [16] gridExtra_2.3         checkmate_1.9.4       caret_6.0-84         
 [19] ggplot2_3.2.1         lattice_0.20-38       randomForestSRC_2.9.2
 [22] randomForest_4.6-14  
-
+``` 
 - Loaded via a namespace (and not attached):  
+``` 
  [1] Rcpp_1.0.3         lubridate_1.7.4    class_7.3-15       gtools_3.8.1      
  [5] ipred_0.9-9        R6_2.4.1           plyr_1.8.5         backports_1.1.5   
  [9] stats4_3.6.2       pillar_1.4.3       rlang_0.4.2        lazyeval_0.2.2    
@@ -210,7 +215,7 @@ The used packages and their corresponding versions are listed below:
 [41] stringi_1.4.3      timeDate_3043.102  generics_0.0.2     lava_1.6.6        
 [45] tools_3.6.2        glue_1.4.0         purrr_0.3.3        survival_3.1-8    
 [49] colorspace_1.4-1   caTools_1.17.1.3  
-
+``` 
 
 ---
 
