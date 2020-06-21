@@ -3,6 +3,8 @@ Script to analyse the real data with the Complete Case Approach
 "
 # [0] Set WD, load packages & define functions
 setwd("C:/Users/kuche_000/Desktop/MS_omics/")
+library(assertthat)
+library(randomForestSRC)
 
 detectCores()
 registerDoParallel(cores = 2)
@@ -142,7 +144,7 @@ missing_str <- read.csv("./data/processed/real_data/Block Structure.csv",
                         sep = ";")
 missing_str$outcome <- NULL
 
-# [2] Start the 5-fold CV - IMPUTATION Approach                             ----
+# [2] Start the 5-fold CV - CompleteCase Approach                           ----
 # 2-1 List for the results
 CC_res_all <- list()
 
