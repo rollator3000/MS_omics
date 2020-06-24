@@ -972,7 +972,35 @@ for (curr_data in "ESCA") {
   print(paste("Needed Time:", end_time - start_time))
 }
 
-# [2] Evaluate approaches on the imputed data
+# [2] Paste the single imputed folds together to a complete file:
+#     Loop over 'DFs_w_gender' and paste the single imputed folds to a DF
+for (df in DFs_w_gender) {
+  
+  # 2-1 Create name of the DF
+  df_name <- paste0(df, "_", setting)
+  
+  # 2-2 Load the 'df_name' with the block-wise missingness patterns
+  curr_DF <- load(paste0("./data/processed/TCGA_subset_12345/missingness_1234/", df_name, ".RData"))
+  curr_DF <- eval(as.symbol(curr_DF))
+  
+  # 2-3 Loop over the the different train folds with missing data and replace them by the imputed data
+  for (fold_ in 1:length(curr_DF$data)) {
+    
+    # Load the imputed data for the current fold!
+    to_load <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", fold_, "_", df, "_", setting, ".RData")
+    imputed <- load(to_load)
+    imputed <- eval(as.symbol(imputed))
+    
+    curr_DF$data[[fold_]]$train <- imputed
+  }
+  
+  # 2-4 Save the whole file
+  path_to_save <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", df, "_IMP_", setting, ".RData") 
+  save(curr_DF, file = path_to_save)
+}
+
+
+# [3] Evaluate approaches on the imputed data
 #     Loop over all imputed datasets in 'DFs_w_gender'
 DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
@@ -1012,13 +1040,14 @@ for (curr_data in DFs_w_gender) {
 }
 
 # ----- Situation 3
-for (curr_data in DFs_w_gender) {
+for (curr_data in c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LGG",
+                    "BLCA", "LUSC", "PAAD", "SARC", "SKCM", "STAD")) {
   
   print(paste0("----- Situation 3 for DF: '", curr_data, "' -----------------"))
   
   # --1 Define current path
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234_imputed/", 
-                      curr_data, "_IMP_2.RData")
+                      curr_data, "_IMP_3.RData")
   
   # --2 Do the CV
   sit3 <- do_CV_missforrest_5(path = curr_path, num_trees = 300, 
