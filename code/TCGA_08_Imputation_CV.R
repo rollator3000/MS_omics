@@ -954,7 +954,7 @@ save_path    <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
 # 1-4 Which block-wise missingness setting [1, 2, 3 or 4]?
 setting      <- "2"
 
-for (curr_data in "ESCA") {
+for (curr_data in DFs_w_gender) {
   
   # print current DF we do Imputation on!
   print(paste("Start Imputation for:", curr_data))
@@ -1040,8 +1040,7 @@ for (curr_data in DFs_w_gender) {
 }
 
 # ----- Situation 3
-for (curr_data in c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LGG",
-                    "BLCA", "LUSC", "PAAD", "SARC", "SKCM", "STAD")) {
+for (curr_data in DFs_w_gender) {
   
   print(paste0("----- Situation 3 for DF: '", curr_data, "' -----------------"))
   
