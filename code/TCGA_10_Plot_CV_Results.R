@@ -806,7 +806,6 @@ extract_avg_metrics_SB <- function(x, metric, train_sit) {
   return(DF_final)
 }
 
-###################################################################### PATTERN 1
 # Analyse Results of the complete case Approach --- pattern 1               ----
 # [0] Define needed Variables
 data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
@@ -2485,6 +2484,862 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   theme_bw() +
   ggtitle("Comparison of all Approaches",
           subtitle = "TCGA - Pattern 2") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Approach: ")) +
+  scale_fill_manual(values = c("darkolivegreen2", "darkorange1", 'darkorchid1', 'darkgoldenrod1', 'darkslategray3'))
+
+# 6-5 Count how often a approach has the highest median!
+counter        <- c(0, 0, 0, 0, 0)
+names(counter) <- c("CC", "SB", "IMP", "BW", "FW")
+for (curr_test in unique(DF_all$Testsituation)) {
+  
+  m_cc <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Complete-Case'])
+  
+  m_sb <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Single-Block'])
+  
+  m_imp <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$Approach == 'Imputation'])
+  
+  m_bw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Block-wise'])
+  
+  m_fw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Fold-wise'])
+  
+  all_res_  <- c(m_cc, m_sb, m_imp, m_bw, m_fw)
+  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
+  
+  if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
+} 
+# Analyse Results of the complete case Approach --- pattern 3               ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
+}
+
+# [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 2-2 The plot itself
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot(fill = 'darkolivegreen3') + 
+  theme_bw() +
+  ggtitle("Complete-Case Approach",
+          subtitle = "TCGA - Pattern 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005)
+
+# 2-3 Get summarys to the perfornance!
+res_ <- sapply(unique(DF_all$Testsituation), FUN = function(x){
+  summary(DF_all$Metric[DF_all$Testsituation == x])
+})
+names(res_) <- unique(DF_all$Testsituation)
+
+# Analyse Results of the Single-Block Approach  --- pattern 3               ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
+}
+
+# [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 2-2 The plot itself
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Learn_Block)) +
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  theme_bw() +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  ggtitle("Single-Block Approach",
+          subtitle = "TCGA - Pattern 3") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Used feature-block: ")) +
+  scale_fill_manual(values = c('darkolivegreen3', "darkorange3", "cyan4", 
+                               "darkmagenta", "bisque3"))
+
+# 2-3 Get summarys to the perfornance!
+res_ <- sapply(unique(DF_all$Learn_Block), FUN = function(x){
+  summary(DF_all$Metric[which(DF_all$Testsituation == "full" &
+                                DF_all$Learn_Block == x)])
+})
+colnames(res_) <- unique(DF_all$Learn_Block)
+
+# Analyse Results of the Imputation Approach    --- pattern 3               ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach/setting3/"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
+}
+
+# [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 2-2 The plot itself
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot(fill = 'darkolivegreen3') + 
+  theme_bw() +
+  ggtitle("Imputation Approach",
+          subtitle = "TCGA - Pattern 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") + 
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005)
+
+# 2-3 Get summarys to the perfornance!
+res_ <- sapply(unique(DF_all$Testsituation), FUN = function(x){
+  summary(DF_all$Metric[DF_all$Testsituation == x])
+})
+colnames(res_) <- unique(DF_all$Testsituation)
+
+# Analyse Results of the BlockWise Approach     --- pattern 3               ----
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting3"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 List all files from the 'data_path'
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  # Extract the Metrics for the current file
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  
+  if (grepl("acc", curr_file)) {
+    curr_df$weight_metric <- "Accuracy"
+  } else if (grepl("f1", curr_file)) {
+    curr_df$weight_metric <- "F-1 Score"
+  } else {
+    curr_df$weight_metric <- "None"
+  }
+  
+  # bind it to 'DF_all'
+  DF_all <- rbind(DF_all, curr_df)
+}
+
+# [2] Plot the Results
+# 2-1 The used metric for the comparison of the performance
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 2-2 Relevel the 'weight_metric' variable
+DF_all$weight_metric <- factor(DF_all$weight_metric, 
+                               levels = c("None", "Accuracy", "F-1 Score"))
+
+# 2-2 Plot itself!
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ggtitle("Blockwise Approach",
+          subtitle = "TCGA - Pattern 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Weight Metric: ")) +
+  scale_fill_manual(values = c( 'darkolivegreen3', "darkorange3", "cyan4"))
+
+# 2-3 Count how often a approach has the highest median!
+counter        <- c(0, 0, 0)
+names(counter) <- c("No", "F1", "Acc")
+for (curr_test in unique(DF_all$Testsituation)) {
+  
+  m_none <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                   DF_all$weight_metric == 'None'])
+  
+  m_acc <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$weight_metric == 'Accuracy'])
+  
+  m_f1s <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$weight_metric == 'F-1 Score'])
+  
+  all_res_  <- c(m_none, m_f1s, m_acc)
+  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
+  
+  if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
+}
+
+# Analyse Results of the FoldWise_Approach      --- pattern 3               ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting3"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 List all files from the 'data_path'
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
+}
+
+# [2] Plot the Results
+# 2-1 Extract the needed Information from 'DF_all'
+# 2-1-1 The used metric for the comparison of the performance
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 2-1-2 Rename the Weight Metrics [--> clearer names]
+DF_all$weight_metric[DF_all$weight_metric == "F1"]  <- "F-1 Score"
+DF_all$weight_metric[DF_all$weight_metric == "Acc"] <- "Accuracy"
+DF_all$weight_metric[DF_all$weight_metric == "No"]  <- "None"
+
+DF_all$weight_metric <- factor(DF_all$weight_metric, 
+                               levels = c("None", "Accuracy", "F-1 Score"))
+
+# 2-2 Do the plot
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
+  geom_boxplot() + 
+  theme_bw() +
+  ggtitle("Foldwise Approach",
+          subtitle = "TCGA - Pattern 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Weight Metric: ")) +
+  scale_fill_manual(values = c('darkolivegreen3', "darkorange3", "cyan4"))
+
+# 2-3 Count how often a approach has the highest median!
+counter        <- c(0, 0, 0)
+names(counter) <- c("No", "F1", "Acc")
+for (curr_test in unique(DF_all$Testsituation)) {
+  
+  m_none <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                   DF_all$weight_metric == 'None'])
+  
+  m_acc <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$weight_metric == 'Accuracy'])
+  
+  m_f1s <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$weight_metric == 'F-1 Score'])
+  
+  all_res_  <- c(m_none, m_f1s, m_acc)
+  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
+  
+  if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
+}
+
+
+# Compare the different Approaches              --- pattern 3 [F1-Score]    ----
+# [1] ----- CC Results
+DF_CC <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  DF_CC     <- rbind(DF_CC, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_CC$Approach <- "Complete-Case"
+
+# [2] ----- SB Results
+DF_SB <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "F1", train_sit = 1)
+  
+  # Only keep the results of single 'A'
+  curr_df   <- curr_df[curr_df$Learn_Block == 'A',]
+  DF_SB     <- rbind(DF_SB, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_SB$Approach <- "Single-Block"
+
+# [3] ----- IMP Results
+DF_IMP <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
+  DF_IMP    <- rbind(DF_IMP, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_IMP$Approach <- "Imputation"
+
+# [4] ----- BW Results
+DF_BW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files[grep("f1", files)]) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
+  DF_BW     <- rbind(DF_BW, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_BW$Approach <- "Block-wise"
+
+# [5] ----- FW Results
+DF_FW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 1)
+  DF_FW     <- rbind(DF_FW, curr_df)
+}
+
+# 1-3 Only keep Results with the F1-Score as weight metric
+DF_FW <- DF_FW[DF_FW$weight_metric == "F1",]
+
+# 1-4 Add the approach to the DF
+DF_FW$Approach <- "Fold-wise"
+
+# [6] ----- Bind the DFs and create a plot
+# 6-1 Columns we need from every approach-DF
+needed_cols <- c("Testsituation", "Metric", "DF", "performance_metric", "Approach")
+
+# 6-2 Bind the DFs from the different approaches to a single DF for plots!
+DF_all <- rbind(DF_CC[,needed_cols], DF_SB[,needed_cols], DF_IMP[,needed_cols],
+                DF_BW[,needed_cols], DF_FW[,needed_cols])
+
+# 6-2-1 Relevel the 'Approach' variable
+DF_all$Approach <- factor(DF_all$Approach, levels = c("Fold-wise", "Block-wise",
+                                                      "Imputation", "Single-Block",
+                                                      "Complete-Case"), 
+                          ordered = TRUE)
+
+# 6-3 Extract the used metric
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 6-4 Do the plot
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  theme_bw() +
+  ggtitle("Comparison of all Approaches",
+          subtitle = "TCGA - Pattern 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Approach: ")) +
+  scale_fill_manual(values = c("darkolivegreen2", "darkorange1", 'darkorchid1', 'darkgoldenrod1', 'darkslategray3'))
+
+# 6-5 Count how often a approach has the highest/ worst median!
+best_counter        <- c(0, 0, 0, 0, 0)
+names(best_counter) <- c("CC", "SB", "IMP", "BW", "FW")
+
+worst_counter        <- c(0, 0, 0, 0, 0)
+names(worst_counter) <- c("CC", "SB", "IMP", "BW", "FW")
+for (curr_test in unique(DF_all$Testsituation)) {
+  
+  m_cc <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Complete-Case'])
+  
+  m_sb <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Single-Block'])
+  
+  m_imp <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$Approach == 'Imputation'])
+  
+  m_bw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Block-wise'])
+  
+  m_fw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Fold-wise'])
+  
+  all_res_  <- c(m_cc, m_sb, m_imp, m_bw, m_fw)
+  
+  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
+  min_index <- which(all_res_ == min(all_res_, na.rm = TRUE))
+  
+  if (length(max_index) == 1) best_counter[max_index]  <- best_counter[max_index] + 1
+  if (length(min_index) == 1) worst_counter[min_index] <- worst_counter[min_index] + 1
+}
+
+
+# Compare the different Approaches              --- pattern 3 [Balanced Accuracy]   ----
+# [1] ----- CC Results
+DF_CC <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "Balance_Acc", train_sit = 1)
+  DF_CC     <- rbind(DF_CC, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_CC$Approach <- "Complete-Case"
+
+# [2] ----- SB Results
+DF_SB <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "Balance_Acc", train_sit = 1)
+  
+  # Only keep the results of single 'A'
+  curr_df   <- curr_df[curr_df$Learn_Block == 'A',]
+  DF_SB     <- rbind(DF_SB, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_SB$Approach <- "Single-Block"
+
+# [3] ----- IMP Results
+DF_IMP <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "Balance_Acc", train_sit = 1)
+  DF_IMP    <- rbind(DF_IMP, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_IMP$Approach <- "Imputation"
+
+# [4] ----- BW Results
+DF_BW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files[grep("f1", files)]) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "Balance_Acc", train_sit = 1)
+  DF_BW     <- rbind(DF_BW, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_BW$Approach <- "Block-wise"
+
+# [5] ----- FW Results
+DF_FW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "Balance_Acc", train_sit = 1)
+  DF_FW     <- rbind(DF_FW, curr_df)
+}
+
+# 1-3 Only keep Results with the F1-Score as weight metric
+DF_FW <- DF_FW[DF_FW$weight_metric == "F1",]
+
+# 1-4 Add the approach to the DF
+DF_FW$Approach <- "Fold-wise"
+
+# [6] ----- Bind the DFs and create a plot
+# 6-1 Columns we need from every approach-DF
+needed_cols <- c("Testsituation", "Metric", "DF", "performance_metric", "Approach")
+
+# 6-2 Bind the DFs from the different approaches to a single DF for plots!
+DF_all <- rbind(DF_CC[,needed_cols], DF_SB[,needed_cols], DF_IMP[,needed_cols],
+                DF_BW[,needed_cols], DF_FW[,needed_cols])
+
+# 6-2-1 Relevel the 'Approach' variable
+DF_all$Approach <- factor(DF_all$Approach, levels = c("Fold-wise", "Block-wise",
+                                                      "Imputation", "Single-Block",
+                                                      "Complete-Case"), 
+                          ordered = TRUE)
+
+# 6-3 Extract the used metric
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else if (DF_all$performance_metric[1] == "Balance_Acc") {
+  used_metric_ <- "Metric: Balanced Accuracy" 
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 6-4 Do the plot
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  theme_bw() +
+  ggtitle("Comparison of all Approaches",
+          subtitle = "TCGA - Pattern 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Approach: ")) +
+  scale_fill_manual(values = c("darkolivegreen2", "darkorange1", 'darkorchid1', 'darkgoldenrod1', 'darkslategray3'))
+
+# 6-5 Count how often a approach has the highest median!
+counter        <- c(0, 0, 0, 0, 0)
+names(counter) <- c("CC", "SB", "IMP", "BW", "FW")
+for (curr_test in unique(DF_all$Testsituation)) {
+  
+  m_cc <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Complete-Case'])
+  
+  m_sb <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Single-Block'])
+  
+  m_imp <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$Approach == 'Imputation'])
+  
+  m_bw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Block-wise'])
+  
+  m_fw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Fold-wise'])
+  
+  all_res_  <- c(m_cc, m_sb, m_imp, m_bw, m_fw)
+  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
+  
+  if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
+}
+# Compare the different Approaches              --- pattern 3 [MCC]         ----
+# [1] ----- CC Results
+DF_CC <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "MCC", train_sit = 1)
+  DF_CC     <- rbind(DF_CC, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_CC$Approach <- "Complete-Case"
+
+# [2] ----- SB Results
+DF_SB <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_SB(x = file_curr, metric = "MCC", train_sit = 1)
+  
+  # Only keep the results of single 'A'
+  curr_df   <- curr_df[curr_df$Learn_Block == 'A',]
+  DF_SB     <- rbind(DF_SB, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_SB$Approach <- "Single-Block"
+
+# [3] ----- IMP Results
+DF_IMP <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "MCC", train_sit = 1)
+  DF_IMP    <- rbind(DF_IMP, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_IMP$Approach <- "Imputation"
+
+# [4] ----- BW Results
+DF_BW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files[grep("f1", files)]) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "MCC", train_sit = 1)
+  DF_BW     <- rbind(DF_BW, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_BW$Approach <- "Block-wise"
+
+# [5] ----- FW Results
+DF_FW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting3/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "MCC", train_sit = 1)
+  DF_FW     <- rbind(DF_FW, curr_df)
+}
+
+# 1-3 Only keep Results with the F1-Score as weight metric
+DF_FW <- DF_FW[DF_FW$weight_metric == "F1",]
+
+# 1-4 Add the approach to the DF
+DF_FW$Approach <- "Fold-wise"
+
+# [6] ----- Bind the DFs and create a plot
+# 6-1 Columns we need from every approach-DF
+needed_cols <- c("Testsituation", "Metric", "DF", "performance_metric", "Approach")
+
+# 6-2 Bind the DFs from the different approaches to a single DF for plots!
+DF_all <- rbind(DF_CC[,needed_cols], DF_SB[,needed_cols], DF_IMP[,needed_cols],
+                DF_BW[,needed_cols], DF_FW[,needed_cols])
+
+# 6-2-1 Relevel the 'Approach' variable
+DF_all$Approach <- factor(DF_all$Approach, levels = c("Fold-wise", "Block-wise",
+                                                      "Imputation", "Single-Block",
+                                                      "Complete-Case"), 
+                          ordered = TRUE)
+
+# 6-3 Extract the used metric
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else if (DF_all$performance_metric[1] == "Balance_Acc") {
+  used_metric_ <- "Metric: Balanced Accuracy" 
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 6-4 Do the plot
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  theme_bw() +
+  ggtitle("Comparison of all Approaches",
+          subtitle = "TCGA - Pattern 1") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
