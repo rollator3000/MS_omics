@@ -1745,21 +1745,26 @@ if (DF_all$performance_metric[1] == "F1") {
 }
 
 # 2-2 The plot itself
-ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
-  geom_boxplot(fill = 'darkolivegreen3') + 
+# 2-2 The plot itself
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Learn_Block)) +
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
   theme_bw() +
-  facet_grid(Learn_Block ~ .) +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   ggtitle("Single-Block Approach",
           subtitle = "TCGA - Pattern 2") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
-        text = element_text(size = 24)) +
+        text = element_text(size = 24),
+        legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
              col = "darkgreen", lty = 2) +
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
-             col = "red", lty = 2, lwd = 1.005)
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Used feature-block: ")) +
+  scale_fill_manual(values = c('darkolivegreen3', "darkorange3", "cyan4", 
+                               "darkmagenta", "bisque3"))
+
 
 # 2-3 Get summarys to the perfornance!
 res_ <- sapply(unique(DF_all$Learn_Block), FUN = function(x){
