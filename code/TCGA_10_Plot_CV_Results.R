@@ -827,7 +827,7 @@ for (curr_file in files) {
 }
 
 # [2] Plot the Results
-# 2-1-1 The used metric for the comparison of the performance
+# 2-1 The used metric for the comparison of the performance
 if (DF_all$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
@@ -3378,3 +3378,137 @@ for (curr_test in unique(DF_all$Testsituation)) {
   
   if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
 } 
+
+
+
+######################################################################### TEST ----
+# Combine the results of all CC approaches [pattern1, .., 3] into a single plot!
+#### CC
+# [0] Define variables
+# 0- 1 Paths to the results of the CV
+data_path_1 <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
+data_path_2 <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting2/"
+data_path_3 <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/"
+
+all_paths <- c(data_path_1, data_path_2, data_path_3)
+
+# 0-2 empty DF to store the results
+DF_CC <- data.frame()
+
+# [1] Extract the results
+# 1-1 Loop over all folders that contain the CV results for CC!
+for (pattern_ in c(1, 2, 3)) {
+  
+  curr_path <- all_paths[pattern_]
+  
+  for (curr_file in list.files(curr_path)) {
+    
+    # Load the result and assign it to 'file_curr'
+    file_curr <- load(paste0(curr_path, "/", curr_file))
+    file_curr <- eval(as.symbol(file_curr))
+    
+    curr_df         <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+    curr_df$pattern <- pattern_
+    DF_CC           <- rbind(DF_CC, curr_df)
+  }
+}
+
+# [2] Do the plots and get informations
+if (DF_CC$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_CC$performance_metric[1])
+}
+
+# 2-2 The plot itself
+ggplot(data = DF_CC, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot(fill = 'darkolivegreen3') + 
+  theme_bw() +
+  ggtitle("Complete-Case Approach",
+          subtitle = "TCGA - Patterns 1, 2 & 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  facet_grid(pattern ~ .)
+
+# 2-3 Get summarys to the perfornance!
+for (patt_ in c(1, 2, 3)) {
+  
+  print(paste0("Current Pattern: ", patt_, " --------------------------------"))
+  
+  res_ <- sapply(unique(DF_CC$Testsituation), FUN = function(x)  {
+    
+    DF_curr <- DF_CC[DF_CC$pattern == patt_,]
+    DF_curr <- DF_curr[DF_curr$Testsituation == x,]
+    
+    if (all(is.na(DF_curr$Metric))) {
+      c(0, 0, 0, 0, 0)
+    } else {
+      as.numeric(summary(DF_curr$Metric[DF_curr$Testsituation == x])) 
+    }
+  })
+  
+  
+  names(res_) <- unique(DF_CC$Testsituation)
+
+  print(res_)
+}
+
+
+
+
+# Analyse Results of the complete case Approach --- pattern 3               ----
+# [0] Define needed Variables
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/"
+
+# [1] Load all Results w/ Romans Approach
+# 1-1 get all files in the folder, that are singleblock performances
+files <- list.files(data_path)
+
+# 1-2 Loop over all the files and extract the results
+DF_all <- data.frame()
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  DF_all    <- rbind(DF_all, curr_df)
+}
+
+# [2] Plot the Results
+# 2-1-1 The used metric for the comparison of the performance
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 2-2 The plot itself
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot(fill = 'darkolivegreen3') + 
+  theme_bw() +
+  ggtitle("Complete-Case Approach",
+          subtitle = "TCGA - Pattern 3") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24)) +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005)
+
+# 2-3 Get summarys to the perfornance!
+res_ <- sapply(unique(DF_all$Testsituation), FUN = function(x){
+  summary(DF_all$Metric[DF_all$Testsituation == x])
+})
+names(res_) <- unique(DF_all$Testsituation)
