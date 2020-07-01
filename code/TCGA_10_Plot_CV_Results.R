@@ -3456,7 +3456,7 @@ for (patt_ in c(1, 2, 3)) {
     if (all(is.na(DF_curr$Metric))) {
       c(0, 0, 0, 0, 0, 0)
     } else {
-      c(as.numeric(summary(DF_curr$Metric[DF_curr$Testsituation == x]))) 
+      c(as.numeric(summary(DF_curr$Metric))) 
     }
   })
   
@@ -3540,43 +3540,34 @@ for (patt_ in c(1, 2, 3)) {
   
   print(paste0("Current Pattern: ", patt_, " --------------------------------"))
   
-  # For each test-situation for the current patterns extract their summaries
-  #  --> [Min, 1st Qu, Median, Mean, 3rd Qu, Max.]
-  res_ <- lapply(unique(DF_CC$Testsituation), FUN = function(x)  {
-    
-    DF_curr <- DF_CC[DF_CC$pattern == patt_,]
-    DF_curr <- DF_curr[DF_curr$Testsituation == x,]
-    
-    if (all(is.na(DF_curr$Metric))) {
-      c(0, 0, 0, 0, 0, 0)
-    } else {
-      c(as.numeric(summary(DF_curr$Metric[DF_curr$Testsituation == x]))) 
-    }
+  # Only keep the results for the current pattern
+  DF_curr <- DF_SB[DF_SB$pattern == patt_,]
+  
+  # Extract the performance for each block that can be used for the single-block
+  # approach for the 'full' test-situation [equal for all test-situations]
+  res_ <- sapply(unique(DF_curr$Learn_Block), FUN = function(x){
+    summary(DF_curr$Metric[which(DF_curr$Testsituation == "full" &
+                                   DF_curr$Learn_Block == x)])
   })
-  
-  # Convert the list 'res_' into a dataframe
-  df <- data.frame(matrix(unlist(res_), nrow = 6, ncol = length(res_), 
-                          byrow = F))
-  
-  # Assign the test-situations as colnames
-  colnames(df) <- unique(DF_CC$Testsituation)
+  colnames(res_) <- unique(DF_curr$Learn_Block)
   
   # Print the DF
-  print(df)
+  print(res_)
   writeLines("\n\n")
 }
-# ----- ----- ----- Imputation Approach                                      ----
+
+# ----- ----- ----- Imputation Approach                                       ----
 # Combine the results of all CC approaches [pattern1, .., 3] into a single plot!
 # [0] Define variables
 # 0- 1 Paths to the results of the CV
-data_path_1 <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting1/"
-data_path_2 <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting2/"
-data_path_3 <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/"
+data_path_1 <- "./docs/CV_Res/TCGA/Imputation_Approach/setting1/"
+data_path_2 <- "./docs/CV_Res/TCGA/Imputation_Approach/setting2/"
+data_path_3 <- "./docs/CV_Res/TCGA/Imputation_Approach/setting3/"
 
 all_paths <- c(data_path_1, data_path_2, data_path_3)
 
 # 0-2 empty DF to store the results
-DF_SB <- data.frame()
+DF_IMP <- data.frame()
 
 # [1] Extract the results
 # 1-1 Loop over all folders that contain the CV results for CC!
@@ -3590,28 +3581,28 @@ for (pattern_ in c(1, 2, 3)) {
     file_curr <- load(paste0(curr_path, "/", curr_file))
     file_curr <- eval(as.symbol(file_curr))
     
-    curr_df         <- extract_avg_metrics_SB(file_curr, metric = "F1", 
-                                              train_sit = pattern_)
+    curr_df         <- extract_avg_metrics(file_curr, metric = "F1", 
+                                           train_sit = pattern_)
     curr_df$pattern <- pattern_
-    DF_SB           <- rbind(DF_SB, curr_df)
+    DF_IMP          <- rbind(DF_IMP, curr_df)
   }
 }
 
 # 1-2 Add a variable 'pattern_names' for a clearer plot [needed for facet_grid]
-DF_SB$pattern_names <- paste("Pattern", DF_SB$pattern)
+DF_IMP$pattern_names <- paste("Pattern", DF_IMP$pattern)
 
 # [2] Do the plots and get informations
-if (DF_SB$performance_metric[1] == "F1") {
+if (DF_IMP$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
-  used_metric_ <- paste("Metric:", DF_SB$performance_metric[1])
+  used_metric_ <- paste("Metric:", DF_IMP$performance_metric[1])
 }
 
 # 2-2 The plot itself
-ggplot(data = DF_SB, aes(x = Testsituation, y = Metric, fill = Learn_Block)) +
-  geom_boxplot(position = position_dodge(preserve = "single")) + 
+ggplot(data = DF_IMP, aes(x = Testsituation, y = Metric)) +
+  geom_boxplot(fill = 'darkolivegreen3') + 
   theme_bw() +
-  ggtitle("Single-Block Approach",
+  ggtitle("Imputation Approach",
           subtitle = "TCGA - Patterns 1, 2 & 3") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
@@ -3633,17 +3624,19 @@ for (patt_ in c(1, 2, 3)) {
   
   print(paste0("Current Pattern: ", patt_, " --------------------------------"))
   
+  
+  DF_curr <- DF_IMP[DF_IMP$pattern == patt_,]
+  
   # For each test-situation for the current patterns extract their summaries
   #  --> [Min, 1st Qu, Median, Mean, 3rd Qu, Max.]
-  res_ <- lapply(unique(DF_CC$Testsituation), FUN = function(x)  {
+  res_ <- lapply(unique(DF_curr$Testsituation), FUN = function(x)  {
     
-    DF_curr <- DF_CC[DF_CC$pattern == patt_,]
-    DF_curr <- DF_curr[DF_curr$Testsituation == x,]
+    DF_curr2 <- DF_curr[DF_curr$Testsituation == x,]
     
-    if (all(is.na(DF_curr$Metric))) {
+    if (all(is.na(DF_curr2$Metric))) {
       c(0, 0, 0, 0, 0, 0)
     } else {
-      c(as.numeric(summary(DF_curr$Metric[DF_curr$Testsituation == x]))) 
+      c(as.numeric(summary(DF_curr2$Metric))) 
     }
   })
   
