@@ -223,7 +223,7 @@ ggplot(data = DF_all, aes(x = 1, y = Metric)) +
   xlab("") +
   ggtitle("Complete-Case Approach",
           subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 24),
+  theme(text = element_text(size = 30),
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
         axis.ticks.x = element_blank())
@@ -306,7 +306,7 @@ ggplot(data = DF_all, aes(x = 1, y = Metric)) +
   xlab("") +
   ggtitle("Imputation Approach",
           subtitle = "Clinical asthma data") +
-  theme(text = element_text(size = 24),
+  theme(text = element_text(size = 30),
         axis.title.x = element_blank(),
         axis.text.x  = element_blank(),
         axis.ticks.x = element_blank())
@@ -1065,7 +1065,7 @@ for (method_ in levels(df_all$Approach)) {
   )
 }
              
-# Comparison of the approaches Balance_Acc                                  ----
+# Comparison of the approaches Balance_Acc                                   ----
 # [1] -------------------- CC Results
 DF_CC <- data.frame()
 
@@ -1238,7 +1238,7 @@ for (method_ in levels(df_all$Approach)) {
   )
 }
 
-# Comparison of the approaches MCC                                          ----
+# Comparison of the approaches MCC                                           ----
 # [1] -------------------- CC Results
 DF_CC <- data.frame()
 
