@@ -753,12 +753,9 @@ do_CV_missforrest_5         <- function(path = "data/processed/TCGA_subset_12345
               "settings" = settings))
 }
 
-# TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO TO DO  
-do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missingness_1234/BLCA_4.RData",
-                                  num_trees = 300, min_node_size = 10, mtry = NULL,
-                                  n_tree_impute = 100, maxiter_impute = 10) {
-  "Evalute the Approach where we impute the block-wise missing values with the 
-   missForest Approach - for the cases with 3 blocks! [Scenario4]
+do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missingness_1234_imputed/BLCA_IMP_4.RData",
+                                  num_trees = 300, min_node_size = 10, mtry = NULL) {
+  "Evalute the imputation Approach - for the cases with 3 blocks! [Scenario4]
    
    'path' must lead to a list with 2 entrances: 'data' & 'block_names'
    - 'data' is a list filled with 'k' test-train-splits
@@ -767,33 +764,31 @@ do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missi
       & must be ['A', 'B', 'clin_block']!
       
    Based on the 'k' test-train-splits in 'data', we will evaluate the imputation
-   approach. For this take the train data (that has blockwise missingness in it)
-   and impute missing values with missForest.
+   approach. For this the block-wise missing datapoints have been imputed already
+   and a random forest model is fit on these imputed DFs and creates predicitions
+   on the test data then!
+
    Then for each testsituation (fully observed testset,.., single block testset) 
-   we prune the imputed data, so that only features that are also in test remain.
-   On this data a RF is fitted and the performance is measured in the testset &
-   rated with Accuracy, Precision, Specifity, F1-Socre,...
+   we prune the imputed data, so that only features remain that are also in the 
+   test set. On this data a RF is fitted and the performance is measured in the 
+   testset & rated with Accuracy, Precision, Recall, F1-Socre,...
    
    Args:
-    - path (str) : path to the data with blockwise missingness we want to CV
-                   --> must lead to list with 2 entrances 'data' & 'block_names'
-                       'data' consitis of 'k' test-train-splits, where train 
-                        has missingness induced and test fully observed!
+    - path (str) : path to the test-train splits, whereby the train parts were 
+                   already imputed! 
+                   --> list with the 2 entrances 'data' & 'block_names'
+                       - 'data' consitis of 'k' test-train-splits
+                       - 'block_names' consits of the feature names for the 
+                          different feature-blocks
+                   --> must contain 'imputed' as the imputed DFs are saved in 
+                       such a corresponding folder!
     - num_trees (int) : Amount of trees to be fit on the imputed data!
                         --> RF will be fit on all feas in Train, that are also
                             observed in 'Test'
-                        If NULL: 1000 is the default!
     - min_node_size(int) : Amount of Observations a node must at least contain,
                            so the model keeps on trying to split them!  
-                        If NULL: 1 is the default!
     - mtry (int)         : Amount of split-variables we try, when looking for
-                           a split variable! 
-                        If 'NULL': mtry = sqrt(p)
-    - n_tree_impute (int)  : Amount of Trees we use for imputing the 
-                             missing values in the 'data$train' section of the
-                             data in 'path'
-    - maxiter_impute (int) : Maximum amount of itterations for the Imputation 
-                             with missForest!
+                           a split variable! >> if 'NULL': mtry = sqrt(p)
    
     Return:
       - list filled w/:
@@ -819,12 +814,8 @@ do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missi
   "
   # [0] Check Inputs  ----------------------------------------------------------
   # 0-0 mtry, min_node_size & num_trees are all checked within 'rfsrc()'
-  # 0-1 path must be string rest is checked in 'load_CV_data()'
-  assert_string(path, fixed = "4.RData")
-  
-  # 0-2 'n_tree_impute' & 'maxiter_impute' must be numeric!
-  assert_int(n_tree_impute)
-  assert_int(maxiter_impute)
+  # 0-1 path must be string - rest is checked in 'load_CV_data()'
+  assert_string(path, fixed = "IMP_4.RData")
   
   # [1] Get the data and create list to save results  --------------------------
   # 1-1 Load CV-Data [already splitted - data checked in 'load_CV_data' itself]
@@ -864,51 +855,46 @@ do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missi
     train <- curr_data$data[[i]]$train
     test  <- curr_data$data[[i]]$test
     
-    # 2-3 Call Imput Function and impute the missing values!
-    train_imputed <- impute_missing_values(data = train, 
-                                           ntree_imp = n_tree_impute, 
-                                           maxiter = maxiter_impute)
-    
-    # 2-4 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
+    # 2-3 Evaluate the RF on the different Testsets! Fromfull TestSet w/o any 
     #     missing blocks to TestSets w/ only one observed Block!
-    # 2-4-1 Full TestSet!
+    # 2-3-1 Full TestSet!
     print("Evaluation full TestSet -------------------------------------------")
-    full[[i]] <- do_evaluation_imputed(train = train_imputed, test = test, 
+    full[[i]] <- do_evaluation_imputed(train = train, test = test, 
                                        num_trees = num_trees, 
                                        min_node_size = min_node_size, 
                                        mtry = mtry)  
     
-    # 2-4-2 TestSet with 1 missing block!
+    # 2-3-2 TestSet with 1 missing block!
     print("Evaluation TestSet w/ 1 missing omics block------------------------")
-    miss1_A[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss1_A[[i]] <- do_evaluation_imputed(train = train, 
                                           test = test[,-which(colnames(test) %in% curr_data$block_names$A)], 
                                           num_trees = num_trees, 
                                           min_node_size = min_node_size, 
                                           mtry = mtry)
     
-    miss1_B[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    miss1_B[[i]] <- do_evaluation_imputed(train = train, 
                                           test = test[,-which(colnames(test) %in% curr_data$block_names$B)], 
                                           num_trees = num_trees, 
                                           min_node_size = min_node_size, 
                                           mtry = mtry)
     
-    # 2-4-3 Evaluation on single Block Testdata
+    # 2-3-3 Evaluation on single Block Testdata
     print("Evaluation TestSet w/ only 1 observed Block -----------------------")
-    single_A[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    single_A[[i]] <- do_evaluation_imputed(train = train, 
                                            test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                      curr_data$block_names$clin_block))], 
                                            num_trees = num_trees, 
                                            min_node_size = min_node_size, 
                                            mtry = mtry)
     
-    single_B[[i]] <-  do_evaluation_imputed(train = train_imputed, 
+    single_B[[i]] <-  do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$A,
                                                                                       curr_data$block_names$clin_block))], 
                                             num_trees = num_trees, 
                                             min_node_size = min_node_size, 
                                             mtry = mtry)
     
-    single_CL[[i]] <- do_evaluation_imputed(train = train_imputed, 
+    single_CL[[i]] <- do_evaluation_imputed(train = train, 
                                             test = test[,-which(colnames(test) %in% c(curr_data$block_names$B,
                                                                                       curr_data$block_names$A))], 
                                             num_trees = num_trees, 
