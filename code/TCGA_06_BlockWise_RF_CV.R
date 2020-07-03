@@ -884,19 +884,19 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_1.RData")
   
-  print("Setting - 1/3")
+  print("Setting - 1/3 --- No weighting") 
   sit1_1 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit1_1, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting1/", DF, ".RData"))
   
-  print("Setting - 2/3")
+  print("Setting - 2/3 --- F1 weighting")
   sit1_2 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit1_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting1/", DF, "_f1.RData"))
   
-  print("Setting - 3/3")
+  print("Setting - 3/3 --- Acc weighting")
   sit1_3 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
@@ -911,19 +911,19 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_2.RData")
   
-  print("Setting - 1/3")
+  print("Setting - 1/3 --- No weighting")
   sit2_1 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit2_1, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting2/", DF, ".RData"))
   
-  print("Setting - 2/3")
+  print("Setting - 2/3 --- F1 weighting")
   sit2_2 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit2_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting2/", DF, "_f1.RData"))
   
-  print("Setting - 3/3")
+  print("Setting - 3/3 --- Acc weighting")
   sit2_3 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
@@ -938,19 +938,19 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_3.RData")
   
-  print("Setting - 1/3")
+  print("Setting - 1/3 --- No weighting")
   sit3_1 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit3_1, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting3/", DF, ".RData"))
   
-  print("Setting - 2/3")
+  print("Setting - 2/3 --- F1 weighting")
   sit3_2 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit3_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting3/", DF, "_f1.RData"))
   
-  print("Setting - 3/3")
+  print("Setting - 3/3 --- Acc weighting")
   sit3_3 <- do_CV_NK_5_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
@@ -965,19 +965,19 @@ for (DF in DFs_w_gender) {
   # Create the path for the current DF
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234/", DF, "_4.RData")
   
-  print("Setting - 1/3")
+  print("Setting - 1/3 --- No weighting")
   sit4_1 <- do_CV_NK_3_blocks(path = curr_path,
                               weighted = FALSE, weight_metric = NULL,
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit4_1, file =  paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting4/", DF, ".RData"))
   
-  print("Setting - 2/3")
+  print("Setting - 2/3 --- F1 weighting")
   sit4_2 <- do_CV_NK_3_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "F1",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
   save(sit4_2, file = paste0("./docs/CV_Res/TCGA/BlockWise_Approach/setting4/", DF, "_f1.RData"))
   
-  print("Setting - 3/3")
+  print("Setting - 3/3 --- Acc weighting")
   sit4_3 <- do_CV_NK_3_blocks(path = curr_path,
                               weighted = TRUE, weight_metric = "Acc",
                               num_trees = 300, mtry = NULL, min_node_size = 5)
