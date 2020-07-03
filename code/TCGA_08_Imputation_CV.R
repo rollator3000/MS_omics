@@ -825,52 +825,55 @@ path         <- "data/processed/TCGA_subset_12345/missingness_1234/"
 # 1-3 Path to the folder to save the imputed test-train-splits!
 save_path    <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
 
-# 1-4 Which block-wise missingness setting [1, 2, 3 or 4]?
-setting      <- "2"
-
-for (curr_data in DFs_w_gender) {
+# 1-4 Loop over the different possible settings [1 - 4] and create the imputed
+#     train sets
+for (setting in c(1, 2, 3, 4)) {
   
-  # print current DF we do Imputation on!
-  print(paste("Start Imputation for:", curr_data))
-  
-  # paste the single path elements and start imputation
-  curr_path    <- paste0(path, curr_data, "_", setting, ".RData")
-  
-  # start the imputation and take the time
-  start_time <- Sys.time()
-  imputed_data <- impute_train_data_foldwise(path = curr_path, ntree_imp = 25, maxiter = 1,
-                                             para = "forests", start_fold = 1)
-  end_time <- Sys.time()
-  
-  # print the needed time
-  print(paste("Needed Time:", end_time - start_time))
-}
-
-# [2] Paste the single imputed folds together to a complete file:
-#     Loop over 'DFs_w_gender' and paste the single imputed folds to a DF
-for (df in DFs_w_gender) {
-  
-  # 2-1 Create name of the DF
-  df_name <- paste0(df, "_", setting)
-  
-  # 2-2 Load the 'df_name' with the block-wise missingness patterns
-  curr_DF <- load(paste0("./data/processed/TCGA_subset_12345/missingness_1234/", df_name, ".RData"))
-  curr_DF <- eval(as.symbol(curr_DF))
-  
-  # 2-3 Loop over the the different train folds with missing data and replace them by the imputed data
-  for (fold_ in 1:length(curr_DF$data)) {
+  # Loop over all 'DFs_w_gender' and impute values for the test-train splits
+  for (curr_data in DFs_w_gender) {
     
-    # Load the imputed data for the current fold!
-    to_load <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", fold_, "_", df, "_", setting, ".RData")
-    imputed <- load(to_load)
-    imputed <- eval(as.symbol(imputed))
+    # print current DF we do Imputation on!
+    print(paste("Start Imputation for:", curr_data))
     
-    curr_DF$data[[fold_]]$train <- imputed
+    # paste the single path elements and start imputation
+    curr_path    <- paste0(path, curr_data, "_", setting, ".RData")
+    
+    # start the imputation and take the time
+    start_time <- Sys.time()
+    imputed_data <- impute_train_data_foldwise(path = curr_path, ntree_imp = 25, maxiter = 1,
+                                               para = "forests", start_fold = 1)
+    end_time <- Sys.time()
+    
+    # print the needed time
+    print(paste("Needed Time:", end_time - start_time))
   }
   
-  # 2-4 Save the whole file
-  path_to_save <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", df, "_IMP_", setting, ".RData") 
-  save(curr_DF, file = path_to_save)
+  # [2] Paste the single imputed folds together to a complete file:
+  #     Loop over 'DFs_w_gender' and paste the single imputed folds to a DF
+  for (df in DFs_w_gender) {
+    
+    # 2-1 Create name of the DF
+    df_name <- paste0(df, "_", setting)
+    
+    # 2-2 Load the 'df_name' with the block-wise missingness patterns
+    curr_DF <- load(paste0("./data/processed/TCGA_subset_12345/missingness_1234/", df_name, ".RData"))
+    curr_DF <- eval(as.symbol(curr_DF))
+    
+    # 2-3 Loop over the the different train folds with missing data and replace them by the imputed data
+    for (fold_ in 1:length(curr_DF$data)) {
+      
+      # Load the imputed data for the current fold!
+      to_load <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", fold_, "_", df, "_", setting, ".RData")
+      imputed <- load(to_load)
+      imputed <- eval(as.symbol(imputed))
+      
+      curr_DF$data[[fold_]]$train <- imputed
+    }
+    
+    # 2-4 Save the whole file
+    path_to_save <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", df, "_IMP_", setting, ".RData") 
+    save(curr_DF, file = path_to_save)
+  }
 }
 
 
