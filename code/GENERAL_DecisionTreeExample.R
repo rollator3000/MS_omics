@@ -61,7 +61,7 @@ a4 <- ggplot(data = example, aes(x = weight, y = height, col = Y)) +
   annotate("text", x = 88, y = 180, label = "N4", size = 15, col = "seagreen") +
   annotate("text", x = 80, y = 169, label = "N5", size = 15, col = "seagreen") +
   annotate("text", x = 65.5, y = 180, label = "N3", size = 15, col = "seagreen") +
-  ggtitle("Splitting N2 into child nodes N3 & N4")
+  ggtitle("Splitting N2 into child nodes N4 & N5")
 
 
 # Paste all plots into a single figure
