@@ -665,7 +665,7 @@ extract_avg_metrics_SB <- function(x, metric, train_sit) {
   # 0-3 'train_sit' must be integer [1; 4]
   assert_int(train_sit, lower = 1, upper = 4)
   
-  # 0-4 There must be 5 single block results in 'x$res_all' [clin, A, B, C, D]
+  # 0-4 There must be 5 single block results in 'x$res_all' [clin, A, B, (C, D)]
   res_learners <- sapply(c("clin_block", "A", "B", "C", "D"), 
                          function(block) block %in% names(x$res_all$full))
   
@@ -805,24 +805,164 @@ extract_avg_metrics_SB <- function(x, metric, train_sit) {
   # [3] Return 'DF_final'
   return(DF_final)
 }
+extract_avg_metrics_SB_3 <- function(x, metric) {
+  "
+  Function to convert a list 'x' - w/ the 2 entrances 'res_all' & 'settings' - 
+  to a DF, that we can use for plotting!
+  'x' is the result of a CV of one trainsetting [pattern4] & all has results for 
+  all of the 6 testsettings! From this list we extract the metric for all of the 
+  different trainsettings!
+    --> Only grab the average values for the metric of all folds!
+  
+   Args:
+    x (list)           : list filled with the metrics for every single 
+                         Itteration in CV + the settings it was created from!
+                         Needs the names:
+                         ['res_all' & 'settings']
+    metric (str)       : the metric we shall extraxt from the result list!
+                         Needs to be in:
+                         ['Accuracy', 'Sensitifity', 'Specificity', 'Precision', 
+                          'Recall', 'F1', 'Balance_Acc', 'AUC', 'MCC']
+
+   Return:
+    DF, suited for plotting, with all metric for all testsettings in 'x'
+  "
+  # [0] Check Inputs 
+  # 0-1 'x' must be a list of length 2 w/ names 'res_all' & 'settings'
+  assert_list(x, len = 2)
+  if (!('res_all' %in% names(x)) | !('settings' %in% names(x))) {
+    stop("'x' needs 2 entrances called 'res_all' & 'settings'")
+  }
+  
+  # 0-2 'metric' must be in 'x'
+  assert_string(metric)
+  
+  # extract all used  metrics and check whether 'metric' exist!
+  met_meas <- unique(names(x$res_all[[1]]$clin_block[[1]]))
+  
+  if (!(metric %in% met_meas)) {
+    stop("'metric' is not within these!")
+  }
+  
+  # 0-3 There must be 3 single block results in 'x$res_all' [clin, A, B]
+  res_learners <- sapply(c("clin_block", "A", "B"), 
+                         function(block) block %in% names(x$res_all$full))
+  
+  if (!(all(res_learners))) {
+    stop("x does not have 3 single_block results ")
+  }
+  
+  # [1] Unpack the lists and put them into a single regular DF
+  # 1-1 Seperate Results and Settings
+  x_res      <- x$res_all
+  x_settings <- x$settings
+  
+  # 1-2 Extract the metric from the wanted TrainSetting for all 20 TestSettings!
+  #     ["full", "miss_1A", ...] & for all different single-block learners!
+  # 1-2-1 Clinical RF - extract Results and average them then!
+  clin_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$clin_block[[1]][metric],
+        x_res[[x]]$clin_block[[2]][metric],
+        x_res[[x]]$clin_block[[3]][metric],
+        x_res[[x]]$clin_block[[4]][metric],
+        x_res[[x]]$clin_block[[5]][metric])
+    }))
+  
+  clin_res <- sapply(1:ncol(clin_res), 
+                     function(col_) mean(as.numeric(unlist(clin_res[,col_])), na.rm = T))
+  names(clin_res) <- names(x_res)
+  
+  # 1-2-2 Block 'A' - extract Results and average them then!
+  b_A_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$A[[1]][metric],
+        x_res[[x]]$A[[2]][metric],
+        x_res[[x]]$A[[3]][metric],
+        x_res[[x]]$A[[4]][metric],
+        x_res[[x]]$A[[5]][metric])
+    }))
+  
+  b_A_res <- sapply(1:ncol(b_A_res), 
+                    function(col_) mean(as.numeric(unlist(b_A_res[,col_])), na.rm = T))
+  names(b_A_res) <- names(x_res)
+  
+  # 1-2-3 Block 'B' - extract Results and average them then!
+  b_B_res <- as.data.frame(
+    sapply(names(x_res), function(x) {
+      c(x_res[[x]]$B[[1]][metric],
+        x_res[[x]]$B[[2]][metric],
+        x_res[[x]]$B[[3]][metric],
+        x_res[[x]]$B[[4]][metric],
+        x_res[[x]]$B[[5]][metric])
+    }))
+  
+  b_B_res <- sapply(1:ncol(b_B_res), 
+                    function(col_) mean(as.numeric(unlist(b_B_res[,col_])), na.rm = T))
+  names(b_B_res) <- names(x_res)
+  
+  
+  # 1-3 Bind the results from the different single_blocks into a single DF
+  DF_final <- data.frame()
+  
+  # 1-3-1 CLIN_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = 4,
+                               "Testsituation"  = names(clin_res),
+                               "Metric"         = clin_res,
+                               "Learn_Block"    = "Clinical"))
+  
+  # 1-3-2 A_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = 4,
+                               "Testsituation"  = names(b_A_res),
+                               "Metric"         = b_A_res,
+                               "Learn_Block"    = "A"))
+  
+  # 1-3-3 B_RES
+  DF_final <- rbind(DF_final,
+                    data.frame("Trainsituation" = 4,
+                               "Testsituation"  = names(b_B_res),
+                               "Metric"         = b_B_res,
+                               "Learn_Block"    = "B"))
+  
+  
+  # [2] Add the settings that have been used
+  # 2-1 Add used DF and used Seed
+  path_split       <- unlist(strsplit(x_settings$data_path, split = "/"))
+  DF_final$DF      <- path_split[length(path_split)]
+  DF_final$DF_seed <- path_split[length(path_split) - 1]
+  
+  # 2-2 Add the infos from "x_settings"
+  DF_final$performance_metric <- metric
+  DF_final$reponse            <- x_settings$response
+  DF_final$model_seed         <- x_settings$seed
+  DF_final$num_trees          <- x_settings$num_trees
+  DF_final$mtry               <- x_settings$mtry
+  DF_final$min_node_size      <- x_settings$min_node_size
+  
+  # [3] Return 'DF_final'
+  return(DF_final)
+}
 
 # Plot the results of the diverese approaches on the diverse patterns og BW in TCGA
 # ----- ----- ----- Complete-Case Approach                                    ----
 # Combine the results of all CC approaches [pattern1, .., 3] into a single plot!
 # [0] Define variables
-# 0- 1 Paths to the results of the CV
+# 0-1 Paths to the results of the CV
 data_path_1 <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting1/"
 data_path_2 <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting2/"
 data_path_3 <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting3/"
+data_path_4 <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting4/"
 
-all_paths <- c(data_path_1, data_path_2, data_path_3)
+all_paths <- c(data_path_1, data_path_2, data_path_3, data_path_4)
 
 # 0-2 empty DF to store the results
 DF_CC <- data.frame()
 
 # [1] Extract the results
 # 1-1 Loop over all folders that contain the CV results for CC!
-for (pattern_ in c(1, 2, 3)) {
+for (pattern_ in c(1, 2, 3, 4)) {
   
   curr_path <- all_paths[pattern_]
   
@@ -843,18 +983,29 @@ for (pattern_ in c(1, 2, 3)) {
 DF_CC$pattern_names <- paste("Pattern", DF_CC$pattern)
 
 # [2] Do the plots and get informations
+# 2-1 Meaningful name for the metric
 if (DF_CC$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
   used_metric_ <- paste("Metric:", DF_CC$performance_metric[1])
 }
 
-# 2-2 The plot itself
+# 2-2 Create the plot
+# 2-2-1 Create annotations for 'Pattern 4'
+ann_text <- data.frame(Testsituation = c("miss1_C", "miss1_D", "miss2_CD", "miss2_BD",
+                                         "miss2_BC", "miss2_AD", "miss2_AC", "miss2_AB",
+                                         "miss3_ABC","miss3_ABD", "miss3_ACD", "miss3_BCD",
+                                         "single_C", "single_D"), 
+                       Metric = 0.5, lab = "Text",
+                       pattern_names = factor("Pattern 4", 
+                                              levels = unique(DF_CC$pattern_names)))
+
+# 2-2-2 Create the actual plot
 ggplot(data = DF_CC, aes(x = Testsituation, y = Metric)) +
   geom_boxplot(fill = 'darkolivegreen3') + 
   theme_bw() +
   ggtitle("Complete-Case Approach",
-          subtitle = "TCGA - Patterns 1, 2 & 3") +
+          subtitle = "TCGA - Patterns 1, 2, 3 & 4") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
@@ -864,10 +1015,11 @@ ggplot(data = DF_CC, aes(x = Testsituation, y = Metric)) +
              col = "darkgreen", lty = 2) +
   geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
              col = "red", lty = 2, lwd = 1.005) +
-  facet_grid(pattern_names ~ .)
+  facet_grid(pattern_names ~ .) + 
+  geom_text(data = ann_text, label = "not existent", col = "red", size = 8, angle = 90)
 
 # 2-3 Get summarys to the perfornance!
-for (patt_ in c(1, 2, 3)) {
+for (patt_ in c(1, 2, 3, 4)) {
   
   print(paste0("Current Pattern: ", patt_, " --------------------------------"))
   
@@ -904,15 +1056,16 @@ for (patt_ in c(1, 2, 3)) {
 data_path_1 <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting1/"
 data_path_2 <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting2/"
 data_path_3 <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting3/"
+data_path_4 <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting4/"
 
-all_paths <- c(data_path_1, data_path_2, data_path_3)
+all_paths <- c(data_path_1, data_path_2, data_path_3, data_path_4)
 
 # 0-2 empty DF to store the results
 DF_SB <- data.frame()
 
 # [1] Extract the results
 # 1-1 Loop over all folders that contain the CV results for CC!
-for (pattern_ in c(1, 2, 3)) {
+for (pattern_ in c(1, 2, 3, 4)) {
   
   curr_path <- all_paths[pattern_]
   
@@ -922,8 +1075,13 @@ for (pattern_ in c(1, 2, 3)) {
     file_curr <- load(paste0(curr_path, "/", curr_file))
     file_curr <- eval(as.symbol(file_curr))
     
-    curr_df         <- extract_avg_metrics_SB(file_curr, metric = "F1", 
-                                              train_sit = pattern_)
+    if (pattern_ %in% c(1, 2, 3)) {
+      curr_df <- extract_avg_metrics_SB(file_curr, metric = "F1", 
+                                                train_sit = pattern_)
+    } else {
+      curr_df <- extract_avg_metrics_SB_3(file_curr, metric = "F1")
+    }
+    
     curr_df$pattern <- pattern_
     DF_SB           <- rbind(DF_SB, curr_df)
   }
@@ -933,18 +1091,30 @@ for (pattern_ in c(1, 2, 3)) {
 DF_SB$pattern_names <- paste("Pattern", DF_SB$pattern)
 
 # [2] Do the plots and get informations
+# 2-1 Create a meaningful name for the xaxis
 if (DF_SB$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
   used_metric_ <- paste("Metric:", DF_SB$performance_metric[1])
 }
 
-# 2-2 The plot itself
+# 2-2 Create the Plot
+# 2-2-1 Create annotations for 'Pattern 4'
+ann_text <- data.frame(Testsituation = c("miss1_C", "miss1_D", "miss2_CD", "miss2_BD",
+                                         "miss2_BC", "miss2_AD", "miss2_AC", "miss2_AB",
+                                         "miss3_ABC","miss3_ABD", "miss3_ACD", "miss3_BCD",
+                                         "single_C", "single_D"), 
+                       Metric = 0.5, lab = "Text",
+                       pattern_names = factor("Pattern 4", 
+                                              levels = unique(DF_SB$pattern_names)),
+                       Learn_Block = "A")
+
+# 2-2-2 The plot itself
 ggplot(data = DF_SB, aes(x = Testsituation, y = Metric, fill = Learn_Block)) +
   geom_boxplot(position = position_dodge(preserve = "single")) + 
   theme_bw() +
   ggtitle("Single-Block Approach",
-          subtitle = "TCGA - Patterns 1, 2 & 3") +
+          subtitle = "TCGA - Patterns 1, 2, 3 & 4") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
@@ -958,10 +1128,11 @@ ggplot(data = DF_SB, aes(x = Testsituation, y = Metric, fill = Learn_Block)) +
   facet_grid(pattern_names ~ .) +
   guides(fill = guide_legend(title = "Feature-block: ")) +
   scale_fill_manual(values = c('darkolivegreen3', "darkorange3", "cyan4", 
-                               "darkmagenta", "bisque3"))
+                               "darkmagenta", "bisque3")) +
+  geom_text(data = ann_text, label = "not existent", col = "red", size = 8, angle = 90)
 
 # 2-3 Get summarys to the perfornance!
-for (patt_ in c(1, 2, 3)) {
+for (patt_ in c(1, 2, 3, 4)) {
   
   print(paste0("Current Pattern: ", patt_, " --------------------------------"))
   
@@ -988,15 +1159,16 @@ for (patt_ in c(1, 2, 3)) {
 data_path_1 <- "./docs/CV_Res/TCGA/Imputation_Approach/setting1/"
 data_path_2 <- "./docs/CV_Res/TCGA/Imputation_Approach/setting2/"
 data_path_3 <- "./docs/CV_Res/TCGA/Imputation_Approach/setting3/"
+data_path_4 <- "./docs/CV_Res/TCGA/Imputation_Approach/setting4/"
 
-all_paths <- c(data_path_1, data_path_2, data_path_3)
+all_paths <- c(data_path_1, data_path_2, data_path_3, data_path_4)
 
 # 0-2 empty DF to store the results
 DF_IMP <- data.frame()
 
 # [1] Extract the results
 # 1-1 Loop over all folders that contain the CV results for CC!
-for (pattern_ in c(1, 2, 3)) {
+for (pattern_ in c(1, 2, 3, 4)) {
   
   curr_path <- all_paths[pattern_]
   
@@ -1017,18 +1189,29 @@ for (pattern_ in c(1, 2, 3)) {
 DF_IMP$pattern_names <- paste("Pattern", DF_IMP$pattern)
 
 # [2] Do the plots and get informations
+# 2-1 Create a meaningful name for the xaxis
 if (DF_IMP$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
   used_metric_ <- paste("Metric:", DF_IMP$performance_metric[1])
 }
 
-# 2-2 The plot itself
+# 2-2 Create the Plot
+# 2-2-1 Create annotations for 'Pattern 4'
+ann_text <- data.frame(Testsituation = c("miss1_C", "miss1_D", "miss2_CD", "miss2_BD",
+                                         "miss2_BC", "miss2_AD", "miss2_AC", "miss2_AB",
+                                         "miss3_ABC","miss3_ABD", "miss3_ACD", "miss3_BCD",
+                                         "single_C", "single_D"), 
+                       Metric = 0.5, lab = "Text",
+                       pattern_names = factor("Pattern 4", 
+                                              levels = unique(DF_IMP$pattern_names)))
+
+# 2-2-2 The plot itself
 ggplot(data = DF_IMP, aes(x = Testsituation, y = Metric)) +
   geom_boxplot(fill = 'darkolivegreen3') + 
   theme_bw() +
   ggtitle("Block-wise Approach",
-          subtitle = "TCGA - Patterns 1, 2 & 3") +
+          subtitle = "TCGA - Patterns 1, 2, 3 & 4") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
@@ -1042,10 +1225,11 @@ ggplot(data = DF_IMP, aes(x = Testsituation, y = Metric)) +
   facet_grid(pattern_names ~ .) +
   guides(fill = guide_legend(title = "Feature-block: ")) +
   scale_fill_manual(values = c('darkolivegreen3', "darkorange3", "cyan4", 
-                               "darkmagenta", "bisque3"))
+                               "darkmagenta", "bisque3")) +
+  geom_text(data = ann_text, label = "not existent", col = "red", size = 8, angle = 90)
 
 # 2-3 Get summarys to the perfornance!
-for (patt_ in c(1, 2, 3)) {
+for (patt_ in c(1, 2, 3, 4)) {
   
   print(paste0("Current Pattern: ", patt_, " --------------------------------"))
   
@@ -1070,7 +1254,7 @@ for (patt_ in c(1, 2, 3)) {
                           byrow = F))
   
   # Assign the test-situations as colnames
-  colnames(df) <- unique(DF_CC$Testsituation)
+  colnames(df) <- unique(DF_curr$Testsituation)
   
   # Print the DF
   print(df)
@@ -1084,15 +1268,16 @@ for (patt_ in c(1, 2, 3)) {
 data_path_1 <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting1/"
 data_path_2 <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting2/"
 data_path_3 <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting3/"
+data_path_4 <- "./docs/CV_Res/TCGA/BlockWise_Approach/setting4/"
 
-all_paths <- c(data_path_1, data_path_2, data_path_3)
+all_paths <- c(data_path_1, data_path_2, data_path_3, data_path_4)
 
 # 0-2 empty DF to store the results
 DF_BW <- data.frame()
 
 # [1] Extract the results
 # 1-1 Loop over all folders that contain the CV results for CC!
-for (pattern_ in c(1, 2, 3)) {
+for (pattern_ in c(1, 2, 3, 4)) {
   
   curr_path <- all_paths[pattern_]
   
@@ -1123,17 +1308,29 @@ for (pattern_ in c(1, 2, 3)) {
 DF_BW$pattern_names <- paste("Pattern", DF_BW$pattern)
 
 # [2] Do the plots and get informations
+# 2-1 Create a meaningful name for the xaxis
 if (DF_BW$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
   used_metric_ <- paste("Metric:", DF_BW$performance_metric[1])
 }
 
-# 2-1 Relevel the 'weight_metric' variable
-DF_BW$weight_metric <- factor(DF_BW$weight_metric, 
-                               levels = c("None", "Accuracy", "F-1 Score"))
+# 2-2 Create the Plot
+# 2-2-1 Create annotations for 'Pattern 4'
+ann_text <- data.frame(Testsituation = c("miss1_C", "miss1_D", "miss2_CD", "miss2_BD",
+                                         "miss2_BC", "miss2_AD", "miss2_AC", "miss2_AB",
+                                         "miss3_ABC","miss3_ABD", "miss3_ACD", "miss3_BCD",
+                                         "single_C", "single_D"), 
+                       Metric = 0.5, lab = "Text",
+                       pattern_names = factor("Pattern 4", 
+                                              levels = unique(DF_BW$pattern_names)),
+                       weight_metric = "None")
 
-# 2-2 Plot itself!
+# 2-2-2 Relevel the 'weight_metric' variable
+DF_BW$weight_metric <- factor(DF_BW$weight_metric, 
+                              levels = c("None", "Accuracy", "F-1 Score"))
+
+# 2-2-3 The plot itself
 ggplot(data = DF_BW, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
@@ -1151,11 +1348,12 @@ ggplot(data = DF_BW, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
              col = "red", lty = 2, lwd = 1.005) +
   guides(fill = guide_legend(title = "Weight Metric: ")) +
   scale_fill_manual(values = c( 'darkolivegreen3', "darkorange3", "cyan4")) +
-  facet_grid(pattern_names ~ .)
+  facet_grid(pattern_names ~ .) +
+  geom_text(data = ann_text, label = "not existent", col = "red", size = 8, angle = 90)
 
 
 # 2-3 Count how often a approach has the highest median!
-for (patt_ in c(1, 2, 3)) {
+for (patt_ in c(1, 2, 3, 4)) {
   
   print(paste0("Current Pattern: ", patt_, " --------------------------------"))
   
@@ -1196,15 +1394,16 @@ for (patt_ in c(1, 2, 3)) {
 data_path_1 <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting1/"
 data_path_2 <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting2/"
 data_path_3 <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting3/"
+data_path_4 <- "./docs/CV_Res/TCGA/FoldWise_Approach/setting4/"
 
-all_paths <- c(data_path_1, data_path_2, data_path_3)
+all_paths <- c(data_path_1, data_path_2, data_path_3, data_path_4)
 
 # 0-2 empty DF to store the results
 DF_FW <- data.frame()
 
 # [1] Extract the results
 # 1-1 Loop over all folders that contain the CV results for CC!
-for (pattern_ in c(1, 2, 3)) {
+for (pattern_ in c(1, 2, 3, 4)) {
   
   curr_path <- all_paths[pattern_]
   
@@ -1226,13 +1425,25 @@ for (pattern_ in c(1, 2, 3)) {
 DF_FW$pattern_names <- paste("Pattern", DF_FW$pattern)
 
 # [2] Do the plots and get informations
-if (DF_FW$performance_metric[1] == "F1") {
+# 2-1 Create a meaningful name for the xaxis
+if (DF_BW$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
-  used_metric_ <- paste("Metric:", DF_FW$performance_metric[1])
+  used_metric_ <- paste("Metric:", DF_BW$performance_metric[1])
 }
 
-# 2-1 Relevel & rename the 'weight_metric' variable
+# 2-2 Create the Plot
+# 2-2-1 Create annotations for 'Pattern 4'
+ann_text <- data.frame(Testsituation = c("miss1_C", "miss1_D", "miss2_CD", "miss2_BD",
+                                         "miss2_BC", "miss2_AD", "miss2_AC", "miss2_AB",
+                                         "miss3_ABC","miss3_ABD", "miss3_ACD", "miss3_BCD",
+                                         "single_C", "single_D"), 
+                       Metric = 0.5, lab = "Text",
+                       pattern_names = factor("Pattern 4", 
+                                              levels = unique(DF_BW$pattern_names)),
+                       weight_metric = "None")
+
+# 2-2-2 Relevel & rename the 'weight_metric' variable
 DF_FW$weight_metric[DF_FW$weight_metric == "F1"]  <- "F-1 Score"
 DF_FW$weight_metric[DF_FW$weight_metric == "Acc"] <- "Accuracy"
 DF_FW$weight_metric[DF_FW$weight_metric == "No"]  <- "None"
@@ -1240,7 +1451,7 @@ DF_FW$weight_metric[DF_FW$weight_metric == "No"]  <- "None"
 DF_FW$weight_metric <- factor(DF_FW$weight_metric, 
                               levels = c("None", "Accuracy", "F-1 Score"))
 
-# 2-2 Plot itself!
+# 2-2-3 Plot itself!
 ggplot(data = DF_FW, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
   geom_boxplot() + 
   theme_bw() +
@@ -1258,11 +1469,12 @@ ggplot(data = DF_FW, aes(x = Testsituation, y = Metric, fill = weight_metric)) +
              col = "red", lty = 2, lwd = 1.005) +
   guides(fill = guide_legend(title = "Weight Metric: ")) +
   scale_fill_manual(values = c( 'darkolivegreen3', "darkorange3", "cyan4")) +
-  facet_grid(pattern_names ~ .)
+  facet_grid(pattern_names ~ .) +
+  geom_text(data = ann_text, label = "not existent", col = "red", size = 8, angle = 90)
 
 
 # 2-3 Count how often a approach has the highest median!
-for (patt_ in c(1, 2, 3)) {
+for (patt_ in c(1, 2, 3, 4)) {
   
   print(paste0("Current Pattern: ", patt_, " --------------------------------"))
   
@@ -2927,3 +3139,187 @@ for (curr_test in unique(DF_all$Testsituation)) {
   
   if (length(max_index) == 1) counter[max_index] <- counter[max_index] + 1
 } 
+
+# Compare the different Approaches              --- pattern 4 [F1-Score]      ----
+# [1] ----- CC Results
+DF_CC <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/CompleteCase_Approach/setting4/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(file_curr, metric = "F1", train_sit = 1)
+  DF_CC     <- rbind(DF_CC, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_CC$Approach <- "Complete-Case"
+
+# [2] ----- SB Results
+DF_SB <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/SingleBlock_Approach/setting4/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_SB_3(x = file_curr, metric = "F1")
+  
+  # Only keep the results of single 'A'
+  curr_df   <- curr_df[curr_df$Learn_Block == 'A',]
+  DF_SB     <- rbind(DF_SB, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_SB$Approach <- "Single-Block"
+
+# [3] ----- IMP Results
+DF_IMP <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/Imputation_Approach//setting4/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
+  DF_IMP    <- rbind(DF_IMP, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_IMP$Approach <- "Imputation"
+
+# [4] ----- BW Results
+DF_BW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/BlockWise_Approach//setting4/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files[grep("f1", files)]) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics(x = file_curr, metric = "F1", train_sit = 1)
+  DF_BW     <- rbind(DF_BW, curr_df)
+}
+
+# 1-3 Add the approach to the DF
+DF_BW$Approach <- "Block-wise"
+
+# [5] ----- FW Results
+DF_FW <- data.frame()
+
+# 1-1 List the files in the path
+data_path <- "./docs/CV_Res/TCGA/FoldWise_Approach//setting4/"
+files     <- list.files(data_path)
+
+# 1-2 Loop over the files and get the results
+for (curr_file in files) {
+  
+  # Load the result and assign it to 'file_curr'
+  file_curr <- load(paste0(data_path, "/", curr_file))
+  file_curr <- eval(as.symbol(file_curr))
+  
+  curr_df   <- extract_avg_metrics_FW(file_curr, metric = "F1", train_sit = 1)
+  DF_FW     <- rbind(DF_FW, curr_df)
+}
+
+# 1-3 Only keep Results with the F1-Score as weight metric
+DF_FW <- DF_FW[DF_FW$weight_metric == "F1",]
+
+# 1-4 Add the approach to the DF
+DF_FW$Approach <- "Fold-wise"
+
+# [6] ----- Bind the DFs and create a plot
+# 6-1 Columns we need from every approach-DF
+needed_cols <- c("Testsituation", "Metric", "DF", "performance_metric", "Approach")
+
+# 6-2 Bind the DFs from the different approaches to a single DF for plots!
+DF_all <- rbind(DF_CC[,needed_cols], DF_SB[,needed_cols], DF_IMP[,needed_cols],
+                DF_BW[,needed_cols], DF_FW[,needed_cols])
+
+# 6-2-1 Relevel the 'Approach' variable
+DF_all$Approach <- factor(DF_all$Approach, levels = c("Fold-wise", "Block-wise",
+                                                      "Imputation", "Single-Block",
+                                                      "Complete-Case"), 
+                          ordered = TRUE)
+
+# 6-3 Extract the used metric
+if (DF_all$performance_metric[1] == "F1") {
+  used_metric_ <- "Metric: F-1 Score"
+} else {
+  used_metric_ <- paste("Metric:", DF_all$performance_metric[1])
+}
+
+# 6-4 Do the plot
+ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
+  geom_boxplot(position = position_dodge(preserve = "single")) + 
+  theme_bw() +
+  ggtitle("Comparison of all Approaches",
+          subtitle = "TCGA - Pattern 4") +
+  ylab(used_metric_) +
+  xlab("Test-Situations") +
+  theme(axis.text.x = element_text(angle = 28, hjust = 1),
+        text = element_text(size = 24),
+        legend.position = "top") +
+  geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
+                            14.5, 16.5, 17.5, 18.5, 19.5),
+             col = "darkgreen", lty = 2) +
+  geom_vline(xintercept = c(1.5, 5.5, 11.5, 15.5),
+             col = "red", lty = 2, lwd = 1.005) +
+  guides(fill = guide_legend(title = "Approach: ")) +
+  scale_fill_manual(values = c("darkolivegreen2", "darkorange1", 'darkorchid1', 'darkgoldenrod1', 'darkslategray3'))
+
+# 6-5 Count how often a approach has the highest/ worst median!
+best_counter        <- c(0, 0, 0, 0, 0)
+names(best_counter) <- c("CC", "SB", "IMP", "BW", "FW")
+
+worst_counter        <- c(0, 0, 0, 0, 0)
+names(worst_counter) <- c("CC", "SB", "IMP", "BW", "FW")
+for (curr_test in unique(DF_all$Testsituation)) {
+  
+  m_cc <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Complete-Case'])
+  
+  m_sb <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Single-Block'])
+  
+  m_imp <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                  DF_all$Approach == 'Imputation'])
+  
+  m_bw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Block-wise'])
+  
+  m_fw <- median(DF_all$Metric[DF_all$Testsituation == curr_test & 
+                                 DF_all$Approach == 'Fold-wise'])
+  
+  all_res_  <- c(m_cc, m_sb, m_imp, m_bw, m_fw)
+  
+  max_index <- which(all_res_ == max(all_res_, na.rm = TRUE))
+  min_index <- which(all_res_ == min(all_res_, na.rm = TRUE))
+  
+  if (length(max_index) == 1) best_counter[max_index]  <- best_counter[max_index] + 1
+  if (length(min_index) == 1) worst_counter[min_index] <- worst_counter[min_index] + 1
+}
