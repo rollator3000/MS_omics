@@ -119,8 +119,7 @@ mcc_metric        <- function(conf_matrix) {
   # [2] Return  ----------------------------------------------------------------
   return(mcc_final)
 }
-impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1, 
-                                       para = "forests", start_fold = 1) {
+impute_train_data <- function(path, ntree_imp = 25, maxiter = 1, para = "forests") {
   " Impute the missing values in the trainsets of the test-train splits 'path'
     points to! Impute the missing values with the missForest approach!
     Then save the imputed DF, so we do not need to impute it the whole time and 
@@ -138,17 +137,17 @@ impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1,
     - ntree_imp (int)  : Amount of trees we use for the missForest imputation
     - maxiter (int)    : Max Number of iterations to be performed - as long 
                          as the stopping criterion is not fullfilled yet!
-    - para (str)       : Should 'missForest' be run parallel? If 'variables' the
+    - para (str)      :  Should 'missForest' be run parallel? If 'variables' the
                          data is split into pieces of the size equal to the
                          number of cores registered in the parallel backend. 
                          If 'forests' the total number of trees in each random
                          forests is split in the same way. 
                           > 'no'; 'forests' or 'variables'
-    - start_fold (int) : Which fold to start the imputation - all lower are 
-                         ignored! 
-  Return:                Save the imputed data of all folds in 
-                         'data/processed/RH_subsetted_12345/missingness_1234_imputed/'
-                         fold_data_imputed.R
+                         
+  Return:
+    - data_all (list)  : Same structure of the loaded Test-Train Splits, but the 
+                         Training set has no more missing values, as all were
+                         imputed by missForest!
   "
   # [0] Check Inputs & load the data  ------------------------------------------
   # 0-1 Check for meaningful arguments
@@ -158,14 +157,13 @@ impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1,
   if (!(para %in% c('no', 'forests', 'variables'))) {
     stop("'para' must be: 'no'; 'forests'; or 'variables'")
   }
-  assert_int(start_fold, lower = 1, upper = 5)
   
   # 0-2 Load data and extract the data-splits itself! 
   curr_data <- load_CV_data(path = path)
   data_all  <- curr_data$data
   
   # [1] Run the impuation for each of the 5 Test-Train Splits  -----------------
-  for (curr_ind in start_fold:length(data_all)) {
+  for (curr_ind in 1:length(data_all)) {
     
     print(paste("Imputation", curr_ind, "/", length(data_all)))
     
@@ -219,12 +217,21 @@ impute_train_data_foldwise <- function(path, ntree_imp = 25, maxiter = 1,
     
     # 1-9 Save the prt that has been imputed!
     name_save <- strsplit(path, split = "1234/")[[1]][2]
-    save_path <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
+    save_path <- "data/processed/RH_subsetted_12345/missingness_1234_imputed/"
     save_path <- paste0(save_path, curr_ind, "_", name_save)
     save(data_imputed, file = save_path)
   }
+  
+  # [2] Return the Test-Train Splits  ------------------------------------------
+  #     Add the imputed test-train splits to curr_data [overwrite old data]!
+  #     And return it! --> train data imputed all the time
+  #                    --> 
+  #     Test-Train Splits as they have been, but the Traindata does not contain 
+  #     anymore missing data!
+  curr_data$data <- data_all
+  return(curr_data)
 }
-do_evaluation_imputed       <- function(train, test, num_trees, min_node_size, mtry) {
+do_evaluation_imputed <- function(train, test, num_trees, min_node_size, mtry) {
   "Evaluate the Imputation Approach! MissForest was used to impute the missing 
    Values in the training data. Evaluate the Approach on 'test'. 
    For this we supply the features -only the ones avaible in 'test'- from 'train'
@@ -336,7 +343,7 @@ do_evaluation_imputed       <- function(train, test, num_trees, min_node_size, m
   
   return(as.vector(res))
 }
-do_CV_missforrest_5         <- function(path = "data/processed/TCGA_subset_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
+do_CV_missforrest_5   <- function(path = "data/processed/TCGA_subset_12345/missingness_1234_imputed/BLCA_IMP_1.RData",
                                         num_trees = 300, min_node_size = 5, mtry = NULL) {
   "Evalute the Approach where the block-wise missingness in the DFs is removed by
    missforest impuation method!
@@ -640,7 +647,6 @@ do_CV_missforrest_5         <- function(path = "data/processed/TCGA_subset_12345
   return(list("res_all"  = res_all, 
               "settings" = settings))
 }
-
 do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missingness_1234_imputed/BLCA_IMP_4.RData",
                                   num_trees = 300, min_node_size = 10, mtry = NULL) {
   "Evalute the imputation Approach - for the cases with 3 blocks! [Scenario4]
@@ -812,7 +818,6 @@ do_CV_missforrest_3   <- function(path = "data/processed/TCGA_subset_12345/missi
               "settings" = settings))
 } 
 
-
 # MAIN -------------------------------------------------------------------------
 # [1] Impute the missing values in Train for all of the DFs
 # 1-1 Names of the usable DFs
@@ -825,59 +830,33 @@ path         <- "data/processed/TCGA_subset_12345/missingness_1234/"
 # 1-3 Path to the folder to save the imputed test-train-splits!
 save_path    <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
 
-# 1-4 Loop over the different possible settings [1 - 4] and create the imputed
-#     train sets
-for (setting in c(1, 2, 3, 4)) {
+# 1-4 Which block-wise missingness setting [1, 2, 3 or 4]?
+setting      <- "1"
+
+for (curr_data in DFs_w_gender) {
   
-  # Loop over all 'DFs_w_gender' and impute values for the test-train splits
-  for (curr_data in DFs_w_gender) {
-    
-    # print current DF we do Imputation on!
-    print(paste("Start Imputation for:", curr_data))
-    
-    # paste the single path elements and start imputation
-    curr_path    <- paste0(path, curr_data, "_", setting, ".RData")
-    
-    # start the imputation and take the time
-    start_time <- Sys.time()
-    imputed_data <- impute_train_data_foldwise(path = curr_path, ntree_imp = 25, maxiter = 1,
-                                               para = "forests", start_fold = 1)
-    end_time <- Sys.time()
-    
-    # print the needed time
-    print(paste("Needed Time:", end_time - start_time))
-  }
+  # print current DF we do Imputation on!
+  print(paste("Start Imputation for:", curr_data))
   
-  # [2] Paste the single imputed folds together to a complete file:
-  #     Loop over 'DFs_w_gender' and paste the single imputed folds to a DF
-  for (df in DFs_w_gender) {
-    
-    # 2-1 Create name of the DF
-    df_name <- paste0(df, "_", setting)
-    
-    # 2-2 Load the 'df_name' with the block-wise missingness patterns
-    curr_DF <- load(paste0("./data/processed/TCGA_subset_12345/missingness_1234/", df_name, ".RData"))
-    curr_DF <- eval(as.symbol(curr_DF))
-    
-    # 2-3 Loop over the the different train folds with missing data and replace them by the imputed data
-    for (fold_ in 1:length(curr_DF$data)) {
-      
-      # Load the imputed data for the current fold!
-      to_load <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", fold_, "_", df, "_", setting, ".RData")
-      imputed <- load(to_load)
-      imputed <- eval(as.symbol(imputed))
-      
-      curr_DF$data[[fold_]]$train <- imputed
-    }
-    
-    # 2-4 Save the whole file
-    path_to_save <- paste0("./data/processed/TCGA_subset_12345/missingness_1234_imputed/", df, "_IMP_", setting, ".RData") 
-    save(curr_DF, file = path_to_save)
-  }
+  # paste the single path elements and start imputation
+  curr_path    <- paste0(path, curr_data, "_", setting, ".RData")
+  
+  # start the imputation and take the time
+  start_time <- Sys.time()
+  imputed_data <- impute_train_data(path = curr_path, ntree_imp = 25, maxiter = 1,
+                                    para = "forests")
+  end_time <- Sys.time()
+  
+  # print the needed time
+  print(paste("Needed Time:", end_time - start_time))
+  
+  # paste the path to save, print it & save the imputed data!
+  path_to_save <- paste0(save_path, curr_data, "_IMP_", setting, ".RData")
+  print(paste("Saving the imputed data to:", path_to_save))
+  save(imputed_data, file = path_to_save)
 }
 
-
-# [3] Evaluate approaches on the imputed data
+# [2] Evaluate approaches on the imputed data
 #     Loop over all imputed datasets in 'DFs_w_gender'
 DFs_w_gender <- c("COAD", "ESCA", "HNSC", "KIRC", "KIRP", "LIHC","LGG", "BLCA",
                   "LUAD", "LUSC", "PAAD", "SARC", "SKCM", "STAD")
@@ -934,9 +913,9 @@ for (curr_data in DFs_w_gender) {
 }
 
 # ----- Situation 4 
-for (DF in DFs_w_gender) {
+for (curr_data in DFs_w_gender) {
   
-  print(paste0("----- Situation 4 for DF: ", DF, "-----"))
+  print(paste0("----- Situation 4 for DF: ", curr_data, "-----"))
   
   # --1 Define current path
   curr_path <- paste0("data/processed/TCGA_subset_12345/missingness_1234_imputed/", 
@@ -946,5 +925,5 @@ for (DF in DFs_w_gender) {
   sit4 <- do_CV_missforrest_3(path = curr_path, num_trees = 300, 
                               min_node_size = 5, mtry = NULL)
 
-  save(sit3, file = paste0("./docs/CV_Res/TCGA/Imputation_Approach/setting4/", curr_data, ".RData"))
+  save(sit4, file = paste0("./docs/CV_Res/TCGA/Imputation_Approach/setting4/", curr_data, ".RData"))
 }
