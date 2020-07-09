@@ -830,31 +830,33 @@ path         <- "data/processed/TCGA_subset_12345/missingness_1234/"
 # 1-3 Path to the folder to save the imputed test-train-splits!
 save_path    <- "data/processed/TCGA_subset_12345/missingness_1234_imputed/"
 
-# 1-4 Which block-wise missingness setting [1, 2, 3 or 4]?
-setting      <- "1"
-
-for (curr_data in DFs_w_gender) {
-  
-  # print current DF we do Imputation on!
-  print(paste("Start Imputation for:", curr_data))
-  
-  # paste the single path elements and start imputation
-  curr_path    <- paste0(path, curr_data, "_", setting, ".RData")
-  
-  # start the imputation and take the time
-  start_time <- Sys.time()
-  imputed_data <- impute_train_data(path = curr_path, ntree_imp = 25, maxiter = 1,
-                                    para = "forests")
-  end_time <- Sys.time()
-  
-  # print the needed time
-  print(paste("Needed Time:", end_time - start_time))
-  
-  # paste the path to save, print it & save the imputed data!
-  path_to_save <- paste0(save_path, curr_data, "_IMP_", setting, ".RData")
-  print(paste("Saving the imputed data to:", path_to_save))
-  save(imputed_data, file = path_to_save)
+# Loop over each pattern of block-wise missingness and impute the traindata 
+# of each CV-fold with the MissForest approach
+for (setting in c("1", "2", "3", "4")) {
+  for (curr_data in DFs_w_gender) {
+    
+    # print current DF we do Imputation on!
+    print(paste("Start Imputation for:", curr_data))
+    
+    # paste the single path elements and start imputation
+    curr_path    <- paste0(path, curr_data, "_", setting, ".RData")
+    
+    # start the imputation and take the time
+    start_time <- Sys.time()
+    imputed_data <- impute_train_data(path = curr_path, ntree_imp = 25, maxiter = 1,
+                                      para = "forests")
+    end_time <- Sys.time()
+    
+    # print the needed time
+    print(paste("Needed Time:", end_time - start_time))
+    
+    # paste the path to save, print it & save the imputed data!
+    path_to_save <- paste0(save_path, curr_data, "_IMP_", setting, ".RData")
+    print(paste("Saving the imputed data to:", path_to_save))
+    save(imputed_data, file = path_to_save)
+  }
 }
+
 
 # [2] Evaluate approaches on the imputed data
 #     Loop over all imputed datasets in 'DFs_w_gender'
