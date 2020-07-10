@@ -1,0 +1,41 @@
+PRESENTATION NOTES:
+
+1. Slide -----
+	- Welcome to the presentation of my master thesis. 
+	  The title of my thesis is:
+	  	'A comparison study of prediction approaches for multiple training data sets \& test data with block-wise missing values'
+
+	 - The thesis was supervised by Dr. Roman Hornung
+
+2. Slide -----
+	- First of all lets have a look into the structure of the presentation
+
+		[1] Firstly the term 'Multi-Omics' data needs to be defined, before 
+		    the term 'Block-Wise missingness' is defined and explained then
+
+		[2] Then the diverse approaches that are at the focus of my thesis are introduced:
+		  	- Firstly the random forest model for classification is explained
+		    - Following five differnt random forest based approaches that can deal with block-wise missingness are introduced
+
+3. Slide -----
+	- The 'Human Genome Project' was launched in 1990 and had the goal to sequence the first complete human genome ever 
+
+	- After Investments of 2.7 Billion US-Dollar and 13 years of reserach it was offically finished. 
+		--> On the one hand - It led to improved diagnosis and novel approaches in therapy!
+		--> On the other hand - It led to a sharp drop of sequencing prices! 
+			--> nowadays genome sequening is affordable for everyone ['Veritas Genomics' ~700$]
+
+	- Besides the genome there are also multiple other types of '-omes'  [e.g. trancriptome, proteome, microbiomes, ...]
+		--> for these other types of omes there was also a sharp drop of sequencing prices as with the genome
+		--> The techologies that make data from molcular process available are generally called 'High Throughput Technologies'
+
+	- Using the data of a single omics type in various statistical approaches was quite logical then. 
+		--> In the clincical context it was additionally used to the regular clinical covariates  
+		--> This has often been found to be useful for the predictions
+			--> Hence the idea of incorperating more than just a single omics type was locial 
+				--> coined the term 'Multi-Omics Data'
+
+	- In such Multi-Omics Data the problem Block-Wise missing values is common.
+		--> My thesis aims to compare diverse approaches that are able to deal with the block-wise missingness 
+
+
