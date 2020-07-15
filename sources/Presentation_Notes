@@ -1,41 +1,231 @@
 PRESENTATION NOTES:
 
-1. Slide -----
+1. Slide ----- ----- ----- ----- -----
 	- Welcome to the presentation of my master thesis. 
-	  The title of my thesis is:
-	  	'A comparison study of prediction approaches for multiple training data sets \& test data with block-wise missing values'
+   	- The title of my thesis is: 'A comparison study of prediction approaches for multiple training data sets \& test
+   	  data with block-wise missing values' & it was supervised by Dr. Hornung
 
-	 - The thesis was supervised by Dr. Roman Hornung
+2. Slide ----- ----- ----- ----- -----
+	>> Firstly, lets have a look at the structure of the presentation itself
+ 
+		[1]	- In the beginning I talk about block-wise missingness, what it is and why it is a common Phenomen in 
+		      Multi-Omics data
+			
+		[2] - Afterwards the diverse approaches that are at the focus of this thesis are introduced
+		  	- Firstly the random forest model is briefly introduced, and afterwards the 5 differnt adaptions of the
+		  	  random forest method, whereby these adaptions can directly deal with BWM
 
-2. Slide -----
-	- First of all lets have a look into the structure of the presentation
+		[3] - Afterwards the diverse data-sources are introduced and to each of them the evaluation technique to asses
+		      the predictive performance of a model
 
-		[1] Firstly the term 'Multi-Omics' data needs to be defined, before 
-		    the term 'Block-Wise missingness' is defined and explained then
+		[4] - Subsequent the results of the various approaches on the diverse data-sources are introduced
 
-		[2] Then the diverse approaches that are at the focus of my thesis are introduced:
-		  	- Firstly the random forest model for classification is explained
-		    - Following five differnt random forest based approaches that can deal with block-wise missingness are introduced
-
-3. Slide -----
-	- The 'Human Genome Project' was launched in 1990 and had the goal to sequence the first complete human genome ever 
-
-	- After Investments of 2.7 Billion US-Dollar and 13 years of reserach it was offically finished. 
-		--> On the one hand - It led to improved diagnosis and novel approaches in therapy!
-		--> On the other hand - It led to a sharp drop of sequencing prices! 
-			--> nowadays genome sequening is affordable for everyone ['Veritas Genomics' ~700$]
-
-	- Besides the genome there are also multiple other types of '-omes'  [e.g. trancriptome, proteome, microbiomes, ...]
-		--> for these other types of omes there was also a sharp drop of sequencing prices as with the genome
-		--> The techologies that make data from molcular process available are generally called 'High Throughput Technologies'
-
-	- Using the data of a single omics type in various statistical approaches was quite logical then. 
-		--> In the clincical context it was additionally used to the regular clinical covariates  
-		--> This has often been found to be useful for the predictions
-			--> Hence the idea of incorperating more than just a single omics type was locial 
-				--> coined the term 'Multi-Omics Data'
-
-	- In such Multi-Omics Data the problem Block-Wise missing values is common.
-		--> My thesis aims to compare diverse approaches that are able to deal with the block-wise missingness 
+		[5] - The presentation is then finished with a discussion, conclusion and a an outlook to the further development
 
 
+3. Slide ----- ----- ----- ----- -----
+	>> Let's start with the term 'Block-Wise Missingness'
+
+	- BWM is a special type of missingness that is common in practice, particular in the context of multi-omics data
+
+	- The table shows an example for data with BMW:
+		- the data consits of 105 variables and 8 observations
+		 	- while the variables 'weight', 'height', 'income' & 'education' are pretty much self explaining, the 
+		 	  variables 'g1' ..., 'g100' could be measurments from any type of '-omes'
+
+		- data with BWM always consit of different folds and blocks. The example data consits of three blocks and folds:
+
+		- a BLOCK describes a set of feature variables that are related in content
+			--> e.g. 'Block1' contains the variables 'weight' & 'height' describing physical properites 
+				     'Block2' contains the 'income' & 'education' describing economical properites 
+				     'Block3' contains the variables 'g1',...,'g100' describing genetic/biological properties
+
+		- a FOLD is a set of observations with the same observed features/ blocks
+			--> e.g. 'FOLD1' consits of observations with physical & economical properites
+					 'FOLD2' consits of observations with economical & genetic properites 
+			         'FOLD3' consits of observations with physical & genetic properites 
+		
+
+		- The only Variable all folds must have in common is the response variable !!!
+
+	- In data with BMW there is always always at least one fold that misses at least one BLOCK, such that not all 
+	  observations are completly observed
+
+
+4. Slide ----- ----- ----- ----- -----
+	>> BWM is common in practice, especially in 'Multi-Omics Data'. There are two main reason for this:
+
+		>1< - Collection of omics data is more expensive & complex than for regular clinical data - e.g. gender, weight, 
+		      blood group -, hence it can not always be collected for all particpians of a study [for financial/ technical reasons]
+
+		>2< - Collection of data sets from different sources
+			- An example for this is shown in the figure:
+				- Three different data-sets from three different hospitals that all do research regarding the variable 
+				    'Y' - e.g. result of asthma test (positive/ negative) - are displayed.
+				- Eventhough the diverse Hospitals do research on the same target variable, the observed blocks 
+				  still differ
+				- When conecating these data sets to a single DF it results in a DF with BWM
+
+
+5. Slide ----- ----- ----- ----- -----
+	>> Now I'll talk about the methods of the thesis:
+
+	- Firstly the RF model is briefly introduced:
+		- It was intoduced 19 years ago by Breiman and is an ensemble method, that uses decision trees as base learner
+		- It uses a modified version of bagging to create bootstrapped decorrelated decision trees
+		- The prediciton of the RF equals the average of all predicitions of its single decision trees
+		- The RF can be evaluated internally with the OOB-error, whereby the OOB error is almost identical to that 
+		  obtained by N-fold cross-validation
+
+		- The algorithm to grow a RF is displayed: 
+			> We train M single decision trees on a dataset n*p dimensional data-set D
+			> For each tree, we draw a bootstrap sample of size n from D amd grow a tree on it.
+				> To do so, draw 'mtry' variables as split candidates, pick the best splitting point among these 
+				  split candidates and split the node in two child nodes
+				  --> this is repeated until the child nodes contain less than 'n_min' observations
+
+
+6. Slide ----- ----- ----- ----- -----
+	>> Lets talk about the first adaption of the RF model to deal with BWM - the COMPLETE CASE APPROACH
+
+	- The idea of the approach is to process the training data such, that it doesn't contain any missing values in 
+	  regards to the test-set:
+	- To do so:
+		- firstly all folds from the training data, that miss a feature-blcok that is available for the test set
+	      are removed, as these folds miss features that are availabel for the test data
+		- From the remaining folds, the blocks that are not available for the test-data are removed!
+			--> Either the resulting data-set is empty, OR 
+			    it can be used to train a RF regularly that can provide predicitions for the test data then
+
+	- The figure shows an example for this. 
+		- The Test-Set only has the feature-blocks 'Clinical' and 'CNV'
+		- After the processing, only the data with the green border can be used to train a RF, that can provide 
+		  predictions for the test-set then!
+
+	- This approach has 2 drawbacks:
+		> It discards a lot of the available data
+		> The processing of the training data can end up in an empty DF, such that the approach can not provide 
+		  predicitions then...
+
+
+7. Slide ----- ----- ----- ----- -----
+	>> Lets talk about the second adaption of the RF model to deal with BWM - the SINGLE BLOCK APPROACH
+
+	- The idea of the approach is to only use a single feature-block - that the test & train data have in common - for
+	  the training of a RF and create predicitions on the test data then
+	- To do so:
+		- firstly the feature-blocks the test & train data have in common are extracted. On each of the blocks the test
+		  & train data have in common a seperate RF is trained.
+		- Each seperate RF can create predicitions for the test data then
+
+	- The figure shows an example for this:
+		- The Test-Set only has the feature-blocks 'Clinical' and 'CNV'
+		- The from the training data, two processed data sets are created.
+		   > one that only consits of the response Y and the Clinical block
+		   > one that only consits of the response Y and the CNV block
+		- On the processed data, a model can be trained regularly and create predicitons then. 
+		  In this example every observation from the test data recieves 2 predicitions (once based on Clinical once on CNV)
+
+	- This approach uses the data not very efficently and can only be applied if test and train data have at least one
+	  feature-block in common
+
+
+8. Slide ----- ----- ----- ----- -----
+	>> Lets talk about the thrid adaption of the RF model to deal with BWM - the IMPUTATION APPROACH
+
+	- The idea of the approach is to impute the missing values in the train data, such that the train data is fully 
+	  observed afterwards. Then a RF can be trained on the feature-blocks that the train and test data have in common.
+	  This model can then provide predicitions for the test-set then.
+
+
+	- To do so:
+		- the missing values are imputed with the 'missForest' method. This method is flexibly applicable, does not
+		  require prior knowledge of the data, can handle mixed-type data and is known to perform very well under 
+		  barren conditions like high dimensions, complex interactions and non-linear data structures.
+		- the feature-blocks that the imputed train data has in common with the test data can be used to fit a RF model
+		- This model is fitted regulary and can provide predicitions for the test-set then!
+
+	- The figure shows an example for this:
+		- The training data has BWM and the values are imputed with the missforest method
+		- Based on the feature-blocks that the test and train data have in common, a usable training set can be created.
+		- Based on the usbale trainnig data a RF can be fit regularly and provide predicitons for the test-set!
+
+	- This approach uses the data very efficently and doesn't discard any training features/ observations. 
+	- Nevertheless there are 2 big drawbacks of this approach:
+	 	[1] Many missing values in the data can lead to unreliable imputations
+	 	[2] If the data is a conecation of DFs from diverse sources, the imputation is performmed across multiple 
+	 	    heterogenous data sets --> making imputations also unreliable! 
+
+
+9. Slide ----- ----- ----- ----- -----
+	>> Lets talk about the foruth adaption of the RF model to deal with BWM - the Block-Wise APPROACH
+
+	- The idea of this approach is to fit a separate RF on the observed parts of each feature-block. For a predicition
+	  on the test data, the predicitions of the block-wise fitted model are aggergated.
+
+	- To do so:
+		- a separate RF is fitted regularly on the observed parts of each feature-block 
+		- For the prediciton on a test-set, each block-wise fitted RF is asked for a predicition. Only those RFs that 
+		  were trained on a block, that is also available for the test-set can create a predicition
+		- The block-wise predicitions can then be aggregated in weighted/ unweighted way 
+
+	- The figure shows an example for this:
+		- The training data has BWM and a separate RF is fitted on the observed parts of each feature-block
+			--> resulting in as many block-wise models as the data has feature-blocks
+		- Then for the predicition, only those block-wise models can be used, that were trained on a block that is
+		  available for the test data
+		  	--> each of these create a separate predicitions
+		- The block.wise predicitions can then be aggregated in a weighted/ unweighted way!
+			> unweighted: --> Create the plain average of predicted class probabilities
+			> weighted:   --> Use the internal OOB-Accuracy/ OOB-F1-Score of the blockwise RFs as weights for a weighted 
+			                  average of the predicted class probabilities
+
+	- This approach uses the data very efficently and doesn't discard any training features/ observations. 
+
+
+10. Slide ----- ----- ----- ----- -----
+	>> Lets talk about the foruth adaption of the RF model to deal with BWM - the FOLD-Wise APPROACH
+
+	- The idea of this approach is to fit a separate RF on the observed parts of each feature-block. For a predicition
+	  on the test data, the predicitions of the fold-wise fitted model are aggergated then.
+
+	- To do so:
+		- Firstly on each fold of the training data, a model is fitted on the observed parts
+			- This is displayed in the figure below
+		- To predict on the test data, each fold-wise fitted model is asked for a prediciton. 
+		   	- Only those models that were fitted on a fold that shares at least on block with the test-set can do so
+		   	- It might be that the models must be pruned to create predicitons 
+		   	  [this is explanined in more detial on the next slide]
+		   	- Then the fold-wise predicitions can be aggregated in a weighted/ unweighted way
+
+
+11. Slide ----- ----- ----- ----- -----
+	>> Let's have a closer look at the 'Pruning' and the predicitons with the fold-wise approach
+
+	- PRUNING:
+		- Pruning actually describes a process to avoid overfitting in decision trees. But it can also be applied, if a
+		  decision tree contains split-variables that are not available for the test data.
+		- e.g. > the decision tree on the left hand side uses the split variables 'height' and 'weight' and three terminal 
+		         nodes
+		       > It can not be applied to an observation that misses the feature 'height'. 
+		       > BUT if we prune the tree at the variable 'height' it can be used for the observation
+		       		--> cut off the branch that uses a not available variable and make the node a terminal node!
+		       > OBACHT: Trees that need to be pruned at the first split are not usable at all and need to be removed 
+		                 completly from the RF!
+
+	- Predicitons:
+		- Each fold-wise fitted RF is asked for a prediciton 
+
+			> RF(Hospital2) was fitted on the blocks 'Clinical' & 'RNA'
+		        --> Hence this model can create predictions regularly!
+
+		    > RF(Hospital1) was fitted in the blocks 'Clincial' & 'CNV' 
+		    	--> Hence the single decision trees of this RF need to be pruned, as they might use a split variable
+		    	    that is not availabe for the test-set!
+
+		- The fold-wise predicitions can then be aggrgated in a weighted/ unweighted way!
+			> unweighted: --> Create the plain average of predicted class probabilities
+			> weighted:   --> Use the internal OOB-Accuracy/ OOB-F1-Score of the pruned RFs as weights for a weighted 
+			                  average of the predicted class probabilities
+
+	- This approach uses the data very efficently and doesn't discard any training features/ observations. 
