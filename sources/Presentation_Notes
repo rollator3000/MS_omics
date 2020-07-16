@@ -229,3 +229,145 @@ PRESENTATION NOTES:
 			                  average of the predicted class probabilities
 
 	- This approach uses the data very efficently and doesn't discard any training features/ observations. 
+
+12. Slide ----- ----- ----- ----- -----
+	>> Let's have a look on the metrics
+
+	- In general: metrics are used to 'evaluate the performance of a statical learning method - it measures how well the 
+	                                   predicitions of the model actually match the observed data'
+
+	- As only datasets with a binary target variable are used to assess the performance of the various approaches, only
+	  metric for 'binary classification' are introduced. All of these metrics are insensitive to class imbalances!
+
+	- 'F-1 Score' is the harmonic mean of the precision and the recall [1. = precision || 2. = recall]
+	- The 'balanced accuracy' calculates the accuracy per response class and returns the average of these class-wise 
+	  accuracies
+	- The 'Matthews Correlation Coefficent' can be seen as a discretization of the pearson correlation for binary variables
+
+	--> All metrics have the best value with '1', the 'F-1 Score' and the 'balanced accuracy' have the worst value with 0
+	    and the MMC has the worst value with '-1'
+
+
+13. Slide ----- ----- ----- ----- -----
+	>> Let'S talk about the first data source --> 'The Cancer Genome Atlas' - short TCGA
+
+	- In total I recieved 21 processed TCGA datasets from Dr. Hornung, who has used the data in the 'blockForest' article already!
+		- The processing included: - the imputation of missing values in the clinical block &  
+		                           - the transformation of categorical feature variables to binary numerical variables
+		--> !!! 21 fully observed data sets !!!
+
+	- As this thesis compared classification approaches, not the original response variable 'survival-time' was used, but
+	  the variable 'gender' from the clincal block 
+	   --> This might not be a clinical meaningful outcome, but features major advantages for a methodlogical investigation
+	    --> 7 DFs had to be removed, such that 14 usable DFs remained!
+
+	- The 14 DFs all have the same 5 feature-blocks. The dimensions of these were reduced to reduce the computionall effort
+	 --> the average amount of variables per feature-block over the 14 TCGA data-sets is shown in the table 
+	     - once the original size & once the reduced size
+	     		--> Clinical Block has the fewest variables, & RNA the most!
+
+
+14. Slide ----- ----- ----- ----- -----
+	>> As all of the 14 TCGA DFs are fully observed, BWM needs to be induced, such that the various approaches can be 
+	   evaluated on this data!
+
+	- In total there are four different patterns:
+		- First one shows a case in which each fold is observed in a single omics block + the clinical block
+		- The second one the first fold is observed in all 5 blocks, the second fold in four blocks, and so so...
+		- For the third pattern, the observed blocks per fold were drawn randomly
+		- For the last pattern we mixed up 2 feature-blocks to a single one, whereby each fold is observed in one of
+		  these blocks & one additional clinical block!
+
+
+15. Slide ----- ----- ----- ----- -----
+	>> The algorithm shows the procedere to evaluate an approach on the TCGA data
+
+		- Firstly a dataset, and approach and a pattern of BWM have to be choosen
+			> The fully observed data is split into 5 equally sized folds for the CV
+				> one fold is used as test-set and the remaining 4 as training set!
+				> Induce BWM into the train-set according to Pattern
+				> Fit the approach on the train-set with BWM
+					> Evaluate the fitted model on:
+						- fully observed test-set
+						- test-set with one missing feature-block
+						- test-set with two missing feature-blocks and so on!
+
+
+16. Slide ----- ----- ----- ----- -----
+	>> Let's have a look at the second source of data - the clinical asthama data
+
+		- the data is a real-world data set and was provided by the group of Prof. Dr. med. Bianca Schaub at the 
+		  'paediatric clinic Dr. von Haunersches Kinderspital'
+		- has a binary target variable that is defined as the presence of asthma
+		  from totally 521 observations: 265 have a negative resposne \& 256 have a positive response
+		- consits of six feature-blocks:
+			- Questionaire, Clinical routine diagnostigs, allergen sensatzion, Cyoktine expression data, gene expression dáta 1&2
+		    - amount of observations inversly reflects the effort of generating the data [less obs. more effort!!]
+
+
+17. Slide ----- ----- ----- ----- -----
+	>> Lets briefly introduce the evaluation technique on the clinical asthma data!
+		- Firstly the data (with BWM) is split into 5 equally sized folds [éach of these CV-folds has BWM]
+		- One of the folds is used as test-set and the remaining 4 folds as train set
+		- Then extract the various patterns of BWM in the test-set
+		 	- for each pattern of BWM in the test-set, the approach is fitted on the data, such that it can provdide 
+		 	  predicitions for the test-set
+		 	- After doing this for all patterns of BWM in the test-set, the metric for the current fold can be calculated!
+
+
+18. Slide ----- ----- ----- ----- ----- 
+	>> Now lets talk about the results of the RF based approaches on the TCGA data
+
+	- Firstly the results of the Complete-Case approach are shown.
+	- Each row in the figure equals a pattern of Block-Wise missingness in the train data
+	- The y-axis shows the F-1 Score and the x.axis the various test-situations
+	  (e.g. miss_1A shows the result of the approach, when the test-set misses the first block!)
+	 		--> as pattern4 only has 3 instead of 5 blocks, there are less test-situations! 
+	 		   --> the test-situations that are not avilabe for pattern 4 are marked with an ornage X
+
+	 	- The first thing that stands out, is that the CC can not always generate predicitons - e.g. pattern 1 - full
+	 		--> this is meaningful, as the CC can only provide predictions, when the train-set contains Complete-Cases 
+	 		    regarding the current test-set!
+	 	- Else it can be seen, that the perfromance highly depends on the availabe feature-blocks in the test-set
+	 	  (e.g. Pattern1 single_A & single_B)
+
+
+19. Slide ----- ----- ----- ----- ----- 
+	- Next the results of the Single-Block approach are shown.
+	- For each pattern of BWM the results are shown split by the block that was used for the training of the SB-Approach
+	- Two things are standing out:
+		- Firstly: The SB approach can only generate predicitons for the test-sets that contain the block, that has been initially used for the training
+		           (e.g. pattern4 - 'A' can only provide predicitons for test-sets with 'A')
+		- Secondly: The performance of a single-block model is the same for the various test-situations. This makes 
+		            sense, as the SB approach only uses a single block for the predicition & the various test-situations
+		            only differ in the observed blocks, BUT not the blocks itself!
+
+
+20. Slide ----- ----- ----- ----- ----- 
+	- Next the results of the Imputation approach are shown.
+	- It stands out, that the imputation approach can provide predicitons for all possible test-situations!
+
+
+21. Slide ----- ----- ----- ----- ----- 
+	- Next the results of the Block-Wise approach are shown.
+	- To each test-situation, the results are shown structured by the weight used to aggregate the predicitions
+	- It stands out, that the BW approach can provide predicitons for all possible test-situations!
+	- Furthermore, it can be seen, that the weight_metric has no influence in the test-situations 'single_A'-'single_CL'
+		--> this makes sense, as the test-set only consits of a single block 
+		   --> no aggregation of BW predicitons!
+	- Else it can be seen, that in all patterns and almost all test-situations the performance of the BW approach is the
+	  best with the 'F-1 Score' as weight metric!
+
+
+22. Slide ----- ----- ----- ----- -----
+	- Last but not least the results of the FW approach are shown
+	- As the BW & Imputation approach, this approach can provide predicitons for each test-situation
+	- Furthermore, it can be seen, that the weight_metric has no influence in the test-situations in which only a single
+	  fold from the training data can be used 
+	  	- e.g. with 'Pattern 1' the performance in the test-situations 'single A', 'single B', 'single C' and
+              'single D' is equal for the different weight metrics. 
+              	--> That is reasonable, as in these test-situations only a single fold-wise fitted random forest model can
+                    provide predictions, as the training-set only has a single fold that can be used for these test-situations.
+					--> no aggregation of FW predicitons!
+
+23. Slide ----- ----- ----- ----- -----
