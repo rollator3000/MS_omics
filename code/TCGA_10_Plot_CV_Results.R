@@ -1210,7 +1210,7 @@ ann_text <- data.frame(Testsituation = c("miss1_C", "miss1_D", "miss2_CD", "miss
 ggplot(data = DF_IMP, aes(x = Testsituation, y = Metric)) +
   geom_boxplot(fill = 'darkolivegreen3') + 
   theme_bw() +
-  ggtitle("Imputaion Approach",
+  ggtitle("Imputation Approach",
           subtitle = "TCGA - Patterns 1, 2, 3 & 4") +
   ylab(used_metric_) +
   xlab("Test-Situations") +
@@ -1426,7 +1426,7 @@ DF_FW$pattern_names <- paste("Pattern", DF_FW$pattern)
 
 # [2] Do the plots and get informations
 # 2-1 Create a meaningful name for the xaxis
-if (DF_BW$performance_metric[1] == "F1") {
+if (DF_FW$performance_metric[1] == "F1") {
   used_metric_ <- "Metric: F-1 Score"
 } else {
   used_metric_ <- paste("Metric:", DF_BW$performance_metric[1])
@@ -1440,7 +1440,7 @@ ann_text <- data.frame(Testsituation = c("miss1_C", "miss1_D", "miss2_CD", "miss
                                          "single_C", "single_D"), 
                        Metric = 0.5, lab = "Text",
                        pattern_names = factor("Pattern 4", 
-                                              levels = unique(DF_BW$pattern_names)),
+                                              levels = unique(DF_FW$pattern_names)),
                        weight_metric = "None")
 
 # 2-2-2 Relevel & rename the 'weight_metric' variable
