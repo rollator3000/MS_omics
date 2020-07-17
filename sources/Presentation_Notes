@@ -1,71 +1,80 @@
 PRESENTATION NOTES:
 
 1. Slide ----- ----- ----- ----- -----
-	- Welcome to the presentation of my master thesis. 
-   	- The title of my thesis is: 'A comparison study of prediction approaches for multiple training data sets \& test
-   	  data with block-wise missing values' & it was supervised by Dr. Hornung
+	- Herzlich wilkommen zu der Abschlusspräsentation meiner Masterarbeit.
+	- Die Arbeit wurde von Dr. Hornung betreut und trägt den Titel
+		'A comparison study of predicition approaches for multiple training data sets & test data with block-wise missing values'
 
 2. Slide ----- ----- ----- ----- -----
-	>> Firstly, lets have a look at the structure of the presentation itself
+	>> Zuerst schauen wir uns an, wie die Präsentation strukturiert ist!
  
-		[1]	- In the beginning I talk about block-wise missingness, what it is and why it is a common Phenomen in 
-		      Multi-Omics data
-			
-		[2] - Afterwards the diverse approaches that are at the focus of this thesis are introduced
-		  	- Firstly the random forest model is briefly introduced, and afterwards the 5 differnt adaptions of the
-		  	  random forest method, whereby these adaptions can directly deal with BWM
+		[1]	- Zu Beginn wird erklärt, was 'block-wise missingness' ist und Gründe dafür, wie sie enstehen kann
 
-		[3] - Afterwards the diverse data-sources are introduced and to each of them the evaluation technique to asses
-		      the predictive performance of a model
+		[2] - Dann kommen wir zu dem Methoden-Teil. 
+		    - Hier wird kurz das 'RandomForestModel' erklärt & anschließend die darauf aufbauenden Ansätze, um mit 
+		      'block-weise fehlden Daten' umzugehen: 
+		    		- CC Approach
+		    		- Single-Block Approach
+		    		- Imputation Approach
+		    		- Block-Wise Approach
+		    		- Fold-Wise Approach
 
-		[4] - Subsequent the results of the various approaches on the diverse data-sources are introduced
+		[3] - Im Teil 'Benchmark Experiment' werden die Metriken, Datensätze & Techniken vorgestellt, um die Güte
+		      der verschiedenen Ansätze zu bewerten
 
-		[5] - The presentation is then finished with a discussion, conclusion and a an outlook to the further development
+		[4] - Anschließend werden die Ergebnisse dieser Benchmark-Experimente vorgestellt
 
+		[5] - Zum Schluss werden diese Ergebnisse diskutiert, es wird ein Fazit gezogen & Vorschläge für die weitere 
+		      Forschung in diesem Themen-Gebiet gemacht
+
+[(1. + 2. Slide = 1.00)]
 
 3. Slide ----- ----- ----- ----- -----
-	>> Let's start with the term 'Block-Wise Missingness'
+	>> Block-Wise missingness ist ein spezieller Fall von fehlenden Daten, der besonders oft im Context von Multi-Omics 
+	   Daten auftritt
 
-	- BWM is a special type of missingness that is common in practice, particular in the context of multi-omics data
+	 - Die Tabelle zeigt ein Beispiel für einen Datensatz mit block-weise fehlenden Daten
+	  	- Insgesamt hat der Datensatz 105 Variablen und 8 Beobachtungen
+	  		- Die Variablen 'weight', 'height', 'income' & 'education' sollten selbsterklärend sein
+	  		- Die variablen 'g1', ..., 'g100' stehen für omics daten & 'Y' ist die binäre response-variabel
 
-	- The table shows an example for data with BMW:
-		- the data consits of 105 variables and 8 observations
-		 	- while the variables 'weight', 'height', 'income' & 'education' are pretty much self explaining, the 
-		 	  variables 'g1' ..., 'g100' could be measurments from any type of '-omes'
+	  	- Daten mit block-wise missingness bestehen immer aus unterschiedlichen 'Blocks' und 'Folds'
+	  		- ein BLOCK beschreibt einfach ein set von variablen, die inhaltlich zusammen hängen
+	  			- in unserm Beispiel gibt es 3 Blocks:
+	  				- 'Block1' besteht aus den Variablen 'weight' & 'height' & steht für physische Eigenschaften 
+				    - 'Block2' besteht aus den Variablen 'income' & 'education' & steht für ökonomische Eigenschaften 
+				    - 'Block3' besteht aus den Variablen 'g1',...,'g100' & steht für biologische Eigenschaften 
 
-		- data with BWM always consit of different folds and blocks. The example data consits of three blocks and folds:
-
-		- a BLOCK describes a set of feature variables that are related in content
-			--> e.g. 'Block1' contains the variables 'weight' & 'height' describing physical properites 
-				     'Block2' contains the 'income' & 'education' describing economical properites 
-				     'Block3' contains the variables 'g1',...,'g100' describing genetic/biological properties
-
-		- a FOLD is a set of observations with the same observed features/ blocks
-			--> e.g. 'FOLD1' consits of observations with physical & economical properites
-					 'FOLD2' consits of observations with economical & genetic properites 
-			         'FOLD3' consits of observations with physical & genetic properites 
+			- a FOLD beschreibt ein set von Observations, die in den gleichen Blöcken beobachtet wurden
+				- in unserem Beispiel gibt es 3 Folds:
+					- 'FOLD1' besteht nur aus den Beobachtungen, die in Block1 & Block2 beobachtet wurden
+					   [also allen Beobachtungen, die in 'weight', 'height', 'income' & 'education' beobachtet wurden]
+					- 'FOLD2' besteht nur aus den Beobachtungen, die in Block1 & Block2 beobachtet wurden
+			        - 'FOLD3' besteht nur aus den Beobachtungen, die in Block2 & Block3 beobachtet wurden
 		
-
-		- The only Variable all folds must have in common is the response variable !!!
-
-	- In data with BMW there is always always at least one fold that misses at least one BLOCK, such that not all 
-	  observations are completly observed
-
+					- Die einzige Variable, die für alle Observations gemeinsam haben müssen ist die response variabele 'Y'
+[3.Slide: ~1.20]
+[1-3 ~2:20]
 
 4. Slide ----- ----- ----- ----- -----
-	>> BWM is common in practice, especially in 'Multi-Omics Data'. There are two main reason for this:
+	>> Es gibt zwei Hauptgründe dafür, dass Block-Wise Missingness häufig im Kontext mit Multi-Omics Daten entsteht.
 
-		>1< - Collection of omics data is more expensive & complex than for regular clinical data - e.g. gender, weight, 
-		      blood group -, hence it can not always be collected for all particpians of a study [for financial/ technical reasons]
+		>1< - Der erste ist, dass das erheben von 'omics Daten' ist deutlich teurer und komplexer ist, als es für normale 
+		      klinische Variablen der Fall ist. Darum können omics Daten meist nicht für ALLE Teilnehmer einer Studie 
+		      erhoben werden, sodass der Datensatz zu der Studie block-wise fehlende Daten enthält
 
-		>2< - Collection of data sets from different sources
-			- An example for this is shown in the figure:
-				- Three different data-sets from three different hospitals that all do research regarding the variable 
-				    'Y' - e.g. result of asthma test (positive/ negative) - are displayed.
-				- Eventhough the diverse Hospitals do research on the same target variable, the observed blocks 
-				  still differ
-				- When conecating these data sets to a single DF it results in a DF with BWM
-
+		>2< - Der zweite ist, dass oft Datensätze von verschiedenen Quellen zusammengetragen werden. 
+		 	- So ein Fall ist besipielhaft gezeigt in der untenstehenden Grafik. 
+		 		- Zu sehen sind 3 verschiedene Datenquellen - von 3 verschiedenen Krankenhäusern, die alle Research im 
+		 		  Bezug auf die Response-Variable 'Y' gemacht haben 	- e.g. hat die Person 'asthma' - ja/nein!
+				- Auch wenn die Krankehäuser für die gleiche Krankheit (Y) forschen, erhebt nicht jedes die gleichen 
+				  variablen
+				- Wenn man diese zusammenfügt, entsteht, dann Block-Wise missingness, weil die Beobachtungen aus den 
+				  verschiedenen Krankenhäusern in verschieden Blocks beobachtet wurden
+				  	--> Hospital1 hat nur die Blöcke 'CNV' & 'Clinical', sodass den Beobachtungen von dem Krankenhaus
+				  	    nicht in den Blöcken 'RNA' & 'miRNA' beobachtet sind!
+[4.Slide: ~1.10]
+-- [1-4: 3:30] --
 
 5. Slide ----- ----- ----- ----- -----
 	>> Now I'll talk about the methods of the thesis:
