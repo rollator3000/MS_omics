@@ -2208,7 +2208,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
-        text = element_text(size = 24),
+        text = element_text(size = 28),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
@@ -2762,7 +2762,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
-        text = element_text(size = 24),
+        text = element_text(size = 28),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 3.5, 4.5, 6.5, 7.5, 8.5, 9.5, 10.5, 12.5, 13.5,
                             14.5, 16.5, 17.5, 18.5, 19.5),
@@ -3318,7 +3318,7 @@ ggplot(data = DF_all, aes(x = Testsituation, y = Metric, fill = Approach)) +
   ylab(used_metric_) +
   xlab("Test-Situations") +
   theme(axis.text.x = element_text(angle = 28, hjust = 1),
-        text = element_text(size = 24),
+        text = element_text(size = 28),
         legend.position = "top") +
   geom_vline(xintercept = c(2.5, 4.5, 5.5),
              col = "darkgreen", lty = 2) +
