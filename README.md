@@ -1,6 +1,6 @@
 # A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
-This is the README to the repository of Frederik Ludwigs' Master-Thesis:
-A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values
+This is the README to the repository of Frederik Ludwigs' Master-Thesis:  
+A comparison study of prediction approaches for multiple training data sets & test data with block-wise missing values  
 supervised by:  
 Dr. rer. nat. Roman Hornung - Ludwig-Maximilians University - IBE
 
