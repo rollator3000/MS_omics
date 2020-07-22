@@ -66,7 +66,7 @@ ggplot(melted, aes(x = Var2, y = Var1, fill = value)) +
   theme_bw() +
   ylab("Observation ID") + ylim(0, 521) +
   xlab("Data Source") +
-  theme(text = element_text(size = 22),
+  theme(text = element_text(size = 28),
         axis.text.x = element_text(angle = 35, hjust = 1)) +
   ggtitle("Structure of the block-wise missingness for the clinical asthma data") +
   geom_vline(xintercept = c(1.5, 2.5, 3.5, 4.5, 5.5), lty = 2, lwd = 1.1)
