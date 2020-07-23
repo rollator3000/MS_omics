@@ -9,18 +9,19 @@ NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESE
 		'A comparison study of predicition approaches for multiple training data sets & test data with block-wise missing values'
 
 2. Slide ----- ----- ----- ----- -----
-	>> Zuerst schauen wir uns an, wie die Präsentation strukturiert ist!
+	>> Zuerst schauen wir uns kurz die Struktur der Präsentation an!
  
-		[1]	- Zu Beginn wird erklärt, was 'block-wise missingness' ist und Gründe dafür, wie sie enstehen kann
+		[1]	- Zu Beginn wird kurz erklärt, was 'block-wise missingness' ist [und Gründe dafür, wie sie enstehen kann]
 
-		[2] - Dann kommen wir zu dem Methoden-Teil. 
+		[2] - Anschließend kommen wir zu dem Methoden-Teil. 
 		    - Hier wird kurz das 'RandomForestModel' erklärt & anschließend die darauf aufbauenden Ansätze, um mit 
 		      'block-weise fehlden Daten' umzugehen: 
-		    		- CC Approach
-		    		- Single-Block Approach
-		    		- Imputation Approach
-		    		- Block-Wise Approach
-		    		- Fold-Wise Approach
+		      	Das ist:
+		    		- der Complete-Case Approach,
+		    		- der Single-Block Approach,
+		    		- der Imputation Approach,
+		    		- der Block-Wise Approach und zu guter letzt
+		    		- der Fold-Wise Approach
 
 		[3] - Im Teil 'Benchmark Experiment' werden die Metriken, Datensätze & Techniken vorgestellt, um die Güte
 		      der verschiedenen Ansätze zu bewerten
@@ -34,62 +35,48 @@ NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESE
 ----- Block-wise Missingness -------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 3. Slide ----- ----- ----- ----- -----
-	>> Block-Wise missingness ist ein spezieller Fall von fehlenden Daten, der besonders oft im Context von Multi-Omics 
+	>> Block-Wise missingness ist ein spezieller Fall von fehlenden Daten, der besonders im Context von Multi-Omics 
 	   Daten auftritt
 
 	 - Die Tabelle zeigt ein Beispiel für einen Datensatz mit block-weise fehlenden Daten
 	  	- Insgesamt hat der Datensatz 105 Variablen und 8 Beobachtungen
 	  		- Die Variablen 'weight', 'height', 'income' & 'education' sollten selbsterklärend sein
-	  		- Die variablen 'g1', ..., 'g100' stehen für omics daten & 'Y' ist die binäre response-variabel
+	  		- Die variablen 'g1', ..., 'g100' könnten für omics daten stehen & 'Y' ist die binäre response-variabel
 
-	  	- Daten mit block-wise missingness bestehen immer aus unterschiedlichen 'Blocks' und 'Folds'
-	  		- ein BLOCK beschreibt einfach ein set von variablen, die inhaltlich zusammen hängen
+	  	- Daten mit block-wise missingness bestehen immer aus unterschiedlichen >>Blocks<< und >>Folds<<
+	  		- ein >>BLOCK<< beschreibt einfach ein set von variablen, die inhaltlich zusammen hängen
 	  			- in unserm Beispiel gibt es 3 Blocks:
 	  				- 'Block1' besteht aus den Variablen 'weight' & 'height' & steht für physische Eigenschaften 
 				    - 'Block2' besteht aus den Variablen 'income' & 'education' & steht für ökonomische Eigenschaften 
 				    - 'Block3' besteht aus den Variablen 'g1',...,'g100' & steht für biologische Eigenschaften 
 
-			- a FOLD beschreibt ein set von Observations, die in den gleichen Blöcken beobachtet wurden
+			- ein  >>FOLD<< beschreibt ein set von Observations, die in den gleichen Blöcken beobachtet wurden
 				- in unserem Beispiel gibt es 3 Folds:
 					- 'FOLD1' besteht nur aus den Beobachtungen, die in Block1 & Block2 beobachtet wurden
 					   [also allen Beobachtungen, die in 'weight', 'height', 'income' & 'education' beobachtet wurden]
-					- 'FOLD2' besteht nur aus den Beobachtungen, die in Block1 & Block2 beobachtet wurden
-			        - 'FOLD3' besteht nur aus den Beobachtungen, die in Block2 & Block3 beobachtet wurden
+					- 'FOLD2' besteht nur aus den Beobachtungen, die in Block2 & Block3 beobachtet wurden
+			        - 'FOLD3' besteht nur aus den Beobachtungen, die in Block1 & Block3 beobachtet wurden
 		
-					- Die einzige Variable, die für alle Observations gemeinsam haben müssen ist die response variabele 'Y'
+					- Die einzige Variable, die alle Observations gemeinsam haben müssen ist die response variabele 'Y'
 
-4. Slide ----- ----- ----- ----- -----
-	>> Es gibt zwei Hauptgründe dafür, dass Block-Wise Missingness häufig im Kontext mit Multi-Omics Daten entsteht.
-
-		>1< - Erstens, das erheben von 'omics Daten' ist deutlich teurer und komplexer ist, als es für normale 
-		      klinische Daten. Darum können omics Daten meist -wg. monetären/ technischen Gründen - nicht für ALLE 
-		      Teilnehmer einer Studie erhoben werden, sodass der Datensatz der Studie block-wise fehlende Daten enthält
-
-		>2< - Der zweite ist, dass Datensätze von verschiedenen Quellen zusammengetragen werden. 
-		 	- So ein Fall ist besipielhaft gezeigt in der untenstehenden Grafik. 
-		 		- Zu sehen sind 3 verschiedene Datenquellen - von 3 verschiedenen Krankenhäusern, die alle Research im 
-		 		  Bezug auf die Response-Variable 'Y' gemacht haben ('Asthma' - ja/nein?!)
-				- Auch wenn die Krankehäuser für die gleiche Krankheit (Y) forschen, müssen sie nicht zwangsläufig die
-				  gleichen Daten erheben
-				- Wenn man diese zusammenfügt, entsteht Block-Wise missingness, weil die Beobachtungen aus den 
-				  verschiedenen Krankenhäusern in verschieden Blocks beobachtet wurden
-				  	--> Hospital1 hat nur die Blöcke 'CNV' & 'Clinical', sodass den Beobachtungen von dem Krankenhaus
-				  	    nicht in den Blöcken 'RNA' & 'miRNA' beobachtet sind!
+	--> Solche Daten stellen deshalb ein Problem dar, da die meisten Methoden vollständig beobachtete Daten braucht.
+	    --> Es werden 5 Ansätze vorgestellt, um mit solchen Block-Wise fehlenden Daten umzugehen
 
 ------------------------------------------------------------------------------------------------------------------------
 ----- Methoden ---------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
-5. Slide ----- ----- ----- ----- -----
+4. Slide ----- ----- ----- ----- -----
 	>> Kommen wir jetzt zu den Methoden:
 
 	- Zuerst wird das RF-Model kurz vorgestellt, weil es die Grundlage für die nachkommenden Ansätze ist
 
 	- Also: > Das RF-Model wurde 2001 von Breimann vorgestellt & ist eine ensemble methode, die decision-trees als 
 	        base-learner benutzt. 
-	        > Um diese decision-trees zu trainieren, wird eine leicht veränderter Bagging Ansatz verwendet.
-	        > Die Vorhersage eines RF entsprichen dem durchschnitt der Vorhersagen der einzelnen decision-trees
+	        > Um diese decision-trees zu trainieren, wird eine leicht veränderter Bagging Ansatz verwendet, der dafür sorgt, dass
+	          sich die einzelnen Entscheidungsbäume nicht zuä hnlich sind
+	        > Die Vorhersage eines RF entsprichen dem durchschnitt der Vorhersagen der einzelnen decision-trees, bzw. der
 	        > Die 'predicitive-performance' eines RF-Models kann intern mit dem OOB-Error berechnet werden - 
-	          dieser OOB-Error is fast identisch mit dem einer N-fold cross-validation
+	          dieser OOB-Error is fast identisch mit 'n-fold cross-validation'
 
 6. Slide ----- ----- ----- ----- -----
 	>> Der Complete-Case approach ist der erste RF-Ansatz um mit block-wise fehlenden Daten umzugehen
@@ -326,7 +313,7 @@ NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESE
 	     zeigt den etnsprechenden F-1 Score
 
 	     - Sowohl der Fold-, als auch der Block-wise approach hatten ihre beste Perfromance mit dem 'F-1 Score' als OOB-Weight-Metric!
-	     - Der Single-Block Approach hatte die besten Ergebnisse mit dem feature-block 'A' [CNV in this pattern]
+	     - Der Single-Block Approacjhhjuj
 
 	     - Der Fold-Wise, Imputation & Block-Wise approach können in allen 20 test-Situations Vorhersagen treffen
 	     - Der Single-Block approach nur in den Test-Situationen mit einem feature-block 'A' [9/20 Test-Situationen]
@@ -380,3 +367,46 @@ STOPPED STOPPED STOPPED STOPPED STOPPED STOPPED STOPPED STOPPED STOPPED STOPPED 
 					--> no aggregation of FW predicitons!
 
 23. Slide ----- ----- ----- ----- -----
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ATTACHMENT
+4. Slide ----- ----- ----- ----- -----
+	>> Es gibt zwei Hauptgründe dafür, dass Block-Wise Missingness häufig im Kontext mit Multi-Omics Daten entsteht.
+
+		>1< - Erstens, das erheben von 'omics Daten' ist deutlich teurer und komplexer ist, als es für normale 
+		      klinische Daten. Darum können omics Daten meist -wg. monetären/ technischen Gründen - nicht für ALLE 
+		      Teilnehmer einer Studie erhoben werden, sodass der Datensatz der Studie block-wise fehlende Daten enthält
+
+		>2< - Der zweite ist, dass Datensätze von verschiedenen Quellen zusammengetragen werden. 
+		 	- So ein Fall ist besipielhaft gezeigt in der untenstehenden Grafik. 
+		 		- Zu sehen sind 3 verschiedene Datenquellen - von 3 verschiedenen Krankenhäusern, die alle Research im 
+		 		  Bezug auf die Response-Variable 'Y' gemacht haben ('Asthma' - ja/nein?!)
+				- Auch wenn die Krankehäuser für die gleiche Krankheit (Y) forschen, müssen sie nicht zwangsläufig die
+				  gleichen Daten erheben
+				- Wenn man diese zusammenfügt, entsteht Block-Wise missingness, weil die Beobachtungen aus den 
+				  verschiedenen Krankenhäusern in verschieden Blocks beobachtet wurden
+				  	--> Hospital1 hat nur die Blöcke 'CNV' & 'Clinical', sodass den Beobachtungen von dem Krankenhaus
+				  	    nicht in den Blöcken 'RNA' & 'miRNA' beobachtet sind!
