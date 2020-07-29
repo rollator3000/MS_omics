@@ -1,134 +1,132 @@
 NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES
 
-------------------------------------------------------------------------------------------------------------------------
 ----- INTRO ------------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 1. Slide ----- ----- ----- ----- -----
 	- Herzlich wilkommen zu der Abschlusspräsentation meiner Masterarbeit.
-	- Die Arbeit wurde von Dr. Hornung betreut und trägt den Titel
+	- Die Arbeit wurde von Dr. Hornung betreut und trägt den Titel:
 		'A comparison study of predicition approaches for multiple training data sets & test data with block-wise missing values'
 
 2. Slide ----- ----- ----- ----- -----
-	>> Zuerst schauen wir uns kurz die Struktur der Präsentation an!
+	>> Zuerst schauen wir uns kurz die Struktur der Präsentation an
  
-		[1]	- Zu Beginn wird kurz erklärt, was 'block-wise missingness' ist [und Gründe dafür, wie sie enstehen kann]
+		[1]	- Zu Beginn wird kurz erklärt, was 'block-wise missingness' ist
 
 		[2] - Anschließend kommen wir zu dem Methoden-Teil. 
-		    - Hier wird kurz das 'RandomForestModel' erklärt & anschließend die darauf basierenden Ansätze, um mit 
-		      'block-weise fehlden Daten' umzugehen: 
-		      	Das ist:
-		    		- der Complete-Case Approach,
-		    		- der Single-Block Approach,
-		    		- der Imputation Approach,
-		    		- der Block-Wise Approach und zu guter letzt
-		    		- der Fold-Wise Approach
+		    - Zuerst wird kurz das 'RandomForestModel' erklärt & anschließend die darauf 
+		      basierenden Ansätze, um mit 'block-weise fehlden Daten' umzugehen: 
+		      		> Der Complete-Case,
+		      			  Single-Block,
+		      			  Imputation,
+		      			  Block-Wise & 
+		      			  Fold-Wise Approach!
 
 		[3] - Im Teil 'Benchmark Experiment' werden die Metriken, Datensätze & Techniken vorgestellt, um die Güte
 		      der verschiedenen Ansätze zu evaluieren
 
-		[4] - Anschließend werden die Ergebnisse dieser Benchmark-Experimente vorgestellt
+		[4] - Im nächsten Kapitel werden dann die Ergebnisse dieser Benchmark-Experimente vorgestellt
 
-		[5] - Zum Schluss werden diese Ergebnisse diskutiert, es wird ein Fazit gezogen & Vorschläge für die weitere 
-		      Forschung in diesem Themen-Gebiet gemacht
+		[5] - Zum Schluss werden die Ergebnisse diskutiert, es wird ein Fazit gezogen &
+		      Vorschläge für die weitere Forschung in diesem Themen-Gebiet gemacht
 
-[1. + 2. --> ~1:00]
-------------------------------------------------------------------------------------------------------------------------
+[1. + 2. --> 0:55 - 1:00] 
 ----- Block-wise Missingness -------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 3. Slide ----- ----- ----- ----- -----
-	>> Block-Wise missingness ist ein spezieller Fall von fehlenden Daten, der besonders im Context von Multi-Omics 
-	   Daten auftritt.
+	>> Kommen wir zu dem Begriff 'Block-Wise Missingness'
 
-	 - Die untenstehende Tabelle zeigt ein Beispiel für einen Datensatz mit block-weise fehlenden Daten:
+	- BWM ist ein spezieller Fall von fehlenden Daten, der besonders im Context von Multi-Omics Daten häufig auftritt.
+
+	- Die Tabelle zeigt ein Beispiel für einen Datensatz mit block-weise fehlenden Daten:
 	  	- Insgesamt hat der Datensatz 105 Variablen und 8 Beobachtungen
-	  		- Die Variablen 'weight', 'height', 'income' & 'education' sollten ziemlich selbsterklärend sein
-	  		- Die variablen 'g1', ..., 'g100' stehen für omics daten 
-	  		- & 'Y' ist eine binäre response-variabel
+	  		- Die Variablen 'weight', 'height', 'income' & 'education' sind ziemlich selbsterklärend,
+	  		- 'g1', ..., 'g100' stehen für omics daten & 
+	  		- 'Y' ist eine binäre response-variabel
 
-	  	- Daten mit block-wise missingness bestehen immer aus unterschiedlichen >>Blocks<< und >>Folds<<
+	- Daten mit BWM bestehen immer aus unterschiedlichen >>Blocks<< und >>Folds<<
 	  		
-	  		- ein >>BLOCK<< beschreibt einfach ein set von variablen, die inhaltlich zusammen hängen
-	  			- in unserm Beispiel gibt es 3 Blocks:
-	  				- z.B. 'Block1' besteht aus den Variablen 'weight' & 'height' & steht für physische Eigenschaften 
+	  	- ein >>BLOCK<< beschreibt einfach ein set von variablen, die inhaltlich zusammen hängen
+	  		- in unserm Beispiel gibt es 3 Blocks:
+	  			- 'Block1' z.B. besteht aus den Variablen 'weight' & 'height'
 
-			- ein >>FOLD<< beschreibt ein set von Observations, die in den gleichen Blöcken beobachtet wurden
-				- in unserem Beispiel gibt es 3 Folds:
-					- z.B. 'FOLD1' besteht nur aus den Beobachtungen, die in Block1 & Block2 beobachtet wurden
-					        [also allen Beobachtungen, die in 'weight', 'height', 'income' & 'education' beobachtet wurden]
+		- ein >>FOLD<< beschreibt ein set von Observations, die in den gleichen Blöcken beobachtet wurden
+			- in unserem Beispiel gibt es 3 Folds:
+				- 'FOLD1' z.B. besteht nur aus den Beobachtungen, die in Block1 & Block2 beobachtet wurden
+				  [also allen Beobachtungen, die in 'weight', 'height', 'income' & 'education' beobachtet wurden]
 						
 			- Die einzige Variable, die alle Observations gemeinsam haben müssen ist die response variabele 'Y'
 
-	--> Solche Daten stellen deshalb ein Problem dar, da die meisten Methoden vollständig beobachtete Daten brauchen.
-	    --> Im Verlauf der Präsentation werden 5 Ansätze vorgestellt, um mit solchen Block-Wise fehlenden Daten umzugehen
+	--> Daten mit BWM stellen ein Problem dar, da die meisten statistischen Methoden vollständig beobachtete Daten brauchen.
+	   --> Im Verlauf der Präsentation werden verschiedene Ansätze vorgestellt, um mit solchen Block-Wise fehlenden Daten umzugehen
 
-[3. --> ~1:30]
-------------------------------------------------------------------------------------------------------------------------
+[3. --> ~1:20 - 1:30]
 ----- Methoden ---------------------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 4. Slide ----- ----- ----- ----- -----
-	>> Kommen wir jetzt zu dem Methodenteil:
+	>> Kommen wir nun zum Methodenteil:
 
-	- Zuerst wird erstmal kurz das RF-Model vorgestellt, weil es eben die Grundlage für die nachkommenden Ansätze ist
+	- Zuerst wird das kurz RF-Model vorgestellt, da es die Grundlage für die nachkommenden Ansätze ist
 
-	- Also: > Das RF-Model wurde 2001 von Breimann vorgestellt & ist eine ensemble methode, die decision-trees als 
-	          base-learner benutzt. 
-	        > Um diese decision-trees zu trainieren, wird eine leicht veränderter Bagging Ansatz verwendet. Dieser sorgt,
-	          dafür dass sich die einzelnen Entscheidungsbäume - aus denen der RF bestehent - sich nicht zu ähnlich sind
-	        > Die Vorhersage eines RF entsprichen dem durchschnitt/ häugisten Ausprägung aller Vorhersagen der 
-	          einzelnen decision trees
-	        > Die 'predicitive-performance' eines RF-Models kann intern mit dem out-of-bag-Error berechnet werden - 
+	- Also: > Das RF-Model wurde 2001 von Leo Breimann vorgestellt & ist eine ensemble methode, die  
+	          Entscheidungsbäume als base-learner benutzt. 
+	        > Um diese Entscheidungsbäume zu trainieren, wird eine leicht veränderter Bagging Ansatz verwendet. 
+	        	--> Dieser hat den Effekt, dass sich die einzelnen Entscheidungsbäume untereinander nicht zu ähnlich sind!
+	        > Die Vorhersage eines RF entspricht dem durchschnitt/ der häugisten Ausprägung aller Vorhersagen der 
+	          einzelnen Entscheidungsbäume
+	        > Die 'predicitive-performance' eines RF-Models kann intern mit dem out-of-bag-Error geschätzt werden - 
 	          dieser OOB-Error is fast identisch mit dem einer 'n-fold cross-validation'
 
-[4. --> ~1:00]
+[4. --> ~0:45 - 1:00]
 5. Slide ----- ----- ----- ----- -----
-	>> Kommen wir nun zum 1. Ansatz um mit block-wise fehlenden Daten umzugehen - Dem Complete-Case approach!
+	>> Kommen wir nun zum 1. Ansatz um mit block-wise fehlenden Daten umzugehen ---> Dem Complete-Case Approach!
 
 	- Die Idee des Complete-Case Approaches ist es, dass die TrainingsDaten - in Bezug auf das Test-Set - so bearbeitet werden,
 	  dass sie keine Block-wise fehlende Daten mehr beinhalten!
 
-	  Die Methode wird nun anhand des unten stehenden Beispiels erklärt:
+	- Die Methode wird nun anhand des unten stehenden Beispiels erklärt:
 	  	> Man sieht ein Test-Set, das aus den Blöcken 'Clinical' und 'CNV' besteht
-	  	> Darunter sind Trainingsdaten mit BWM dargestellt - Die Daten bestehen aus insgesamt 4 blocks & 3 Folds!
+	  	> Darunter sind Trainingsdaten mit BWM dargestellt [bestehen aus insgesamt 4 blocks & 3 Folds]
 
-	  	(1) Der erste Schritt ist es, alle folds aus den Trainingsdaten zu entfernen, die einen Block enthalten, 
-	  	    der für das Test-Set nicht vorhanden ist.
-	          >> in dem Beispiel, werden aus den Trainingsdaten Hospital 2 & 3 entfernt, weil diese entweder nicht 
-	             im Block 'CNV' oder 'Clinical' beobachtet wurden
+	  	(1) Im ersten Schritt werden alle folds aus den Trainingsdaten entfernt, denen mind. ein Block aus dem Test-Set fehlt
+	          >> in dem Beispiel, werden aus den Trainingsdaten die Folds 'Hospital 2' & 'Hospital 3' entfernt, da
+	             diesen entweder der Block 'CNV' oder 'Clinical' fehlt
 
-	    (2) Im nächsten Schritt werden dann alle Blöcke entfernt, die nicht für die Test-Daten vorhanden sind.
-	       	  >> in dem Beispiel werden die Blöcke RNA & miRNA entfernt
+	    (2) Im nächsten Schritt werden dann alle Blöcke aus den TrainingsDaten entfernt, die nicht für die Test-Daten vorhanden sind.
+	       	  >> in dem Beispiel werden sind das die Blöcke RNA & miRNA
 
-	     --> Auf diesen resultierenden Daten (markiert mit einer grünen Box) kann ein RF rergulär trainiert werden &
-	         Vorhersagen für das Test-Set treffen!
+	    	--> Auf dem resultierenden Datensatz (umrandet mit grüner Box) kann ein RF rergulär trainiert werden &
+	      	    anschließend regulär Vorhersagen für das Test-Set treffen!
 
-	- Dieser Ansatz hat 2 Nachteile:
-		[1] Die Daten werden nicht besonders effizient benutzt & es werden viele Verworfen
-		[2] Das 'Processing' der Trainings-Daten kann auch in einem leeren Datensatz enden, aus dem alle Folds & Blocks 
-		    entfernt wurden, sodass der Ansatz in solchen Fällen dann keine Vorhersagen liefern kann
+	- Der Complete-Case Approach hat 2 Nachteile:
+		[1] Die Daten werden nicht besonders effizient genutzt!
+		[2] Das 'Processing' der Trainings-Daten kann zu einem leeren Trainings-Daten führen! 
+		    	--> In solchen Fällen sind keine Vorhersagen für das Test-Set möglich!
 
-[5. --> ~ 1:30]
+[5. --> ~ 1:20-1:30]
 6. Slide ----- ----- ----- ----- -----
 	>> Kommen wir nun zum 2. Ansatz um mit block-wise fehlenden Daten umzugehen - Dem Single-Block approach!
 
-	- die Idee ist es, dass ein RF auf einem Block [den Test- & Train gemeinsam haben] trainiert wird,
+	- die Idee ist es, dass ein RF auf einem einzelnen Block [den Test- & Train gemeinsam haben] trainiert wird,
 	  um dann Vorhersagen für das Test-Set zu treffen.
 
 	  Die Methode wird wieder anhand des untenstehenden Beispiels erklärt.
 	  	> Das Test-Set & die Trainingsdaten sind die gleichen wie in dem Beispiel davor
 
-	  	(1) Zuerst werden alle Blöcke, die sich Test- & Train-Set teilen extrahiert & basierend darauf RFs trainiert.
+	  	(1) Im ersten Schritt werden alle Blöcke, die sich Test- & Train-Set teilen extrahiert & basierend darauf RFs trainiert.
 	  		 >> In dem Beispiel haben die Train & Test-Daten die Blöcke 'Clinical' & 'CNV' gemeinsam.
-	  		    Auf jedem dieser Blocks wird nun ein RF trainiert --> insgesamt 2 RF Modelle
+	  		    Auf jedem dieser Blocks wird nun ein RF trainiert 
+	  		    	--> insgesamt 2 RF Modelle [einmal basierend auf 'Clinical' & einmal basierend auf 'CNV']
 
-	  	(2) Diese trainierten RFs können dann Vorgersagen für das Test-Set liefern. 
+	  	(2) Jedes dieser trainierten RFs kann dann Vorgersagen für das Test-Set liefern. 
 		   	>> In dem Beispiel würde jede Beobachtung aus dem Test-Set zwei Vorhersage erhalten 
 		   		- einmal basierend auf dem CNV Block &
 		   		- einmal basierend auf dem Clinical Block.
 
-		--> Nachteil dieses Ansatzes ist es - wie auch schon beim CC-APproach -, dass die Daten wieder nicht besonders 
-		    effizient verwendet werden
+	- Nachteil dieses Ansatzes ist es, dass die Daten nicht besonders effizient verwendet werden
 
-[6. --> ~1:00]
+[6. --> 0.55 - 1:05]
+
+-------------------------------------------------------------------------------------------------------------------------------
 7. Slide ----- ----- ----- ----- -----
 	>> Der nächste Ansatz, um mit block-wise fehlenden Daten umzugehen ist der 'Imputation Approach'
 
@@ -183,50 +181,52 @@ NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESE
 	- Dieser Ansatz verwendet die Daten sehr effizient und verwirft keine einzige Beobachtung/ Feature!
 
 [8. --> ~1:40]
------- STOPPPED HERE ---------------------------------------------------------------------------------------------------------------------------------------
 9. Slide ----- ----- ----- ----- -----
 	>> Nun kommen wir zu dem letztem RF-Ansatz - dem Fold-Wise Approach
 
-	- Die Idee des Ansatzes besteht darin, auf jedem Fold in den Trainingsdaten ein Modell zu fitten. Für die Vorhersage
-	  auf einem Test-Set, werden die Vorhersagen der fold-wise models aggregiert.
+	- Die Idee des Ansatzes besteht darin, auf jedem Fold in den Trainingsdaten ein seperates Modell zu gefittet wird. 
+	  Und für die Vorhersage auf einem Test-Set, werden die Vorhersagen der fold-wise models aggregiert.
 
 	Dazu:	- Wird auf jedem Fold ein seperates RF-Model gefittet, sodass man so viele Modelle hat, wie die TrainingsDaten
-	          Folds hat
-	          	>> gezeigt in dem untenstehenden Beispiel
+	          Folds hat 	
+	          	--> gezeigt in dem untenstehenden Beispiel: Pro Fold werden die beobachteten Blöcke genommen & der Response Y
+	          	                                            und darauf basierend RFs trainiert!
+	          	                                            	--> So viel fold-wise fitted models wie unique folds!
 
-	         - Für eine Vorhersage auf dem Test-Set, wird jedes Fold-Wise Molde nach einer Vorhersage gefragt.
-	         	--> Nur die, die auf einem Fold trainiert wurden, der mindest einen Block mit dem Test-Set gemeinsam hat,
-	         	    können Vorhersage treffen - dafür kann es aber sein, dass ein Modell geprunded werden muss.
-	                 >> Pruning wird auf der nächsten Folie genauer erklärt.
+10. Slide ----- ----- ----- ----- -----
+	--> Nur die Modelle, die auf einem Fold trainiert wurden, der mindestens einen Block mit dem Test-Set gemeinsam hat, 
+	    können veruschen Vorhersagen zu treffen.
+	    	--> dafür kann es aber sein, dass ein Modell geprunded werden muss.
+                --> pruning wird in unserem Fall angewandt, wenn ein RF mindestens eine SplitVariable enthält,
+                    die für eine Test-Beobachtung nicht vorhanden ist.
 
-	         - Diese einzelnen Vorhersagen werden dann aggregiert für eine final Vorhersage
-	         		>> Wird auch auf der nächsten Slide genauer erläutert.
+                    > der decision-tree links benutzt 'weight' & 'height' als split-variablen & hat 3 terminal nodes
+						
+					> Dieser decision-tree kann nicht angewandt werden, wenn die Beobachtung 'height' nicht hat.
+						  	--> ABER wenn wir den decision-tree prunen, kann er Vorhersagen treffen für Beobachtungen ohne 'height'
+						  	--> schneide den decision-tree zurecht, sodass jeder Node, der mit einer unbekannten Variable splitted
+						  	    zu einem Terminal Node wird
+						  	    --> Kann dann Vorhersagen treffen, auch wenn Test-Obs. gar nicht in 'height' beobachtet wurde
 
-10. Slide ----- ----- ----- ----- ----
-	- PRUNING:
-		- Pruning - zu deutsch stutzen - kann auf einen decision-tree angewandt werden, wenn dieser eine SplitVariable enthält,
-		  die für eine Test-Beobachtung vorhanden ist.
-		- e.g.  > der decision-tree links benutzt 'weight' & 'height' als split-variablen & hat 3 terminal nodes
-				> Dieser decision-tree kann nicht angewandt werden, wenn die Beobachtung 'height' nicht hat.
-				  ABER wenn wir den decision-tree prunen (stutzen), dann kann er Vorhersagen treffen für Beobachtungen 
-				  ohne 'height'
-				  	--> schneide den decision-tree zurecht, sodass jeder Node, der mit einer unbekannten Variable splitted
-				  	    zu einem Terminal Node wird
-				  	    --> Kann dann Vorhersagen treffen, auch wenn Test-Obs. gar nicht in 'height' beobachtet wurde
-				> Wenn ein decision-tree an dem ersten Split gepruned werden muss, ist der decision-tree nicht mehr verwendbar 
-				  & wird komplett von dem Entscheidugsbaum entfernt!
+					> Wenn ein decision-tree an dem ersten Split gepruned werden muss, ist der decision-tree nicht mehr verwendbar 
+					  & wird komplett von dem Entscheidugsbaum entfernt!
 
-	- Predicitons:
-		- Jedes Fold-wise fitted model wird nach einer Vorhersage gefragt.
-			> RF(Hospital2) wurde auf den Blocks 'Clinical' & 'RNA' trainiert
-				-> Vorhersage mit dem Modell auf den Tést-Daten regulär!
+11. Slide ----- ----- ----- ----- ----
+	>> Die Vorhersage für eine Test-Obs. entspricht dann dem gewichteten / ungewichteten Mittelwert der fold-wise RFs:
+		Dazu: 
+			- wird jedes Fold-wise fitted model nach einer Vorhersage gefragt.
 
-			> RF(Hospital1) wurde auf den Blocks 'Clincial' & 'CNV' trainiert
-		    	--> Die einzelnen Decision-Trees müssen gepruned werden, weil sie unter umständen 'CNV' features als 
-		    	    SplitVariablen benutzen, die für das Test-Set nicht vorhanden sind.
-		    	    --> Nach dem Pruning kann das Modell dann Vorhersagen regulär treffen!
+				> RF(Hospital2) wurde auf den Blocks 'Clinical' & 'RNA' trainiert
+					-> Vorhersage mit dem Modell auf den Tést-Daten regulär!
 
-		    > diese fold-wise predicitons werden dann aggregiert zu einer finalen Vorhersage
+
+				> RF(Hospital1) & RF(Hospital3) wurden beide auf einem Fold mit 'CNV' trainiert
+					--> CNV nicht vorhanden für Test-Set
+						--> einzelnen Decision-Trees müssen gepruned werden, weil sie unter umständen
+		    			   'CNV' features als SplitVariablen benutzen [nicht vorhanden für Test-Set]
+		    			   	--> Nach dem Pruning kann das Modell dann Vorhersagen regulär treffen!
+
+		    - diese fold-wise predicitons werden dann aggregiert zu einer finalen Vorhersage
 				> unweighted: --> Mittelwert der fold-wise predicitions
 				> weighted:   --> Benutze die OOB-Accuracy/ F-1-Score der gepruneden Fold-Wise Models als Gewicht, um 
 				                  die einzelnen Vorhersagen zu gewichten
@@ -238,8 +238,9 @@ NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESE
 ----- Benchmark Experiment ---------------------------------------------------------------------------------------------
 ------------------------------------------------------------------------------------------------------------------------
 12. Slide ----- ----- ----- ----- -----
-	>> Kommen wir jetzt zu den Benchmark Experimenten
-		--> Als erstes die Metriken
+	>> Kommen wir nun zu dem Kapitel "Benchmark Experiments"
+	
+	>> Zuerst werden die METRIKEN vorgestellt!
 
 	- Metriken werden verwendet, um zu bewerten, wie gut die Vorhersagen eines Modells mit den eigentlichen Daten übereinstimmen.
 
@@ -247,8 +248,10 @@ NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESE
 	  Alle Metriken sind - anders als z.B. die accuracy - insensibel zu Class Inbalaces in der response variable
 
 	- Der 'F-1 Score' ist das harmonische Mittel aus der Precsion und Recall Metric [1. = precision || 2. = recall]
+
 	- Die 'balanced accuracy' berechnet die Accuracy seperate pro Responseklasse und ist der Durchschnitt der class-wisen
 	  accuracys!
+
 	- Der 'Matthews Correlation Coefficent' ist die diskretisierung der pearson correlation für binäre Variable
 
 	--> Für alle Metriken gitl, dass sie am besten sind mit dem Wert '1'
@@ -258,7 +261,7 @@ NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESENTATION --- NOTES PRESE
 	>> Sprechn wir nun über die erste Quelle von Multi-Omics Daten --> 'The Cancer Genome Atlas' - kurz TCGA
 
 	- Insgesamt wurden 21 Datensätze von meinem Betreuer zur Verfügung gestellt. 
-	  Die Daten wurden bereits bearbeitet 	- einmal die fehlenden Daten im Block 'Clincial' wurden imputiert!
+	  Die Daten wurden bereits bearbeitet 	- die fehlenden Daten im Block 'Clincial' wurden imputiert!
 	  										- kategoriale Variablen wurden in binäre numerische umgewandelt!
 	  	--> 21 komplett Beobachtete Datensätze
 
